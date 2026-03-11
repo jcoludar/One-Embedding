@@ -1,0 +1,461 @@
+[
+  {
+    "name": "hpo_top1_trial28_s42",
+    "hpo_trial": 28,
+    "hpo_rank": 1,
+    "params": {
+      "lr": 0.00013674486572389248,
+      "temperature": 0.12692805679389219,
+      "batch_size": 128,
+      "recon_reg_weight": 0.054296124938454954,
+      "epochs": 150,
+      "dropout": 0.19988470535636305
+    },
+    "seed": 42,
+    "training_time_s": 616.3578608036041
+  },
+  {
+    "name": "hpo_top1_trial28_s123",
+    "hpo_trial": 28,
+    "hpo_rank": 1,
+    "params": {
+      "lr": 0.00013674486572389248,
+      "temperature": 0.12692805679389219,
+      "batch_size": 128,
+      "recon_reg_weight": 0.054296124938454954,
+      "epochs": 150,
+      "dropout": 0.19988470535636305
+    },
+    "seed": 123,
+    "training_time_s": 643.011223077774
+  },
+  {
+    "name": "hpo_top1_trial28_s456",
+    "hpo_trial": 28,
+    "hpo_rank": 1,
+    "params": {
+      "lr": 0.00013674486572389248,
+      "temperature": 0.12692805679389219,
+      "batch_size": 128,
+      "recon_reg_weight": 0.054296124938454954,
+      "epochs": 150,
+      "dropout": 0.19988470535636305
+    },
+    "seed": 456,
+    "training_time_s": 609.9867358207703
+  },
+  {
+    "name": "hpo_top2_trial14_s42",
+    "hpo_trial": 14,
+    "hpo_rank": 2,
+    "params": {
+      "lr": 8.30266803586792e-05,
+      "temperature": 0.12113667102234912,
+      "batch_size": 64,
+      "recon_reg_weight": 0.01780592622583312,
+      "epochs": 100,
+      "dropout": 0.23206372523536994
+    },
+    "seed": 42,
+    "training_time_s": 453.7607982158661
+  },
+  {
+    "name": "hpo_top2_trial14_s123",
+    "hpo_trial": 14,
+    "hpo_rank": 2,
+    "params": {
+      "lr": 8.30266803586792e-05,
+      "temperature": 0.12113667102234912,
+      "batch_size": 64,
+      "recon_reg_weight": 0.01780592622583312,
+      "epochs": 100,
+      "dropout": 0.23206372523536994
+    },
+    "seed": 123,
+    "training_time_s": 426.6071689128876
+  },
+  {
+    "name": "hpo_top2_trial14_s456",
+    "hpo_trial": 14,
+    "hpo_rank": 2,
+    "params": {
+      "lr": 8.30266803586792e-05,
+      "temperature": 0.12113667102234912,
+      "batch_size": 64,
+      "recon_reg_weight": 0.01780592622583312,
+      "epochs": 100,
+      "dropout": 0.23206372523536994
+    },
+    "seed": 456,
+    "training_time_s": 391.13499212265015
+  },
+  {
+    "name": "hpo_top3_trial10_s42",
+    "hpo_trial": 10,
+    "hpo_rank": 3,
+    "params": {
+      "lr": 7.10555302635254e-05,
+      "temperature": 0.13463680927991925,
+      "batch_size": 64,
+      "recon_reg_weight": 0.010727948694969774,
+      "epochs": 100,
+      "dropout": 0.20391713440515993
+    },
+    "seed": 42,
+    "training_time_s": 365.1532847881317
+  },
+  {
+    "name": "hpo_top3_trial10_s123",
+    "hpo_trial": 10,
+    "hpo_rank": 3,
+    "params": {
+      "lr": 7.10555302635254e-05,
+      "temperature": 0.13463680927991925,
+      "batch_size": 64,
+      "recon_reg_weight": 0.010727948694969774,
+      "epochs": 100,
+      "dropout": 0.20391713440515993
+    },
+    "seed": 123,
+    "training_time_s": 349.3731038570404
+  },
+  {
+    "name": "hpo_top3_trial10_s456",
+    "hpo_trial": 10,
+    "hpo_rank": 3,
+    "params": {
+      "lr": 7.10555302635254e-05,
+      "temperature": 0.13463680927991925,
+      "batch_size": 64,
+      "recon_reg_weight": 0.010727948694969774,
+      "epochs": 100,
+      "dropout": 0.20391713440515993
+    },
+    "seed": 456,
+    "training_time_s": 333.2727527618408
+  },
+  {
+    "name": "eval_hpo_top1_trial28_s42",
+    "hpo_trial": 28,
+    "hpo_rank": 1,
+    "seed": 42,
+    "params": {
+      "lr": 0.00013674486572389248,
+      "temperature": 0.12692805679389219,
+      "batch_size": 128,
+      "recon_reg_weight": 0.054296124938454954,
+      "epochs": 150,
+      "dropout": 0.19988470535636305
+    },
+    "retrieval": {
+      "precision@1": 0.8011764705882353,
+      "precision@3": 0.6823529411764706,
+      "precision@5": 0.5134117647058823,
+      "mrr": 0.869246747060731,
+      "map": 0.596298377388812
+    },
+    "classification": {
+      "accuracy_mean": 0.7204058624577226,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.03168441652813379,
+      "cosine_sim": 0.6154235894539777,
+      "mse_std": 0.004572281394453741,
+      "cosine_sim_std": 0.04574469257439949,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "eval_hpo_top1_trial28_s123",
+    "hpo_trial": 28,
+    "hpo_rank": 1,
+    "seed": 123,
+    "params": {
+      "lr": 0.00013674486572389248,
+      "temperature": 0.12692805679389219,
+      "batch_size": 128,
+      "recon_reg_weight": 0.054296124938454954,
+      "epochs": 150,
+      "dropout": 0.19988470535636305
+    },
+    "retrieval": {
+      "precision@1": 0.7964705882352942,
+      "precision@3": 0.680392156862745,
+      "precision@5": 0.5141176470588236,
+      "mrr": 0.8666240598179443,
+      "map": 0.5946578614096587
+    },
+    "classification": {
+      "accuracy_mean": 0.7249154453213078,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.03151882003116257,
+      "cosine_sim": 0.6163904703715268,
+      "mse_std": 0.004516429043347424,
+      "cosine_sim_std": 0.0456614364844756,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "eval_hpo_top1_trial28_s456",
+    "hpo_trial": 28,
+    "hpo_rank": 1,
+    "seed": 456,
+    "params": {
+      "lr": 0.00013674486572389248,
+      "temperature": 0.12692805679389219,
+      "batch_size": 128,
+      "recon_reg_weight": 0.054296124938454954,
+      "epochs": 150,
+      "dropout": 0.19988470535636305
+    },
+    "retrieval": {
+      "precision@1": 0.8,
+      "precision@3": 0.6839215686274509,
+      "precision@5": 0.5157647058823529,
+      "mrr": 0.8692639270797714,
+      "map": 0.5979106149977913
+    },
+    "classification": {
+      "accuracy_mean": 0.7147688838782412,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.031224133247400032,
+      "cosine_sim": 0.6177521755414851,
+      "mse_std": 0.004371330026392947,
+      "cosine_sim_std": 0.04510625554866465,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "eval_hpo_top2_trial14_s42",
+    "hpo_trial": 14,
+    "hpo_rank": 2,
+    "seed": 42,
+    "params": {
+      "lr": 8.30266803586792e-05,
+      "temperature": 0.12113667102234912,
+      "batch_size": 64,
+      "recon_reg_weight": 0.01780592622583312,
+      "epochs": 100,
+      "dropout": 0.23206372523536994
+    },
+    "retrieval": {
+      "precision@1": 0.7988235294117647,
+      "precision@3": 0.675686274509804,
+      "precision@5": 0.5080000000000001,
+      "mrr": 0.8686688305827535,
+      "map": 0.5886395965943202
+    },
+    "classification": {
+      "accuracy_mean": 0.705749718151071,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.05365885606145158,
+      "cosine_sim": 0.5722520608761731,
+      "mse_std": 0.008472984063139337,
+      "cosine_sim_std": 0.039708289323365696,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "eval_hpo_top2_trial14_s123",
+    "hpo_trial": 14,
+    "hpo_rank": 2,
+    "seed": 123,
+    "params": {
+      "lr": 8.30266803586792e-05,
+      "temperature": 0.12113667102234912,
+      "batch_size": 64,
+      "recon_reg_weight": 0.01780592622583312,
+      "epochs": 100,
+      "dropout": 0.23206372523536994
+    },
+    "retrieval": {
+      "precision@1": 0.7988235294117647,
+      "precision@3": 0.6756862745098038,
+      "precision@5": 0.5058823529411764,
+      "mrr": 0.8690775319538844,
+      "map": 0.5871091589798579
+    },
+    "classification": {
+      "accuracy_mean": 0.705749718151071,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.05363627616096946,
+      "cosine_sim": 0.5725496385377996,
+      "mse_std": 0.0082865772885375,
+      "cosine_sim_std": 0.0393961616054902,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "eval_hpo_top2_trial14_s456",
+    "hpo_trial": 14,
+    "hpo_rank": 2,
+    "seed": 456,
+    "params": {
+      "lr": 8.30266803586792e-05,
+      "temperature": 0.12113667102234912,
+      "batch_size": 64,
+      "recon_reg_weight": 0.01780592622583312,
+      "epochs": 100,
+      "dropout": 0.23206372523536994
+    },
+    "retrieval": {
+      "precision@1": 0.8,
+      "precision@3": 0.672156862745098,
+      "precision@5": 0.5058823529411764,
+      "mrr": 0.8692998764136404,
+      "map": 0.5870700493998056
+    },
+    "classification": {
+      "accuracy_mean": 0.7012401352874859,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.053936833165147725,
+      "cosine_sim": 0.5719524850214229,
+      "mse_std": 0.008250815005309324,
+      "cosine_sim_std": 0.039521555279676775,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "eval_hpo_top3_trial10_s42",
+    "hpo_trial": 10,
+    "hpo_rank": 3,
+    "seed": 42,
+    "params": {
+      "lr": 7.10555302635254e-05,
+      "temperature": 0.13463680927991925,
+      "batch_size": 64,
+      "recon_reg_weight": 0.010727948694969774,
+      "epochs": 100,
+      "dropout": 0.20391713440515993
+    },
+    "retrieval": {
+      "precision@1": 0.8011764705882353,
+      "precision@3": 0.6729411764705883,
+      "precision@5": 0.5063529411764706,
+      "mrr": 0.8700897050068191,
+      "map": 0.5865736693008332
+    },
+    "classification": {
+      "accuracy_mean": 0.6978579481397971,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.06138233156326939,
+      "cosine_sim": 0.5606451270510169,
+      "mse_std": 0.009517362465774394,
+      "cosine_sim_std": 0.038372216606582014,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "eval_hpo_top3_trial10_s123",
+    "hpo_trial": 10,
+    "hpo_rank": 3,
+    "seed": 123,
+    "params": {
+      "lr": 7.10555302635254e-05,
+      "temperature": 0.13463680927991925,
+      "batch_size": 64,
+      "recon_reg_weight": 0.010727948694969774,
+      "epochs": 100,
+      "dropout": 0.20391713440515993
+    },
+    "retrieval": {
+      "precision@1": 0.7988235294117647,
+      "precision@3": 0.6737254901960784,
+      "precision@5": 0.504,
+      "mrr": 0.8678419184148657,
+      "map": 0.5850983518037378
+    },
+    "classification": {
+      "accuracy_mean": 0.6967305524239008,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.06157864585518837,
+      "cosine_sim": 0.5607906461813871,
+      "mse_std": 0.009447960581067637,
+      "cosine_sim_std": 0.03836746786036174,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "eval_hpo_top3_trial10_s456",
+    "hpo_trial": 10,
+    "hpo_rank": 3,
+    "seed": 456,
+    "params": {
+      "lr": 7.10555302635254e-05,
+      "temperature": 0.13463680927991925,
+      "batch_size": 64,
+      "recon_reg_weight": 0.010727948694969774,
+      "epochs": 100,
+      "dropout": 0.20391713440515993
+    },
+    "retrieval": {
+      "precision@1": 0.8023529411764706,
+      "precision@3": 0.6725490196078431,
+      "precision@5": 0.5030588235294118,
+      "mrr": 0.8700538557232058,
+      "map": 0.5853320335609166
+    },
+    "classification": {
+      "accuracy_mean": 0.6910935738444194,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.061886087616576865,
+      "cosine_sim": 0.5601699284595602,
+      "mse_std": 0.009411366120821989,
+      "cosine_sim_std": 0.03838931140846116,
+      "n_proteins": 850
+    }
+  }
+]

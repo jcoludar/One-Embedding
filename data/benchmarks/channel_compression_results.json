@@ -1,0 +1,797 @@
+[
+  {
+    "name": "channel_baseline_meanpool",
+    "split_mode": "legacy_cv",
+    "compression": {
+      "K": 1,
+      "D_prime": 1280,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compression_ratio": 0.005706868845028638
+    },
+    "retrieval_family": {
+      "precision@1": 0.6176470588235294,
+      "precision@3": 0.43843137254901954,
+      "precision@5": 0.3127058823529411,
+      "mean_precision": 0.45626143790849677,
+      "mrr": 0.6986199163043135,
+      "map": 0.35485992048163617,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.8105882352941176,
+      "precision@3": 0.6168627450980392,
+      "precision@5": 0.47929411764705887,
+      "mean_precision": 0.6355816993464052,
+      "mrr": 0.8428662271290747,
+      "map": 0.3710611367836953,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.8223529411764706,
+      "precision@3": 0.6415686274509803,
+      "precision@5": 0.5035294117647059,
+      "mean_precision": 0.6558169934640522,
+      "mrr": 0.854137170306393,
+      "map": 0.3645935387195435,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.7215332581736189,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.8083427282976324,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.8320180383314544,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    }
+  },
+  {
+    "name": "channel_baseline_pca_d64",
+    "split_mode": "held_out",
+    "latent_dim": 64,
+    "method": "pca",
+    "explained_variance": 0.4531618654727936,
+    "compression_ratio": 0.05,
+    "retrieval_family": {
+      "precision@1": 0.3023529411764706,
+      "precision@3": 0.19647058823529412,
+      "precision@5": 0.14235294117647057,
+      "mean_precision": 0.21372549019607842,
+      "mrr": 0.38576321754293663,
+      "map": 0.16413754733534702,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.26944757609921083,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    }
+  },
+  {
+    "name": "channel_baseline_pca_d128",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "method": "pca",
+    "explained_variance": 0.5342726707458496,
+    "compression_ratio": 0.1,
+    "retrieval_family": {
+      "precision@1": 0.36941176470588233,
+      "precision@3": 0.236078431372549,
+      "precision@5": 0.16776470588235295,
+      "mean_precision": 0.2577516339869281,
+      "mrr": 0.450832967757446,
+      "map": 0.19496823301423713,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.370913190529876,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    }
+  },
+  {
+    "name": "channel_baseline_pca_d256",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "method": "pca",
+    "explained_variance": 0.6384676098823547,
+    "compression_ratio": 0.2,
+    "retrieval_family": {
+      "precision@1": 0.42470588235294116,
+      "precision@3": 0.27921568627450977,
+      "precision@5": 0.2011764705882353,
+      "mean_precision": 0.3016993464052287,
+      "mrr": 0.5108169563192789,
+      "map": 0.23038294874567886,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.48703494926719276,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    }
+  },
+  {
+    "name": "channel_unsup_d64_s42",
+    "split_mode": "held_out",
+    "latent_dim": 64,
+    "method": "channel_unsup",
+    "use_residual": true,
+    "n_params": 2588224,
+    "seed": 42,
+    "best_epoch": 74,
+    "reconstruction": {
+      "mse": 0.022737919746295493,
+      "cosine_sim": 0.8278405143232906,
+      "mse_std": 0.0052918168206103795,
+      "cosine_sim_std": 0.04814918560458112,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.3058823529411765,
+      "precision@3": 0.21137254901960784,
+      "precision@5": 0.15105882352941177,
+      "mean_precision": 0.2227712418300654,
+      "mrr": 0.40407769247084696,
+      "map": 0.16860148661489704,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.3988235294117647,
+      "precision@3": 0.3027450980392157,
+      "precision@5": 0.23058823529411765,
+      "mean_precision": 0.310718954248366,
+      "mrr": 0.5157911739090056,
+      "map": 0.17163964400139628,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.42164599774520856,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "compression": {
+      "K": -1,
+      "D_prime": 64,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 11214.5559566787,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.05
+    },
+    "training_time_s": 1464.1227419376373
+  },
+  {
+    "name": "channel_unsup_d64_s123",
+    "split_mode": "held_out",
+    "latent_dim": 64,
+    "method": "channel_unsup",
+    "use_residual": true,
+    "n_params": 2588224,
+    "seed": 123,
+    "best_epoch": 199,
+    "reconstruction": {
+      "mse": 0.019400766117169576,
+      "cosine_sim": 0.8549562874962302,
+      "mse_std": 0.005011262262801719,
+      "cosine_sim_std": 0.04368764607817117,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.40941176470588236,
+      "precision@3": 0.28196078431372545,
+      "precision@5": 0.20376470588235296,
+      "mean_precision": 0.2983790849673203,
+      "mrr": 0.5084122875697867,
+      "map": 0.22931648972282107,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.548235294117647,
+      "precision@3": 0.40549019607843134,
+      "precision@5": 0.3072941176470589,
+      "mean_precision": 0.4203398692810458,
+      "mrr": 0.6372830368336118,
+      "map": 0.23834787754286046,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.4644870349492672,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "compression": {
+      "K": -1,
+      "D_prime": 64,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 11214.5559566787,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.05
+    },
+    "training_time_s": 1362.8639588356018
+  },
+  {
+    "name": "channel_unsup_d128_s42",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "method": "channel_unsup",
+    "use_residual": true,
+    "n_params": 2711168,
+    "seed": 42,
+    "best_epoch": 199,
+    "reconstruction": {
+      "mse": 0.01755066867096021,
+      "cosine_sim": 0.8703012495882371,
+      "mse_std": 0.004522129762407989,
+      "cosine_sim_std": 0.03876707468210957,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.5247058823529411,
+      "precision@3": 0.36392156862745095,
+      "precision@5": 0.26494117647058824,
+      "mean_precision": 0.38452287581699346,
+      "mrr": 0.6172393529245624,
+      "map": 0.30160974641983546,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.6894117647058824,
+      "precision@3": 0.5137254901960784,
+      "precision@5": 0.4028235294117647,
+      "mean_precision": 0.5353202614379086,
+      "mrr": 0.7545440539664827,
+      "map": 0.3164725842495297,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.6155580608793687,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "compression": {
+      "K": -1,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 22429.1119133574,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.1
+    },
+    "training_time_s": 1350.7588369846344
+  },
+  {
+    "name": "channel_unsup_d128_s123",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "method": "channel_unsup",
+    "use_residual": true,
+    "n_params": 2711168,
+    "seed": 123,
+    "best_epoch": 199,
+    "reconstruction": {
+      "mse": 0.018719743171378093,
+      "cosine_sim": 0.8608476168969098,
+      "mse_std": 0.004752728215364612,
+      "cosine_sim_std": 0.04108131897774605,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.24823529411764705,
+      "precision@5": 0.1816470588235294,
+      "mean_precision": 0.27309803921568626,
+      "mrr": 0.47670335723062635,
+      "map": 0.2073704128969082,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.508235294117647,
+      "precision@3": 0.34901960784313724,
+      "precision@5": 0.27082352941176474,
+      "mean_precision": 0.37602614379084964,
+      "mrr": 0.5993298602778546,
+      "map": 0.20976990018096425,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.1995490417136415,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "compression": {
+      "K": -1,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 22429.1119133574,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.1
+    },
+    "training_time_s": 1291.2697248458862
+  },
+  {
+    "name": "channel_unsup_d256_s42",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "method": "channel_unsup",
+    "use_residual": true,
+    "n_params": 2957056,
+    "seed": 42,
+    "best_epoch": 200,
+    "reconstruction": {
+      "mse": 0.01552451691836776,
+      "cosine_sim": 0.8870209043166216,
+      "mse_std": 0.003937089571729601,
+      "cosine_sim_std": 0.03310983680391156,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.4764705882352941,
+      "precision@3": 0.31529411764705884,
+      "precision@5": 0.22305882352941178,
+      "mean_precision": 0.33827450980392154,
+      "mrr": 0.5599662908748265,
+      "map": 0.2529938502587143,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.6247058823529412,
+      "precision@3": 0.4466666666666666,
+      "precision@5": 0.3357647058823529,
+      "mean_precision": 0.46904575163398693,
+      "mrr": 0.6925246652863659,
+      "map": 0.25669866290889803,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.2480270574971815,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "compression": {
+      "K": -1,
+      "D_prime": 256,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 44858.2238267148,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.2
+    },
+    "training_time_s": 1482.8810908794403
+  },
+  {
+    "name": "channel_unsup_d256_s123",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "method": "channel_unsup",
+    "use_residual": true,
+    "n_params": 2957056,
+    "seed": 123,
+    "best_epoch": 190,
+    "reconstruction": {
+      "mse": 0.014631562867914052,
+      "cosine_sim": 0.8932842828245724,
+      "mse_std": 0.003939546110848651,
+      "cosine_sim_std": 0.03256863958964316,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.49411764705882355,
+      "precision@3": 0.32274509803921564,
+      "precision@5": 0.23623529411764707,
+      "mean_precision": 0.3510326797385621,
+      "mrr": 0.5804161093790076,
+      "map": 0.2646386115487393,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.6435294117647059,
+      "precision@3": 0.45294117647058824,
+      "precision@5": 0.3557647058823529,
+      "mean_precision": 0.484078431372549,
+      "mrr": 0.7109156566556192,
+      "map": 0.26969340540308995,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.45659526493799324,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "compression": {
+      "K": -1,
+      "D_prime": 256,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 44858.2238267148,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.2
+    },
+    "training_time_s": 1480.5404901504517
+  },
+  {
+    "name": "channel_contrastive_d128_s42",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "method": "channel_contrastive",
+    "use_residual": true,
+    "seed": 42,
+    "pre_finetune_recon": {
+      "mse": 0.01755066867096021,
+      "cosine_sim": 0.8703012495882371,
+      "mse_std": 0.004522129762407989,
+      "cosine_sim_std": 0.03876707468210957,
+      "n_proteins": 850
+    },
+    "post_finetune_recon": {
+      "mse": 0.04440556172938908,
+      "cosine_sim": 0.6543769518768087,
+      "mse_std": 0.004224824762527948,
+      "cosine_sim_std": 0.034348715113245866,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.7494117647058823,
+      "precision@3": 0.6254901960784315,
+      "precision@5": 0.4684705882352941,
+      "mean_precision": 0.6144575163398693,
+      "mrr": 0.832548146485982,
+      "map": 0.5402021508914255,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.928235294117647,
+      "precision@3": 0.8388235294117647,
+      "precision@5": 0.7134117647058823,
+      "mean_precision": 0.8268235294117647,
+      "mrr": 0.9478672117451838,
+      "map": 0.62126774058061,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.8399098083427283,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "compression": {
+      "K": -1,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 22429.1119133574,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.1
+    },
+    "training_time_s": 611.0506308078766
+  },
+  {
+    "name": "channel_contrastive_d128_s123",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "method": "channel_contrastive",
+    "use_residual": true,
+    "seed": 123,
+    "pre_finetune_recon": {
+      "mse": 0.018719743171378093,
+      "cosine_sim": 0.8608476168969098,
+      "mse_std": 0.004752728215364612,
+      "cosine_sim_std": 0.04108131897774605,
+      "n_proteins": 850
+    },
+    "post_finetune_recon": {
+      "mse": 0.06725819344029707,
+      "cosine_sim": 0.6279087194975684,
+      "mse_std": 0.009706780863196323,
+      "cosine_sim_std": 0.05139956811838922,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.691764705882353,
+      "precision@3": 0.5450980392156862,
+      "precision@5": 0.4155294117647059,
+      "mean_precision": 0.5507973856209151,
+      "mrr": 0.7868848886527359,
+      "map": 0.4728264763685433,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.8658823529411764,
+      "precision@3": 0.7250980392156862,
+      "precision@5": 0.6044705882352941,
+      "mean_precision": 0.7318169934640523,
+      "mrr": 0.9056440851765863,
+      "map": 0.5055966793838405,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.3979706877113867,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "compression": {
+      "K": -1,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 22429.1119133574,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.1
+    },
+    "training_time_s": 588.9195799827576
+  },
+  {
+    "name": "channel_contrastive_d256_s42",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "method": "channel_contrastive",
+    "use_residual": true,
+    "seed": 42,
+    "pre_finetune_recon": {
+      "mse": 0.01552451691836776,
+      "cosine_sim": 0.8870209043166216,
+      "mse_std": 0.003937089571729601,
+      "cosine_sim_std": 0.03310983680391156,
+      "n_proteins": 850
+    },
+    "post_finetune_recon": {
+      "mse": 0.08892885834416922,
+      "cosine_sim": 0.5870836136972203,
+      "mse_std": 0.013618155847409845,
+      "cosine_sim_std": 0.04381883290214224,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.7470588235294118,
+      "precision@3": 0.6145098039215685,
+      "precision@5": 0.45858823529411774,
+      "mean_precision": 0.606718954248366,
+      "mrr": 0.8334648948036759,
+      "map": 0.5307672198725707,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.9294117647058824,
+      "precision@3": 0.8168627450980391,
+      "precision@5": 0.688,
+      "mean_precision": 0.811424836601307,
+      "mrr": 0.9477103396346024,
+      "map": 0.5859469442638257,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.5377677564825254,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "compression": {
+      "K": -1,
+      "D_prime": 256,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 44858.2238267148,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.2
+    },
+    "training_time_s": 575.9058630466461
+  },
+  {
+    "name": "channel_contrastive_d256_s123",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "method": "channel_contrastive",
+    "use_residual": true,
+    "seed": 123,
+    "pre_finetune_recon": {
+      "mse": 0.014631562867914052,
+      "cosine_sim": 0.8932842828245724,
+      "mse_std": 0.003939546110848651,
+      "cosine_sim_std": 0.03256863958964316,
+      "n_proteins": 850
+    },
+    "post_finetune_recon": {
+      "mse": 0.06511488232542487,
+      "cosine_sim": 0.5859678696884828,
+      "mse_std": 0.009077331912657163,
+      "cosine_sim_std": 0.028147438820354895,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.7576470588235295,
+      "precision@3": 0.6309803921568626,
+      "precision@5": 0.4790588235294118,
+      "mean_precision": 0.622562091503268,
+      "mrr": 0.8407320019340819,
+      "map": 0.5497073139749323,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.9388235294117647,
+      "precision@3": 0.8447058823529412,
+      "precision@5": 0.7235294117647059,
+      "mean_precision": 0.835686274509804,
+      "mrr": 0.9566630928794155,
+      "map": 0.6286457796981033,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.6922209695603156,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "compression": {
+      "K": -1,
+      "D_prime": 256,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 44858.2238267148,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.2
+    },
+    "training_time_s": 569.9557790756226
+  },
+  {
+    "name": "channel_prot_t5_unsup_d256_s42",
+    "split_mode": "held_out",
+    "plm": "ProtT5-XL",
+    "input_dim": 1024,
+    "latent_dim": 256,
+    "method": "channel_unsup",
+    "n_params": 1972480,
+    "seed": 42,
+    "reconstruction": {
+      "mse": 0.011077991510357927,
+      "cosine_sim": 0.8498341236394994,
+      "mse_std": 0.002701016488465168,
+      "cosine_sim_std": 0.027330488816581594,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.6305882352941177,
+      "precision@3": 0.4666666666666666,
+      "precision@5": 0.3371764705882353,
+      "mean_precision": 0.47814379084967323,
+      "mrr": 0.7239279621744833,
+      "map": 0.38782730880532695,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.5129650507328072,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "compression": {
+      "K": -1,
+      "D_prime": 256,
+      "D_original": 1024,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 44858.2238267148,
+      "original_elements": 179432.8953068592,
+      "compression_ratio": 0.25
+    },
+    "training_time_s": 1217.0325899124146
+  },
+  {
+    "name": "channel_prot_t5_contrastive_d256_s42",
+    "split_mode": "held_out",
+    "plm": "ProtT5-XL",
+    "input_dim": 1024,
+    "latent_dim": 256,
+    "method": "channel_contrastive",
+    "seed": 42,
+    "retrieval_family": {
+      "precision@1": 0.808235294117647,
+      "precision@3": 0.6666666666666667,
+      "precision@5": 0.5032941176470588,
+      "mean_precision": 0.6593986928104575,
+      "mrr": 0.8728817192614339,
+      "map": 0.584456745970953,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.705749718151071,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "compression": {
+      "K": -1,
+      "D_prime": 256,
+      "D_original": 1024,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 44858.2238267148,
+      "original_elements": 179432.8953068592,
+      "compression_ratio": 0.25
+    },
+    "training_time_s": 483.65818071365356
+  }
+]

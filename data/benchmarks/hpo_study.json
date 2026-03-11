@@ -1,0 +1,446 @@
+{
+  "best_trial": {
+    "number": 28,
+    "value": 0.8989078412064988,
+    "params": {
+      "lr": 0.00013674486572389248,
+      "temperature": 0.12692805679389219,
+      "batch_size": 128,
+      "recon_reg_weight": 0.054296124938454954,
+      "epochs": 150,
+      "dropout": 0.19988470535636305
+    }
+  },
+  "all_trials": [
+    {
+      "number": 0,
+      "value": 0.8984493468270116,
+      "params": {
+        "lr": 7.106591851092232e-05,
+        "temperature": 0.1385613281701473,
+        "batch_size": 64,
+        "recon_reg_weight": 0.018408992080552525,
+        "epochs": 100,
+        "dropout": 0.1916145155592091
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 1,
+      "value": 0.8861235185396258,
+      "params": {
+        "lr": 3.145616317558385e-05,
+        "temperature": 0.14290885785088342,
+        "batch_size": 64,
+        "recon_reg_weight": 0.020492680115417352,
+        "epochs": 100,
+        "dropout": 0.10824582803960839
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 2,
+      "value": 0.871536673058485,
+      "params": {
+        "lr": 0.00012273661723331348,
+        "temperature": 0.03755115322842063,
+        "batch_size": 256,
+        "recon_reg_weight": 0.21576967455896826,
+        "epochs": 150,
+        "dropout": 0.05929008254399955
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 3,
+      "value": 0.8715353680622137,
+      "params": {
+        "lr": 0.00012152513343989019,
+        "temperature": 0.039474124105549825,
+        "batch_size": 256,
+        "recon_reg_weight": 0.2362886418423641,
+        "epochs": 150,
+        "dropout": 0.13803049874792025
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 4,
+      "value": 0.8869792518277095,
+      "params": {
+        "lr": 3.9733744020297995e-05,
+        "temperature": 0.06656333325146147,
+        "batch_size": 128,
+        "recon_reg_weight": 0.13353819088790583,
+        "epochs": 150,
+        "dropout": 0.08697089110510542
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 5,
+      "value": 0.8933722991310933,
+      "params": {
+        "lr": 0.0002797086405534444,
+        "temperature": 0.10445178054811376,
+        "batch_size": 64,
+        "recon_reg_weight": 0.36832964384234196,
+        "epochs": 100,
+        "dropout": 0.11506606615265287
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 6,
+      "value": 0.8979878993162672,
+      "params": {
+        "lr": 7.34173229219703e-05,
+        "temperature": 0.0464286534970369,
+        "batch_size": 64,
+        "recon_reg_weight": 0.08356499023325524,
+        "epochs": 100,
+        "dropout": 0.24737738732010348
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 7,
+      "value": 0.8956311306143521,
+      "params": {
+        "lr": 0.0001775685400639094,
+        "temperature": 0.0413064198963348,
+        "batch_size": 128,
+        "recon_reg_weight": 0.1732053535845954,
+        "epochs": 50,
+        "dropout": 0.07317381190502595
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 8,
+      "value": 0.8931116189377144,
+      "params": {
+        "lr": 0.00021888937469133481,
+        "temperature": 0.08180652578321557,
+        "batch_size": 64,
+        "recon_reg_weight": 0.03568426123255424,
+        "epochs": 150,
+        "dropout": 0.14444298503238986
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 9,
+      "value": 0.8333819016553916,
+      "params": {
+        "lr": 3.951077065576527e-05,
+        "temperature": 0.09454922355484109,
+        "batch_size": 256,
+        "recon_reg_weight": 0.06901506581791923,
+        "epochs": 50,
+        "dropout": 0.07157828539866089
+      },
+      "state": "TrialState.PRUNED"
+    },
+    {
+      "number": 10,
+      "value": 0.8984635498937936,
+      "params": {
+        "lr": 7.10555302635254e-05,
+        "temperature": 0.13463680927991925,
+        "batch_size": 64,
+        "recon_reg_weight": 0.010727948694969774,
+        "epochs": 100,
+        "dropout": 0.20391713440515993
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 11,
+      "value": 0.8829475562452656,
+      "params": {
+        "lr": 6.113672932630035e-05,
+        "temperature": 0.14659615299727463,
+        "batch_size": 64,
+        "recon_reg_weight": 0.010148524368100589,
+        "epochs": 100,
+        "dropout": 0.2051436742577468
+      },
+      "state": "TrialState.PRUNED"
+    },
+    {
+      "number": 12,
+      "value": 0.8830739672317981,
+      "params": {
+        "lr": 6.237726925918476e-05,
+        "temperature": 0.11728342056713034,
+        "batch_size": 64,
+        "recon_reg_weight": 0.010444705305211199,
+        "epochs": 100,
+        "dropout": 0.19294399572777232
+      },
+      "state": "TrialState.PRUNED"
+    },
+    {
+      "number": 13,
+      "value": 0.886557908906902,
+      "params": {
+        "lr": 9.394912246514964e-05,
+        "temperature": 0.069071512957391,
+        "batch_size": 64,
+        "recon_reg_weight": 0.025652249931236527,
+        "epochs": 100,
+        "dropout": 0.1906551988584657
+      },
+      "state": "TrialState.PRUNED"
+    },
+    {
+      "number": 14,
+      "value": 0.8987723982533127,
+      "params": {
+        "lr": 8.30266803586792e-05,
+        "temperature": 0.12113667102234912,
+        "batch_size": 64,
+        "recon_reg_weight": 0.01780592622583312,
+        "epochs": 100,
+        "dropout": 0.23206372523536994
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 15,
+      "value": 0.8961221651418592,
+      "params": {
+        "lr": 0.00010726594902734915,
+        "temperature": 0.11445580913994366,
+        "batch_size": 128,
+        "recon_reg_weight": 0.039812334097198546,
+        "epochs": 100,
+        "dropout": 0.24971774007368588
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 16,
+      "value": 0.8920246085011184,
+      "params": {
+        "lr": 0.00016104827753315835,
+        "temperature": 0.060339005512792324,
+        "batch_size": 64,
+        "recon_reg_weight": 0.014953347969093256,
+        "epochs": 50,
+        "dropout": 0.2181878080421271
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 17,
+      "value": 0.8683047346455359,
+      "params": {
+        "lr": 4.5619289534775e-05,
+        "temperature": 0.08450767332650508,
+        "batch_size": 64,
+        "recon_reg_weight": 0.0438711210657447,
+        "epochs": 100,
+        "dropout": 0.16537978848137785
+      },
+      "state": "TrialState.PRUNED"
+    },
+    {
+      "number": 18,
+      "value": 0.8713322082199473,
+      "params": {
+        "lr": 8.557424523328843e-05,
+        "temperature": 0.12376302780071655,
+        "batch_size": 256,
+        "recon_reg_weight": 0.014218808550841223,
+        "epochs": 100,
+        "dropout": 0.22636284016084102
+      },
+      "state": "TrialState.PRUNED"
+    },
+    {
+      "number": 19,
+      "value": 0.8928850456031663,
+      "params": {
+        "lr": 0.0001524263524360297,
+        "temperature": 0.031026958898249694,
+        "batch_size": 128,
+        "recon_reg_weight": 0.029044252215821752,
+        "epochs": 50,
+        "dropout": 0.16538983477793553
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 20,
+      "value": 0.8802654202620646,
+      "params": {
+        "lr": 5.0510865786377516e-05,
+        "temperature": 0.09666022693630827,
+        "batch_size": 64,
+        "recon_reg_weight": 0.05690230478485488,
+        "epochs": 100,
+        "dropout": 0.22662397912729892
+      },
+      "state": "TrialState.PRUNED"
+    },
+    {
+      "number": 21,
+      "value": 0.8858171687158534,
+      "params": {
+        "lr": 7.27413861297335e-05,
+        "temperature": 0.12913725455179131,
+        "batch_size": 64,
+        "recon_reg_weight": 0.01899876778998719,
+        "epochs": 100,
+        "dropout": 0.17649435415052517
+      },
+      "state": "TrialState.PRUNED"
+    },
+    {
+      "number": 22,
+      "value": 0.7966776527708664,
+      "params": {
+        "lr": 7.941466113204779e-05,
+        "temperature": 0.14183709635006256,
+        "batch_size": 64,
+        "recon_reg_weight": 0.015013474588918597,
+        "epochs": 100,
+        "dropout": 0.20517549193764248
+      },
+      "state": "TrialState.PRUNED"
+    },
+    {
+      "number": 23,
+      "value": 0.8830918633938768,
+      "params": {
+        "lr": 5.861029501418697e-05,
+        "temperature": 0.10766280740622991,
+        "batch_size": 64,
+        "recon_reg_weight": 0.021798079302833936,
+        "epochs": 100,
+        "dropout": 0.2303127724289098
+      },
+      "state": "TrialState.PRUNED"
+    },
+    {
+      "number": 24,
+      "value": 0.7997215056078972,
+      "params": {
+        "lr": 0.0001028588680634843,
+        "temperature": 0.1294371615682028,
+        "batch_size": 64,
+        "recon_reg_weight": 0.012888999047581397,
+        "epochs": 100,
+        "dropout": 0.1851968779289746
+      },
+      "state": "TrialState.PRUNED"
+    },
+    {
+      "number": 25,
+      "value": 0.8860392543697911,
+      "params": {
+        "lr": 6.84938412980742e-05,
+        "temperature": 0.08525096786644633,
+        "batch_size": 64,
+        "recon_reg_weight": 0.03104577451717466,
+        "epochs": 100,
+        "dropout": 0.20966100297219822
+      },
+      "state": "TrialState.PRUNED"
+    },
+    {
+      "number": 26,
+      "value": 0.7935104393863288,
+      "params": {
+        "lr": 5.4436181129790235e-05,
+        "temperature": 0.14643674150911318,
+        "batch_size": 64,
+        "recon_reg_weight": 0.018731147273591583,
+        "epochs": 100,
+        "dropout": 0.15929222190205777
+      },
+      "state": "TrialState.PRUNED"
+    },
+    {
+      "number": 27,
+      "value": 0.893007039451041,
+      "params": {
+        "lr": 9.259961126168726e-05,
+        "temperature": 0.09981852208261975,
+        "batch_size": 64,
+        "recon_reg_weight": 0.010237950235446507,
+        "epochs": 100,
+        "dropout": 0.2374969900344498
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 28,
+      "value": 0.8989078412064988,
+      "params": {
+        "lr": 0.00013674486572389248,
+        "temperature": 0.12692805679389219,
+        "batch_size": 128,
+        "recon_reg_weight": 0.054296124938454954,
+        "epochs": 150,
+        "dropout": 0.19988470535636305
+      },
+      "state": "TrialState.COMPLETE"
+    },
+    {
+      "number": 29,
+      "value": 0.8838676939345782,
+      "params": {
+        "lr": 0.00011648003501125333,
+        "temperature": 0.07533721500330737,
+        "batch_size": 128,
+        "recon_reg_weight": 0.09578788329788497,
+        "epochs": 150,
+        "dropout": 0.21184669060570682
+      },
+      "state": "TrialState.PRUNED"
+    }
+  ],
+  "n_completed": 16,
+  "n_pruned": 14,
+  "top3_trials": [
+    {
+      "number": 28,
+      "value": 0.8989078412064988,
+      "params": {
+        "lr": 0.00013674486572389248,
+        "temperature": 0.12692805679389219,
+        "batch_size": 128,
+        "recon_reg_weight": 0.054296124938454954,
+        "epochs": 150,
+        "dropout": 0.19988470535636305
+      }
+    },
+    {
+      "number": 14,
+      "value": 0.8987723982533127,
+      "params": {
+        "lr": 8.30266803586792e-05,
+        "temperature": 0.12113667102234912,
+        "batch_size": 64,
+        "recon_reg_weight": 0.01780592622583312,
+        "epochs": 100,
+        "dropout": 0.23206372523536994
+      }
+    },
+    {
+      "number": 10,
+      "value": 0.8984635498937936,
+      "params": {
+        "lr": 7.10555302635254e-05,
+        "temperature": 0.13463680927991925,
+        "batch_size": 64,
+        "recon_reg_weight": 0.010727948694969774,
+        "epochs": 100,
+        "dropout": 0.20391713440515993
+      }
+    }
+  ]
+}

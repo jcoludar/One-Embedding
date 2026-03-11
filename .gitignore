@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+build/
+dist/
+wheels/
+*.egg
+
+# Virtual environments
+.venv/
+.env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (large files — tracked separately or not at all)
+data/residue_embeddings/*.h5
+data/checkpoints/**/*.pt
+data/checkpoints/**/history.json
+data/per_residue_benchmarks/
+data/external_validation/
+data/compressed/
+data/plots/
+data/proteins/*.fa
+data/proteins/*.fasta
+data/proteins/metadata*.csv
+
+# Environment files
+.env
+.env.local
+
+# uv
+.python-version

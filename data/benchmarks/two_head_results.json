@@ -1,0 +1,155 @@
+[
+  {
+    "name": "two_head_prot_t5_d256_s42",
+    "plm": "ProtT5-XL",
+    "method": "two_head",
+    "latent_dim": 256,
+    "retrieval_head_dim": 256,
+    "seed": 42,
+    "best_epoch": 200,
+    "reconstruction": {
+      "mse": 0.0172072083207176,
+      "cosine_sim": 0.7511492506195517,
+      "mse_std": 0.003727496301818612,
+      "cosine_sim_std": 0.03479287689584587,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.711764705882353,
+      "precision@3": 0.5815686274509803,
+      "precision@5": 0.4364705882352941,
+      "mean_precision": 0.5766013071895425,
+      "mrr": 0.8015966645971271,
+      "map": 0.5096437556089192,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.5749718151071026,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 940.4546740055084
+  },
+  {
+    "name": "two_head_prot_t5_d256_s123",
+    "plm": "ProtT5-XL",
+    "method": "two_head",
+    "latent_dim": 256,
+    "retrieval_head_dim": 256,
+    "seed": 123,
+    "best_epoch": 200,
+    "reconstruction": {
+      "mse": 0.02361858786248109,
+      "cosine_sim": 0.6250489269635257,
+      "mse_std": 0.0036464350633486848,
+      "cosine_sim_std": 0.03594783305134597,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.6,
+      "precision@3": 0.4509803921568628,
+      "precision@5": 0.3552941176470588,
+      "mean_precision": 0.46875816993464053,
+      "mrr": 0.7095258203492423,
+      "map": 0.4102090634432061,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.41037204058624577,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 987.7502150535583
+  },
+  {
+    "name": "two_head_prot_t5_d256_s456",
+    "plm": "ProtT5-XL",
+    "method": "two_head",
+    "latent_dim": 256,
+    "retrieval_head_dim": 256,
+    "seed": 456,
+    "best_epoch": 200,
+    "reconstruction": {
+      "mse": 0.022454521031502417,
+      "cosine_sim": 0.6475512379758498,
+      "mse_std": 0.003635168453788205,
+      "cosine_sim_std": 0.03626315491237366,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.6658823529411765,
+      "precision@3": 0.4988235294117647,
+      "precision@5": 0.3764705882352941,
+      "mean_precision": 0.5137254901960785,
+      "mrr": 0.7535089785376913,
+      "map": 0.4447509991827162,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.46674182638105977,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 920.5140390396118
+  },
+  {
+    "name": "t2_eval_two_head_prot_t5_d256_s42",
+    "plm": "ProtT5-XL",
+    "method": "two_head",
+    "seed": 42,
+    "dim": 256,
+    "cb513_q3_mean": 0.8300833398831856,
+    "cb513_q3_std": 0.007846052621764434,
+    "cb513_q8_mean": 0.6852104910320583,
+    "cb513_q8_std": 0.011281667376888129,
+    "chezod_spearman_rho": 0.5294810140433205,
+    "tmbed_accuracy_mean": 0.9750116696310397,
+    "tmbed_f1_mean": 0.6371952836747067,
+    "ts115_q3_mean": 0.814796251364201,
+    "ts115_q8_mean": 0.7009903681534532
+  },
+  {
+    "name": "t2_eval_two_head_prot_t5_d256_s123",
+    "plm": "ProtT5-XL",
+    "method": "two_head",
+    "seed": 123,
+    "dim": 256,
+    "cb513_q3_mean": 0.8284980828050049,
+    "cb513_q3_std": 0.00801528263641638,
+    "cb513_q8_mean": 0.6821939853908058,
+    "cb513_q8_std": 0.010154585244247043,
+    "chezod_spearman_rho": 0.5114138521783756,
+    "tmbed_accuracy_mean": 0.9753476554964341,
+    "tmbed_f1_mean": 0.6255249338506735,
+    "ts115_q3_mean": 0.8151408669431265,
+    "ts115_q8_mean": 0.6964459239743147
+  },
+  {
+    "name": "t2_eval_two_head_prot_t5_d256_s456",
+    "plm": "ProtT5-XL",
+    "method": "two_head",
+    "seed": 456,
+    "dim": 256,
+    "cb513_q3_mean": 0.8273745902245192,
+    "cb513_q3_std": 0.007743093226449145,
+    "cb513_q8_mean": 0.683236274599036,
+    "cb513_q8_std": 0.009903587725153191,
+    "chezod_spearman_rho": 0.5367076524029653,
+    "tmbed_accuracy_mean": 0.9772816175164456,
+    "tmbed_f1_mean": 0.6629757913408487,
+    "ts115_q3_mean": 0.8190258381536593,
+    "ts115_q8_mean": 0.7014791510461391
+  }
+]

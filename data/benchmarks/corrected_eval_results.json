@@ -1,0 +1,4025 @@
+[
+  {
+    "name": "baseline_meanpool_esm2_650m",
+    "split_mode": "held_out",
+    "compression": {
+      "K": 1,
+      "D_prime": 1280,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compression_ratio": 0.005706868845028638
+    },
+    "retrieval_family": {
+      "precision@1": 0.6176470588235294,
+      "precision@3": 0.43843137254901954,
+      "precision@5": 0.3127058823529411,
+      "mean_precision": 0.45626143790849677,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.8105882352941176,
+      "precision@3": 0.6168627450980392,
+      "precision@5": 0.47929411764705887,
+      "mean_precision": 0.6355816993464052,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.8223529411764706,
+      "precision@3": 0.6415686274509803,
+      "precision@5": 0.5035294117647059,
+      "mean_precision": 0.6558169934640522,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.08823529411764706,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "embed_dim": 1280,
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850
+  },
+  {
+    "name": "quality_meanpool_esm2_650m",
+    "rns": {
+      "rns_mean": 0.0,
+      "rns_std": 0.0,
+      "rns_median": 0.0,
+      "n_unreliable": 0,
+      "frac_unreliable": 0.0,
+      "n_proteins": 850,
+      "n_random": 1000,
+      "k": 10
+    },
+    "inherent_family": {
+      "silhouette": -0.01918792724609375,
+      "knn_purity_k1": 0.6176470588235294,
+      "knn_purity_k5": 0.31270588235294117,
+      "ami": 0.4279990772399063,
+      "n_classes": 210,
+      "n_proteins": 850
+    },
+    "inherent_superfamily": {
+      "silhouette": -0.04238593578338623,
+      "knn_purity_k1": 0.8105882352941176,
+      "knn_purity_k5": 0.4792941176470588,
+      "ami": 0.39508582432063893,
+      "n_classes": 124,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "baseline_pca128",
+    "split_mode": "held_out",
+    "n_components": 128,
+    "explained_variance": 0.8999077081680298,
+    "retrieval_family": {
+      "precision@1": 0.4541176470588235,
+      "precision@3": 0.30313725490196075,
+      "precision@5": 0.2204705882352941,
+      "mean_precision": 0.3259084967320261,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850
+  },
+  {
+    "name": "baseline_pca256",
+    "split_mode": "held_out",
+    "n_components": 256,
+    "explained_variance": 0.9571172595024109,
+    "retrieval_family": {
+      "precision@1": 0.5058823529411764,
+      "precision@3": 0.3525490196078431,
+      "precision@5": 0.25247058823529417,
+      "mean_precision": 0.37030065359477127,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850
+  },
+  {
+    "name": "baseline_pca512",
+    "split_mode": "held_out",
+    "n_components": 512,
+    "explained_variance": 0.9895195364952087,
+    "retrieval_family": {
+      "precision@1": 0.58,
+      "precision@3": 0.39607843137254906,
+      "precision@5": 0.28352941176470586,
+      "mean_precision": 0.4198692810457516,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850
+  },
+  {
+    "name": "baseline_l2_weighted_mean",
+    "split_mode": "held_out",
+    "retrieval_family": {
+      "precision@1": 0.6188235294117647,
+      "precision@3": 0.436078431372549,
+      "precision@5": 0.3110588235294117,
+      "mean_precision": 0.45532026143790844,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "n_train": 1643,
+    "n_test": 850
+  },
+  {
+    "name": "attnpool_default_s42",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036621267721056935,
+      "cosine_sim": 0.7069116032123566,
+      "mse_std": 0.008955336575963853,
+      "cosine_sim_std": 0.09342275826943483,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.3905882352941176,
+      "precision@3": 0.263921568627451,
+      "precision@5": 0.19482352941176473,
+      "mean_precision": 0.28311111111111115,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5047058823529412,
+      "precision@3": 0.37411764705882355,
+      "precision@5": 0.29341176470588237,
+      "mean_precision": 0.39074509803921575,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5235294117647059,
+      "precision@3": 0.39176470588235296,
+      "precision@5": 0.3157647058823529,
+      "mean_precision": 0.4103529411764706,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.03882352941176471,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "training_time_s": 2134.6957137584686,
+    "seed": 42,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_heads": 4,
+    "n_encoder_layers": 2,
+    "n_proj_layers": 1,
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850,
+    "epochs": 100,
+    "batch_size": 8,
+    "contrastive_weight": 0.0,
+    "best_epoch": 61
+  },
+  {
+    "name": "attnpool_default_s123",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.0364288514721043,
+      "cosine_sim": 0.7082635205282884,
+      "mse_std": 0.008858238241688661,
+      "cosine_sim_std": 0.09234740087506245,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.38588235294117645,
+      "precision@3": 0.26705882352941174,
+      "precision@5": 0.19717647058823531,
+      "mean_precision": 0.2833725490196078,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5188235294117647,
+      "precision@3": 0.37568627450980396,
+      "precision@5": 0.29858823529411765,
+      "mean_precision": 0.39769934640522875,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5411764705882353,
+      "precision@3": 0.3952941176470588,
+      "precision@5": 0.3176470588235294,
+      "mean_precision": 0.41803921568627445,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04823529411764706,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "training_time_s": 1952.713241815567,
+    "seed": 123,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_heads": 4,
+    "n_encoder_layers": 2,
+    "n_proj_layers": 1,
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850,
+    "epochs": 100,
+    "batch_size": 8,
+    "contrastive_weight": 0.0,
+    "best_epoch": 57
+  },
+  {
+    "name": "attnpool_default_s456",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03667771439013236,
+      "cosine_sim": 0.7058974757965873,
+      "mse_std": 0.009001466586666193,
+      "cosine_sim_std": 0.09397530725030492,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.37411764705882355,
+      "precision@3": 0.2603921568627451,
+      "precision@5": 0.1896470588235294,
+      "mean_precision": 0.274718954248366,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.48470588235294115,
+      "precision@3": 0.36,
+      "precision@5": 0.28329411764705886,
+      "mean_precision": 0.37600000000000006,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5011764705882353,
+      "precision@3": 0.3768627450980392,
+      "precision@5": 0.3004705882352941,
+      "mean_precision": 0.39283660130718956,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "training_time_s": 1975.1634438037872,
+    "seed": 456,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_heads": 4,
+    "n_encoder_layers": 2,
+    "n_proj_layers": 1,
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850,
+    "epochs": 100,
+    "batch_size": 8,
+    "contrastive_weight": 0.0,
+    "best_epoch": 61
+  },
+  {
+    "name": "ablation_latent256_s42",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03685958265381701,
+      "cosine_sim": 0.7037079441547394,
+      "mse_std": 0.009082871886077154,
+      "cosine_sim_std": 0.095205594583054,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 256,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 2048,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00913099015204582
+    },
+    "retrieval_family": {
+      "precision@1": 0.3776470588235294,
+      "precision@3": 0.2576470588235294,
+      "precision@5": 0.1915294117647059,
+      "mean_precision": 0.2756078431372549,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.49529411764705883,
+      "precision@3": 0.36823529411764705,
+      "precision@5": 0.28917647058823537,
+      "mean_precision": 0.38423529411764706,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5164705882352941,
+      "precision@3": 0.38784313725490194,
+      "precision@5": 0.30964705882352944,
+      "mean_precision": 0.4046535947712418,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04470588235294118,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "training_time_s": 2208.362494945526,
+    "seed": 42,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 256,
+    "n_heads": 4,
+    "n_encoder_layers": 2,
+    "n_proj_layers": 1,
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850,
+    "epochs": 100,
+    "batch_size": 8,
+    "contrastive_weight": 0.0,
+    "best_epoch": 59
+  },
+  {
+    "name": "ablation_latent256_s123",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036743013521327694,
+      "cosine_sim": 0.7053252382138196,
+      "mse_std": 0.009025621213482162,
+      "cosine_sim_std": 0.09429491182282215,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 256,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 2048,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00913099015204582
+    },
+    "retrieval_family": {
+      "precision@1": 0.36941176470588233,
+      "precision@3": 0.2541176470588235,
+      "precision@5": 0.1908235294117647,
+      "mean_precision": 0.27145098039215687,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.49411764705882355,
+      "precision@3": 0.363921568627451,
+      "precision@5": 0.287764705882353,
+      "mean_precision": 0.38193464052287585,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5164705882352941,
+      "precision@3": 0.3843137254901961,
+      "precision@5": 0.30729411764705883,
+      "mean_precision": 0.4026928104575164,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.047058823529411764,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "training_time_s": 2224.033460855484,
+    "seed": 123,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 256,
+    "n_heads": 4,
+    "n_encoder_layers": 2,
+    "n_proj_layers": 1,
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850,
+    "epochs": 100,
+    "batch_size": 8,
+    "contrastive_weight": 0.0,
+    "best_epoch": 57
+  },
+  {
+    "name": "ablation_latent512_s42",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.037041354579303194,
+      "cosine_sim": 0.7022737638038747,
+      "mse_std": 0.00910640800821895,
+      "cosine_sim_std": 0.09551212250428216,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 512,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 4096,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.01826198030409164
+    },
+    "retrieval_family": {
+      "precision@1": 0.15529411764705883,
+      "precision@3": 0.10745098039215686,
+      "precision@5": 0.08776470588235294,
+      "mean_precision": 0.11683660130718954,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.20470588235294118,
+      "precision@3": 0.1584313725490196,
+      "precision@5": 0.1350588235294118,
+      "mean_precision": 0.1660653594771242,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.22,
+      "precision@3": 0.1741176470588235,
+      "precision@5": 0.15341176470588236,
+      "mean_precision": 0.1825098039215686,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.03411764705882353,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "training_time_s": 3195.9961059093475,
+    "seed": 42,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 512,
+    "n_heads": 4,
+    "n_encoder_layers": 2,
+    "n_proj_layers": 1,
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850,
+    "epochs": 100,
+    "batch_size": 8,
+    "contrastive_weight": 0.0,
+    "best_epoch": 87
+  },
+  {
+    "name": "ablation_latent512_s123",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.037345668607774905,
+      "cosine_sim": 0.6996241848609027,
+      "mse_std": 0.009114978939556324,
+      "cosine_sim_std": 0.09585141583209018,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 512,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 4096,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.01826198030409164
+    },
+    "retrieval_family": {
+      "precision@1": 0.05176470588235294,
+      "precision@3": 0.04549019607843137,
+      "precision@5": 0.041411764705882356,
+      "mean_precision": 0.04622222222222222,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.09294117647058824,
+      "precision@3": 0.07568627450980392,
+      "precision@5": 0.07058823529411765,
+      "mean_precision": 0.07973856209150328,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.10352941176470588,
+      "precision@3": 0.08627450980392157,
+      "precision@5": 0.08141176470588234,
+      "mean_precision": 0.09040522875816993,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.041176470588235294,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "training_time_s": 3235.8036806583405,
+    "seed": 123,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 512,
+    "n_heads": 4,
+    "n_encoder_layers": 2,
+    "n_proj_layers": 1,
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850,
+    "epochs": 100,
+    "batch_size": 8,
+    "contrastive_weight": 0.0,
+    "best_epoch": 88
+  },
+  {
+    "name": "ablation_contrastive_batch32_s42",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.0363156845420599,
+      "cosine_sim": 0.7083898911406012,
+      "mse_std": 0.008956763698681982,
+      "cosine_sim_std": 0.09337628146596265,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.35058823529411764,
+      "precision@3": 0.2368627450980392,
+      "precision@5": 0.17882352941176471,
+      "mean_precision": 0.25542483660130716,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.4588235294117647,
+      "precision@3": 0.33450980392156865,
+      "precision@5": 0.26611764705882357,
+      "mean_precision": 0.3531503267973856,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.4764705882352941,
+      "precision@3": 0.3533333333333334,
+      "precision@5": 0.2830588235294118,
+      "mean_precision": 0.3709542483660131,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "training_time_s": 2211.830197095871,
+    "seed": 42,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_heads": 4,
+    "n_encoder_layers": 2,
+    "n_proj_layers": 1,
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850,
+    "epochs": 100,
+    "batch_size": 32,
+    "contrastive_weight": 0.3,
+    "best_epoch": 87
+  },
+  {
+    "name": "ablation_contrastive_batch32_s123",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03623634227387169,
+      "cosine_sim": 0.7089803953731761,
+      "mse_std": 0.008938924916436965,
+      "cosine_sim_std": 0.0928010367399874,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.3447058823529412,
+      "precision@3": 0.236078431372549,
+      "precision@5": 0.17741176470588238,
+      "mean_precision": 0.25273202614379087,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.4647058823529412,
+      "precision@3": 0.3356862745098038,
+      "precision@5": 0.26823529411764707,
+      "mean_precision": 0.3562091503267974,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.4811764705882353,
+      "precision@3": 0.3552941176470588,
+      "precision@5": 0.2891764705882353,
+      "mean_precision": 0.3752156862745098,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04470588235294118,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "training_time_s": 1878.853640794754,
+    "seed": 123,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_heads": 4,
+    "n_encoder_layers": 2,
+    "n_proj_layers": 1,
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850,
+    "epochs": 100,
+    "batch_size": 32,
+    "contrastive_weight": 0.3,
+    "best_epoch": 90
+  },
+  {
+    "name": "ablation_deep_wide_s42",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036717124723774544,
+      "cosine_sim": 0.7054181838386199,
+      "mse_std": 0.009007895117249832,
+      "cosine_sim_std": 0.09433286389055426,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.26588235294117646,
+      "precision@5": 0.20047058823529412,
+      "mean_precision": 0.28525490196078435,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5141176470588236,
+      "precision@3": 0.37843137254901954,
+      "precision@5": 0.3061176470588235,
+      "mean_precision": 0.3995555555555555,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5294117647058824,
+      "precision@3": 0.3968627450980392,
+      "precision@5": 0.3256470588235294,
+      "mean_precision": 0.41730718954248364,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.041176470588235294,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "training_time_s": 2269.1005852222443,
+    "seed": 42,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_heads": 8,
+    "n_encoder_layers": 4,
+    "n_proj_layers": 1,
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850,
+    "epochs": 100,
+    "batch_size": 8,
+    "contrastive_weight": 0.0,
+    "best_epoch": 58
+  },
+  {
+    "name": "ablation_deep_wide_s123",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036591207044308675,
+      "cosine_sim": 0.7067713577957714,
+      "mse_std": 0.008975099334716569,
+      "cosine_sim_std": 0.09365368484122757,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.27058823529411763,
+      "precision@5": 0.19811764705882354,
+      "mean_precision": 0.2860392156862745,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5094117647058823,
+      "precision@3": 0.37686274509803924,
+      "precision@5": 0.3014117647058824,
+      "mean_precision": 0.39589542483660134,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5247058823529411,
+      "precision@3": 0.3933333333333333,
+      "precision@5": 0.32164705882352945,
+      "mean_precision": 0.4132287581699346,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "training_time_s": 2262.675328016281,
+    "seed": 123,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_heads": 8,
+    "n_encoder_layers": 4,
+    "n_proj_layers": 1,
+    "n_train": 1643,
+    "n_test": 850,
+    "n_eval": 850,
+    "epochs": 100,
+    "batch_size": 8,
+    "contrastive_weight": 0.0,
+    "best_epoch": 56
+  },
+  {
+    "name": "attnpool_default_s42_pool_first",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036621267721056935,
+      "cosine_sim": 0.7069116032123566,
+      "mse_std": 0.008955336575963853,
+      "cosine_sim_std": 0.09342275826943483,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.3905882352941176,
+      "precision@3": 0.263921568627451,
+      "precision@5": 0.19482352941176473,
+      "mean_precision": 0.28311111111111115,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5047058823529412,
+      "precision@3": 0.37411764705882355,
+      "precision@5": 0.2931764705882353,
+      "mean_precision": 0.3906666666666667,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5235294117647059,
+      "precision@3": 0.39176470588235296,
+      "precision@5": 0.3155294117647059,
+      "mean_precision": 0.41027450980392155,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.03882352941176471,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "first",
+    "base_model": "attnpool_default",
+    "seed": 42
+  },
+  {
+    "name": "attnpool_default_s42_pool_mean_std",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036621267721056935,
+      "cosine_sim": 0.7069116032123566,
+      "mse_std": 0.008955336575963853,
+      "cosine_sim_std": 0.09342275826943483,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.3905882352941176,
+      "precision@3": 0.263921568627451,
+      "precision@5": 0.19482352941176473,
+      "mean_precision": 0.28311111111111115,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5047058823529412,
+      "precision@3": 0.37411764705882355,
+      "precision@5": 0.29341176470588237,
+      "mean_precision": 0.39074509803921575,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5235294117647059,
+      "precision@3": 0.39176470588235296,
+      "precision@5": 0.3157647058823529,
+      "mean_precision": 0.4103529411764706,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.03882352941176471,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "mean_std",
+    "base_model": "attnpool_default",
+    "seed": 42
+  },
+  {
+    "name": "attnpool_default_s42_pool_concat",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036621267721056935,
+      "cosine_sim": 0.7069116032123566,
+      "mse_std": 0.008955336575963853,
+      "cosine_sim_std": 0.09342275826943483,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.3905882352941176,
+      "precision@3": 0.263921568627451,
+      "precision@5": 0.19482352941176473,
+      "mean_precision": 0.28311111111111115,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5047058823529412,
+      "precision@3": 0.37411764705882355,
+      "precision@5": 0.29341176470588237,
+      "mean_precision": 0.39074509803921575,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5235294117647059,
+      "precision@3": 0.39176470588235296,
+      "precision@5": 0.3157647058823529,
+      "mean_precision": 0.4103529411764706,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.03529411764705882,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "concat",
+    "base_model": "attnpool_default",
+    "seed": 42
+  },
+  {
+    "name": "attnpool_default_s123_pool_first",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.0364288514721043,
+      "cosine_sim": 0.7082635205282884,
+      "mse_std": 0.008858238241688661,
+      "cosine_sim_std": 0.09234740087506245,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.3835294117647059,
+      "precision@3": 0.26705882352941174,
+      "precision@5": 0.19717647058823531,
+      "mean_precision": 0.28258823529411764,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5164705882352941,
+      "precision@3": 0.37568627450980396,
+      "precision@5": 0.2983529411764706,
+      "mean_precision": 0.39683660130718956,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5388235294117647,
+      "precision@3": 0.3952941176470588,
+      "precision@5": 0.3174117647058824,
+      "mean_precision": 0.4171764705882353,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04941176470588235,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "first",
+    "base_model": "attnpool_default",
+    "seed": 123
+  },
+  {
+    "name": "attnpool_default_s123_pool_mean_std",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.0364288514721043,
+      "cosine_sim": 0.7082635205282884,
+      "mse_std": 0.008858238241688661,
+      "cosine_sim_std": 0.09234740087506245,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.38588235294117645,
+      "precision@3": 0.26705882352941174,
+      "precision@5": 0.19717647058823531,
+      "mean_precision": 0.2833725490196078,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5188235294117647,
+      "precision@3": 0.37568627450980396,
+      "precision@5": 0.29858823529411765,
+      "mean_precision": 0.39769934640522875,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5411764705882353,
+      "precision@3": 0.3952941176470588,
+      "precision@5": 0.3176470588235294,
+      "mean_precision": 0.41803921568627445,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04941176470588235,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "mean_std",
+    "base_model": "attnpool_default",
+    "seed": 123
+  },
+  {
+    "name": "attnpool_default_s123_pool_concat",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.0364288514721043,
+      "cosine_sim": 0.7082635205282884,
+      "mse_std": 0.008858238241688661,
+      "cosine_sim_std": 0.09234740087506245,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.38588235294117645,
+      "precision@3": 0.26705882352941174,
+      "precision@5": 0.19717647058823531,
+      "mean_precision": 0.2833725490196078,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5188235294117647,
+      "precision@3": 0.37568627450980396,
+      "precision@5": 0.29858823529411765,
+      "mean_precision": 0.39769934640522875,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5411764705882353,
+      "precision@3": 0.3952941176470588,
+      "precision@5": 0.3176470588235294,
+      "mean_precision": 0.41803921568627445,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "concat",
+    "base_model": "attnpool_default",
+    "seed": 123
+  },
+  {
+    "name": "attnpool_default_s456_pool_first",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03667771439013236,
+      "cosine_sim": 0.7058974757965873,
+      "mse_std": 0.009001466586666193,
+      "cosine_sim_std": 0.09397530725030492,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.37411764705882355,
+      "precision@3": 0.2603921568627451,
+      "precision@5": 0.1896470588235294,
+      "mean_precision": 0.274718954248366,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.48470588235294115,
+      "precision@3": 0.36,
+      "precision@5": 0.28329411764705886,
+      "mean_precision": 0.37600000000000006,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5011764705882353,
+      "precision@3": 0.3768627450980392,
+      "precision@5": 0.3004705882352941,
+      "mean_precision": 0.39283660130718956,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "first",
+    "base_model": "attnpool_default",
+    "seed": 456
+  },
+  {
+    "name": "attnpool_default_s456_pool_mean_std",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03667771439013236,
+      "cosine_sim": 0.7058974757965873,
+      "mse_std": 0.009001466586666193,
+      "cosine_sim_std": 0.09397530725030492,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.37411764705882355,
+      "precision@3": 0.2603921568627451,
+      "precision@5": 0.1896470588235294,
+      "mean_precision": 0.274718954248366,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.48470588235294115,
+      "precision@3": 0.36,
+      "precision@5": 0.28329411764705886,
+      "mean_precision": 0.37600000000000006,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5011764705882353,
+      "precision@3": 0.3768627450980392,
+      "precision@5": 0.3004705882352941,
+      "mean_precision": 0.39283660130718956,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "mean_std",
+    "base_model": "attnpool_default",
+    "seed": 456
+  },
+  {
+    "name": "attnpool_default_s456_pool_concat",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03667771439013236,
+      "cosine_sim": 0.7058974757965873,
+      "mse_std": 0.009001466586666193,
+      "cosine_sim_std": 0.09397530725030492,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.37411764705882355,
+      "precision@3": 0.2603921568627451,
+      "precision@5": 0.1896470588235294,
+      "mean_precision": 0.274718954248366,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.48470588235294115,
+      "precision@3": 0.36,
+      "precision@5": 0.28329411764705886,
+      "mean_precision": 0.37600000000000006,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5011764705882353,
+      "precision@3": 0.3768627450980392,
+      "precision@5": 0.3004705882352941,
+      "mean_precision": 0.39283660130718956,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.03529411764705882,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "concat",
+    "base_model": "attnpool_default",
+    "seed": 456
+  },
+  {
+    "name": "ablation_latent256_s42_pool_first",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03685958265381701,
+      "cosine_sim": 0.7037079441547394,
+      "mse_std": 0.009082871886077154,
+      "cosine_sim_std": 0.095205594583054,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 256,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 2048,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00913099015204582
+    },
+    "retrieval_family": {
+      "precision@1": 0.3776470588235294,
+      "precision@3": 0.2576470588235294,
+      "precision@5": 0.1915294117647059,
+      "mean_precision": 0.2756078431372549,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.49529411764705883,
+      "precision@3": 0.36823529411764705,
+      "precision@5": 0.28917647058823537,
+      "mean_precision": 0.38423529411764706,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5164705882352941,
+      "precision@3": 0.38784313725490194,
+      "precision@5": 0.30964705882352944,
+      "mean_precision": 0.4046535947712418,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04470588235294118,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "first",
+    "base_model": "ablation_latent256",
+    "seed": 42
+  },
+  {
+    "name": "ablation_latent256_s42_pool_mean_std",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03685958265381701,
+      "cosine_sim": 0.7037079441547394,
+      "mse_std": 0.009082871886077154,
+      "cosine_sim_std": 0.095205594583054,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 256,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 2048,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00913099015204582
+    },
+    "retrieval_family": {
+      "precision@1": 0.3776470588235294,
+      "precision@3": 0.2576470588235294,
+      "precision@5": 0.1915294117647059,
+      "mean_precision": 0.2756078431372549,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.49529411764705883,
+      "precision@3": 0.36823529411764705,
+      "precision@5": 0.28917647058823537,
+      "mean_precision": 0.38423529411764706,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5164705882352941,
+      "precision@3": 0.38784313725490194,
+      "precision@5": 0.30964705882352944,
+      "mean_precision": 0.4046535947712418,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04470588235294118,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "mean_std",
+    "base_model": "ablation_latent256",
+    "seed": 42
+  },
+  {
+    "name": "ablation_latent256_s42_pool_concat",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03685958265381701,
+      "cosine_sim": 0.7037079441547394,
+      "mse_std": 0.009082871886077154,
+      "cosine_sim_std": 0.095205594583054,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 256,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 2048,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00913099015204582
+    },
+    "retrieval_family": {
+      "precision@1": 0.3776470588235294,
+      "precision@3": 0.2576470588235294,
+      "precision@5": 0.1915294117647059,
+      "mean_precision": 0.2756078431372549,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.49529411764705883,
+      "precision@3": 0.36823529411764705,
+      "precision@5": 0.28917647058823537,
+      "mean_precision": 0.38423529411764706,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5164705882352941,
+      "precision@3": 0.38784313725490194,
+      "precision@5": 0.30964705882352944,
+      "mean_precision": 0.4046535947712418,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.036470588235294116,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "concat",
+    "base_model": "ablation_latent256",
+    "seed": 42
+  },
+  {
+    "name": "ablation_latent256_s123_pool_first",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036743013521327694,
+      "cosine_sim": 0.7053252382138196,
+      "mse_std": 0.009025621213482162,
+      "cosine_sim_std": 0.09429491182282215,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 256,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 2048,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00913099015204582
+    },
+    "retrieval_family": {
+      "precision@1": 0.36941176470588233,
+      "precision@3": 0.2541176470588235,
+      "precision@5": 0.1908235294117647,
+      "mean_precision": 0.27145098039215687,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.49411764705882355,
+      "precision@3": 0.363921568627451,
+      "precision@5": 0.28800000000000003,
+      "mean_precision": 0.3820130718954249,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5164705882352941,
+      "precision@3": 0.3843137254901961,
+      "precision@5": 0.30752941176470583,
+      "mean_precision": 0.40277124183006535,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.047058823529411764,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "first",
+    "base_model": "ablation_latent256",
+    "seed": 123
+  },
+  {
+    "name": "ablation_latent256_s123_pool_mean_std",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036743013521327694,
+      "cosine_sim": 0.7053252382138196,
+      "mse_std": 0.009025621213482162,
+      "cosine_sim_std": 0.09429491182282215,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 256,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 2048,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00913099015204582
+    },
+    "retrieval_family": {
+      "precision@1": 0.36941176470588233,
+      "precision@3": 0.2541176470588235,
+      "precision@5": 0.1908235294117647,
+      "mean_precision": 0.27145098039215687,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.49411764705882355,
+      "precision@3": 0.363921568627451,
+      "precision@5": 0.287764705882353,
+      "mean_precision": 0.38193464052287585,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5164705882352941,
+      "precision@3": 0.3843137254901961,
+      "precision@5": 0.30729411764705883,
+      "mean_precision": 0.4026928104575164,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.047058823529411764,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "mean_std",
+    "base_model": "ablation_latent256",
+    "seed": 123
+  },
+  {
+    "name": "ablation_latent256_s123_pool_concat",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036743013521327694,
+      "cosine_sim": 0.7053252382138196,
+      "mse_std": 0.009025621213482162,
+      "cosine_sim_std": 0.09429491182282215,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 256,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 2048,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00913099015204582
+    },
+    "retrieval_family": {
+      "precision@1": 0.36941176470588233,
+      "precision@3": 0.2541176470588235,
+      "precision@5": 0.1908235294117647,
+      "mean_precision": 0.27145098039215687,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.49411764705882355,
+      "precision@3": 0.363921568627451,
+      "precision@5": 0.287764705882353,
+      "mean_precision": 0.38193464052287585,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5164705882352941,
+      "precision@3": 0.3843137254901961,
+      "precision@5": 0.30729411764705883,
+      "mean_precision": 0.4026928104575164,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.03764705882352941,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "concat",
+    "base_model": "ablation_latent256",
+    "seed": 123
+  },
+  {
+    "name": "ablation_latent512_s42_pool_first",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.037041354579303194,
+      "cosine_sim": 0.7022737638038747,
+      "mse_std": 0.00910640800821895,
+      "cosine_sim_std": 0.09551212250428216,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 512,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 4096,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.01826198030409164
+    },
+    "retrieval_family": {
+      "precision@1": 0.15529411764705883,
+      "precision@3": 0.10745098039215686,
+      "precision@5": 0.08776470588235294,
+      "mean_precision": 0.11683660130718954,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.20470588235294118,
+      "precision@3": 0.1584313725490196,
+      "precision@5": 0.1350588235294118,
+      "mean_precision": 0.1660653594771242,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.22,
+      "precision@3": 0.1741176470588235,
+      "precision@5": 0.15341176470588236,
+      "mean_precision": 0.1825098039215686,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.03411764705882353,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "first",
+    "base_model": "ablation_latent512",
+    "seed": 42
+  },
+  {
+    "name": "ablation_latent512_s42_pool_mean_std",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.037041354579303194,
+      "cosine_sim": 0.7022737638038747,
+      "mse_std": 0.00910640800821895,
+      "cosine_sim_std": 0.09551212250428216,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 512,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 4096,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.01826198030409164
+    },
+    "retrieval_family": {
+      "precision@1": 0.15529411764705883,
+      "precision@3": 0.10745098039215686,
+      "precision@5": 0.08776470588235294,
+      "mean_precision": 0.11683660130718954,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.20470588235294118,
+      "precision@3": 0.1584313725490196,
+      "precision@5": 0.1350588235294118,
+      "mean_precision": 0.1660653594771242,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.22,
+      "precision@3": 0.1741176470588235,
+      "precision@5": 0.15341176470588236,
+      "mean_precision": 0.1825098039215686,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.03411764705882353,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "mean_std",
+    "base_model": "ablation_latent512",
+    "seed": 42
+  },
+  {
+    "name": "ablation_latent512_s42_pool_concat",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.037041354579303194,
+      "cosine_sim": 0.7022737638038747,
+      "mse_std": 0.00910640800821895,
+      "cosine_sim_std": 0.09551212250428216,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 512,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 4096,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.01826198030409164
+    },
+    "retrieval_family": {
+      "precision@1": 0.15529411764705883,
+      "precision@3": 0.10745098039215686,
+      "precision@5": 0.08776470588235294,
+      "mean_precision": 0.11683660130718954,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.20470588235294118,
+      "precision@3": 0.1584313725490196,
+      "precision@5": 0.1350588235294118,
+      "mean_precision": 0.1660653594771242,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.22,
+      "precision@3": 0.1741176470588235,
+      "precision@5": 0.15341176470588236,
+      "mean_precision": 0.1825098039215686,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.021176470588235293,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "concat",
+    "base_model": "ablation_latent512",
+    "seed": 42
+  },
+  {
+    "name": "ablation_latent512_s123_pool_first",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.037345668607774905,
+      "cosine_sim": 0.6996241848609027,
+      "mse_std": 0.009114978939556324,
+      "cosine_sim_std": 0.09585141583209018,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 512,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 4096,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.01826198030409164
+    },
+    "retrieval_family": {
+      "precision@1": 0.05176470588235294,
+      "precision@3": 0.04549019607843137,
+      "precision@5": 0.041411764705882356,
+      "mean_precision": 0.04622222222222222,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.09294117647058824,
+      "precision@3": 0.07568627450980392,
+      "precision@5": 0.07058823529411765,
+      "mean_precision": 0.07973856209150328,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.10352941176470588,
+      "precision@3": 0.08627450980392157,
+      "precision@5": 0.08141176470588234,
+      "mean_precision": 0.09040522875816993,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.041176470588235294,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "first",
+    "base_model": "ablation_latent512",
+    "seed": 123
+  },
+  {
+    "name": "ablation_latent512_s123_pool_mean_std",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.037345668607774905,
+      "cosine_sim": 0.6996241848609027,
+      "mse_std": 0.009114978939556324,
+      "cosine_sim_std": 0.09585141583209018,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 512,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 4096,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.01826198030409164
+    },
+    "retrieval_family": {
+      "precision@1": 0.05176470588235294,
+      "precision@3": 0.04549019607843137,
+      "precision@5": 0.041411764705882356,
+      "mean_precision": 0.04622222222222222,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.09294117647058824,
+      "precision@3": 0.07568627450980392,
+      "precision@5": 0.07058823529411765,
+      "mean_precision": 0.07973856209150328,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.10352941176470588,
+      "precision@3": 0.08627450980392157,
+      "precision@5": 0.08141176470588234,
+      "mean_precision": 0.09040522875816993,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.041176470588235294,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "mean_std",
+    "base_model": "ablation_latent512",
+    "seed": 123
+  },
+  {
+    "name": "ablation_latent512_s123_pool_concat",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.037345668607774905,
+      "cosine_sim": 0.6996241848609027,
+      "mse_std": 0.009114978939556324,
+      "cosine_sim_std": 0.09585141583209018,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 512,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 4096,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.01826198030409164
+    },
+    "retrieval_family": {
+      "precision@1": 0.05176470588235294,
+      "precision@3": 0.04549019607843137,
+      "precision@5": 0.04164705882352942,
+      "mean_precision": 0.04630065359477125,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.09294117647058824,
+      "precision@3": 0.07568627450980392,
+      "precision@5": 0.07082352941176472,
+      "mean_precision": 0.0798169934640523,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.10352941176470588,
+      "precision@3": 0.08627450980392157,
+      "precision@5": 0.08188235294117646,
+      "mean_precision": 0.09056209150326798,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.03294117647058824,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "concat",
+    "base_model": "ablation_latent512",
+    "seed": 123
+  },
+  {
+    "name": "ablation_contrastive_batch32_s42_pool_first",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.0363156845420599,
+      "cosine_sim": 0.7083898911406012,
+      "mse_std": 0.008956763698681982,
+      "cosine_sim_std": 0.09337628146596265,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.36941176470588233,
+      "precision@3": 0.2545098039215686,
+      "precision@5": 0.1887058823529412,
+      "mean_precision": 0.270875816993464,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.49176470588235294,
+      "precision@3": 0.36313725490196075,
+      "precision@5": 0.2811764705882353,
+      "mean_precision": 0.3786928104575163,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.508235294117647,
+      "precision@3": 0.38313725490196077,
+      "precision@5": 0.30094117647058827,
+      "mean_precision": 0.39743790849673205,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.036470588235294116,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "first",
+    "base_model": "ablation_contrastive_batch32",
+    "seed": 42
+  },
+  {
+    "name": "ablation_contrastive_batch32_s42_pool_mean_std",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.0363156845420599,
+      "cosine_sim": 0.7083898911406012,
+      "mse_std": 0.008956763698681982,
+      "cosine_sim_std": 0.09337628146596265,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.3305882352941176,
+      "precision@3": 0.23490196078431372,
+      "precision@5": 0.17435294117647057,
+      "mean_precision": 0.2466143790849673,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.45176470588235296,
+      "precision@3": 0.33450980392156865,
+      "precision@5": 0.26235294117647057,
+      "mean_precision": 0.3495424836601308,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.46588235294117647,
+      "precision@3": 0.3513725490196078,
+      "precision@5": 0.2795294117647059,
+      "mean_precision": 0.36559477124183,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.042352941176470586,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "mean_std",
+    "base_model": "ablation_contrastive_batch32",
+    "seed": 42
+  },
+  {
+    "name": "ablation_contrastive_batch32_s42_pool_concat",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.0363156845420599,
+      "cosine_sim": 0.7083898911406012,
+      "mse_std": 0.008956763698681982,
+      "cosine_sim_std": 0.09337628146596265,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.3905882352941176,
+      "precision@3": 0.26823529411764707,
+      "precision@5": 0.20164705882352943,
+      "mean_precision": 0.2868235294117647,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5388235294117647,
+      "precision@3": 0.3901960784313725,
+      "precision@5": 0.3072941176470589,
+      "mean_precision": 0.4121045751633987,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5517647058823529,
+      "precision@3": 0.40941176470588236,
+      "precision@5": 0.3247058823529412,
+      "mean_precision": 0.4286274509803922,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.05058823529411765,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "concat",
+    "base_model": "ablation_contrastive_batch32",
+    "seed": 42
+  },
+  {
+    "name": "ablation_contrastive_batch32_s123_pool_first",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03623634227387169,
+      "cosine_sim": 0.7089803953731761,
+      "mse_std": 0.008938924916436965,
+      "cosine_sim_std": 0.0928010367399874,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.2741176470588235,
+      "precision@3": 0.1776470588235294,
+      "precision@5": 0.13741176470588234,
+      "mean_precision": 0.1963921568627451,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.36941176470588233,
+      "precision@3": 0.26156862745098036,
+      "precision@5": 0.20564705882352943,
+      "mean_precision": 0.27887581699346403,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.3905882352941176,
+      "precision@3": 0.2815686274509804,
+      "precision@5": 0.22399999999999998,
+      "mean_precision": 0.298718954248366,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.03764705882352941,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "first",
+    "base_model": "ablation_contrastive_batch32",
+    "seed": 123
+  },
+  {
+    "name": "ablation_contrastive_batch32_s123_pool_mean_std",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03623634227387169,
+      "cosine_sim": 0.7089803953731761,
+      "mse_std": 0.008938924916436965,
+      "cosine_sim_std": 0.0928010367399874,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.33294117647058824,
+      "precision@3": 0.23176470588235293,
+      "precision@5": 0.17341176470588235,
+      "mean_precision": 0.24603921568627451,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.4576470588235294,
+      "precision@3": 0.3309803921568627,
+      "precision@5": 0.2616470588235294,
+      "mean_precision": 0.35009150326797384,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.4764705882352941,
+      "precision@3": 0.35058823529411764,
+      "precision@5": 0.28211764705882353,
+      "mean_precision": 0.3697254901960784,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04588235294117647,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "mean_std",
+    "base_model": "ablation_contrastive_batch32",
+    "seed": 123
+  },
+  {
+    "name": "ablation_contrastive_batch32_s123_pool_concat",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03623634227387169,
+      "cosine_sim": 0.7089803953731761,
+      "mse_std": 0.008938924916436965,
+      "cosine_sim_std": 0.0928010367399874,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.26705882352941174,
+      "precision@5": 0.1988235294117647,
+      "mean_precision": 0.28509803921568627,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5352941176470588,
+      "precision@3": 0.3945098039215686,
+      "precision@5": 0.3108235294117648,
+      "mean_precision": 0.4135424836601307,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.548235294117647,
+      "precision@3": 0.4133333333333334,
+      "precision@5": 0.3294117647058824,
+      "mean_precision": 0.4303267973856209,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04470588235294118,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "concat",
+    "base_model": "ablation_contrastive_batch32",
+    "seed": 123
+  },
+  {
+    "name": "ablation_deep_wide_s42_pool_first",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036717124723774544,
+      "cosine_sim": 0.7054181838386199,
+      "mse_std": 0.009007895117249832,
+      "cosine_sim_std": 0.09433286389055426,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.26588235294117646,
+      "precision@5": 0.20047058823529412,
+      "mean_precision": 0.28525490196078435,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5141176470588236,
+      "precision@3": 0.37843137254901954,
+      "precision@5": 0.3061176470588235,
+      "mean_precision": 0.3995555555555555,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5294117647058824,
+      "precision@3": 0.3968627450980392,
+      "precision@5": 0.3256470588235294,
+      "mean_precision": 0.41730718954248364,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.041176470588235294,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "first",
+    "base_model": "ablation_deep_wide",
+    "seed": 42
+  },
+  {
+    "name": "ablation_deep_wide_s42_pool_mean_std",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036717124723774544,
+      "cosine_sim": 0.7054181838386199,
+      "mse_std": 0.009007895117249832,
+      "cosine_sim_std": 0.09433286389055426,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.26588235294117646,
+      "precision@5": 0.20047058823529412,
+      "mean_precision": 0.28525490196078435,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5141176470588236,
+      "precision@3": 0.37843137254901954,
+      "precision@5": 0.3061176470588235,
+      "mean_precision": 0.3995555555555555,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5294117647058824,
+      "precision@3": 0.3968627450980392,
+      "precision@5": 0.3256470588235294,
+      "mean_precision": 0.41730718954248364,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.041176470588235294,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "mean_std",
+    "base_model": "ablation_deep_wide",
+    "seed": 42
+  },
+  {
+    "name": "ablation_deep_wide_s42_pool_concat",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036717124723774544,
+      "cosine_sim": 0.7054181838386199,
+      "mse_std": 0.009007895117249832,
+      "cosine_sim_std": 0.09433286389055426,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.26588235294117646,
+      "precision@5": 0.20047058823529412,
+      "mean_precision": 0.28525490196078435,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5141176470588236,
+      "precision@3": 0.37843137254901954,
+      "precision@5": 0.3061176470588235,
+      "mean_precision": 0.3995555555555555,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5294117647058824,
+      "precision@3": 0.3968627450980392,
+      "precision@5": 0.3256470588235294,
+      "mean_precision": 0.41730718954248364,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.041176470588235294,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "concat",
+    "base_model": "ablation_deep_wide",
+    "seed": 42
+  },
+  {
+    "name": "ablation_deep_wide_s123_pool_first",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036591207044308675,
+      "cosine_sim": 0.7067713577957714,
+      "mse_std": 0.008975099334716569,
+      "cosine_sim_std": 0.09365368484122757,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.27058823529411763,
+      "precision@5": 0.19811764705882354,
+      "mean_precision": 0.2860392156862745,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5094117647058823,
+      "precision@3": 0.37686274509803924,
+      "precision@5": 0.3014117647058824,
+      "mean_precision": 0.39589542483660134,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5247058823529411,
+      "precision@3": 0.3933333333333333,
+      "precision@5": 0.32164705882352945,
+      "mean_precision": 0.4132287581699346,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "first",
+    "base_model": "ablation_deep_wide",
+    "seed": 123
+  },
+  {
+    "name": "ablation_deep_wide_s123_pool_mean_std",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036591207044308675,
+      "cosine_sim": 0.7067713577957714,
+      "mse_std": 0.008975099334716569,
+      "cosine_sim_std": 0.09365368484122757,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.27058823529411763,
+      "precision@5": 0.19811764705882354,
+      "mean_precision": 0.2860392156862745,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5094117647058823,
+      "precision@3": 0.37686274509803924,
+      "precision@5": 0.3014117647058824,
+      "mean_precision": 0.39589542483660134,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5247058823529411,
+      "precision@3": 0.3933333333333333,
+      "precision@5": 0.32164705882352945,
+      "mean_precision": 0.4132287581699346,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.04,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "mean_std",
+    "base_model": "ablation_deep_wide",
+    "seed": 123
+  },
+  {
+    "name": "ablation_deep_wide_s123_pool_concat",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036591207044308675,
+      "cosine_sim": 0.7067713577957714,
+      "mse_std": 0.008975099334716569,
+      "cosine_sim_std": 0.09365368484122757,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.27058823529411763,
+      "precision@5": 0.19811764705882354,
+      "mean_precision": 0.2860392156862745,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5094117647058823,
+      "precision@3": 0.37686274509803924,
+      "precision@5": 0.3014117647058824,
+      "mean_precision": 0.39589542483660134,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5247058823529411,
+      "precision@3": 0.3933333333333333,
+      "precision@5": 0.32164705882352945,
+      "mean_precision": 0.4132287581699346,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.03882352941176471,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1643,
+      "n_test": 850,
+      "mode": "held_out"
+    },
+    "pooling_strategy": "concat",
+    "base_model": "ablation_deep_wide",
+    "seed": 123
+  },
+  {
+    "name": "attnpool_default_s42_late_interaction",
+    "base_model": "attnpool_default",
+    "seed": 42,
+    "late_interaction_retrieval": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.26352941176470585,
+      "precision@5": 0.19482352941176473,
+      "mean_precision": 0.28258823529411764,
+      "n_queries": 850,
+      "n_database": 850,
+      "scoring": "late_interaction"
+    },
+    "rns": {
+      "rns_mean": 0.0,
+      "rns_std": 0.0,
+      "rns_median": 0.0,
+      "n_unreliable": 0,
+      "frac_unreliable": 0.0,
+      "n_proteins": 850,
+      "n_random": 1000,
+      "k": 10
+    },
+    "inherent_family": {
+      "silhouette": -0.07599562406539917,
+      "knn_purity_k1": 0.3905882352941176,
+      "knn_purity_k5": 0.19482352941176473,
+      "ami": 0.2862398704127002,
+      "n_classes": 210,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "attnpool_default_s123_late_interaction",
+    "base_model": "attnpool_default",
+    "seed": 123,
+    "late_interaction_retrieval": {
+      "precision@1": 0.3847058823529412,
+      "precision@3": 0.26705882352941174,
+      "precision@5": 0.19717647058823531,
+      "mean_precision": 0.2829803921568627,
+      "n_queries": 850,
+      "n_database": 850,
+      "scoring": "late_interaction"
+    },
+    "rns": {
+      "rns_mean": 0.0,
+      "rns_std": 0.0,
+      "rns_median": 0.0,
+      "n_unreliable": 0,
+      "frac_unreliable": 0.0,
+      "n_proteins": 850,
+      "n_random": 1000,
+      "k": 10
+    },
+    "inherent_family": {
+      "silhouette": -0.0646742731332779,
+      "knn_purity_k1": 0.38588235294117645,
+      "knn_purity_k5": 0.19717647058823531,
+      "ami": 0.2950257539235311,
+      "n_classes": 210,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "attnpool_default_s456_late_interaction",
+    "base_model": "attnpool_default",
+    "seed": 456,
+    "late_interaction_retrieval": {
+      "precision@1": 0.37411764705882355,
+      "precision@3": 0.2603921568627451,
+      "precision@5": 0.1896470588235294,
+      "mean_precision": 0.274718954248366,
+      "n_queries": 850,
+      "n_database": 850,
+      "scoring": "late_interaction"
+    },
+    "rns": {
+      "rns_mean": 0.0,
+      "rns_std": 0.0,
+      "rns_median": 0.0,
+      "n_unreliable": 0,
+      "frac_unreliable": 0.0,
+      "n_proteins": 850,
+      "n_random": 1000,
+      "k": 10
+    },
+    "inherent_family": {
+      "silhouette": -0.07542508840560913,
+      "knn_purity_k1": 0.37411764705882355,
+      "knn_purity_k5": 0.18964705882352942,
+      "ami": 0.2555321654513035,
+      "n_classes": 210,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "ablation_latent256_s42_late_interaction",
+    "base_model": "ablation_latent256",
+    "seed": 42,
+    "late_interaction_retrieval": {
+      "precision@1": 0.3776470588235294,
+      "precision@3": 0.2576470588235294,
+      "precision@5": 0.1915294117647059,
+      "mean_precision": 0.2756078431372549,
+      "n_queries": 850,
+      "n_database": 850,
+      "scoring": "late_interaction"
+    },
+    "rns": {
+      "rns_mean": 0.0,
+      "rns_std": 0.0,
+      "rns_median": 0.0,
+      "n_unreliable": 0,
+      "frac_unreliable": 0.0,
+      "n_proteins": 850,
+      "n_random": 1000,
+      "k": 10
+    },
+    "inherent_family": {
+      "silhouette": -0.08625591546297073,
+      "knn_purity_k1": 0.3776470588235294,
+      "knn_purity_k5": 0.1915294117647059,
+      "ami": 0.3130794700381641,
+      "n_classes": 210,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "ablation_latent256_s123_late_interaction",
+    "base_model": "ablation_latent256",
+    "seed": 123,
+    "late_interaction_retrieval": {
+      "precision@1": 0.36941176470588233,
+      "precision@3": 0.2541176470588235,
+      "precision@5": 0.1908235294117647,
+      "mean_precision": 0.27145098039215687,
+      "n_queries": 850,
+      "n_database": 850,
+      "scoring": "late_interaction"
+    },
+    "rns": {
+      "rns_mean": 0.0,
+      "rns_std": 0.0,
+      "rns_median": 0.0,
+      "n_unreliable": 0,
+      "frac_unreliable": 0.0,
+      "n_proteins": 850,
+      "n_random": 1000,
+      "k": 10
+    },
+    "inherent_family": {
+      "silhouette": -0.09200213849544525,
+      "knn_purity_k1": 0.36941176470588233,
+      "knn_purity_k5": 0.1908235294117647,
+      "ami": 0.27616038514086166,
+      "n_classes": 210,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "ablation_latent512_s42_late_interaction",
+    "base_model": "ablation_latent512",
+    "seed": 42,
+    "late_interaction_retrieval": {
+      "precision@1": 0.15529411764705883,
+      "precision@3": 0.10745098039215686,
+      "precision@5": 0.08776470588235294,
+      "mean_precision": 0.11683660130718954,
+      "n_queries": 850,
+      "n_database": 850,
+      "scoring": "late_interaction"
+    },
+    "rns": {
+      "rns_mean": 0.0,
+      "rns_std": 0.0,
+      "rns_median": 0.0,
+      "n_unreliable": 0,
+      "frac_unreliable": 0.0,
+      "n_proteins": 850,
+      "n_random": 1000,
+      "k": 10
+    },
+    "inherent_family": {
+      "silhouette": -0.37468117475509644,
+      "knn_purity_k1": 0.15529411764705883,
+      "knn_purity_k5": 0.08776470588235294,
+      "ami": 0.1328906057104315,
+      "n_classes": 210,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "ablation_latent512_s123_late_interaction",
+    "base_model": "ablation_latent512",
+    "seed": 123,
+    "late_interaction_retrieval": {
+      "precision@1": 0.05176470588235294,
+      "precision@3": 0.04549019607843137,
+      "precision@5": 0.041411764705882356,
+      "mean_precision": 0.04622222222222222,
+      "n_queries": 850,
+      "n_database": 850,
+      "scoring": "late_interaction"
+    },
+    "rns": {
+      "rns_mean": 0.0,
+      "rns_std": 0.0,
+      "rns_median": 0.0,
+      "n_unreliable": 0,
+      "frac_unreliable": 0.0,
+      "n_proteins": 850,
+      "n_random": 1000,
+      "k": 10
+    },
+    "inherent_family": {
+      "silhouette": -0.5335553884506226,
+      "knn_purity_k1": 0.05176470588235294,
+      "knn_purity_k5": 0.041411764705882356,
+      "ami": 0.061929976534064735,
+      "n_classes": 210,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "ablation_contrastive_batch32_s42_late_interaction",
+    "base_model": "ablation_contrastive_batch32",
+    "seed": 42,
+    "late_interaction_retrieval": {
+      "precision@1": 0.39176470588235296,
+      "precision@3": 0.26823529411764707,
+      "precision@5": 0.20164705882352943,
+      "mean_precision": 0.28721568627450983,
+      "n_queries": 850,
+      "n_database": 850,
+      "scoring": "late_interaction"
+    },
+    "rns": {
+      "rns_mean": 0.0,
+      "rns_std": 0.0,
+      "rns_median": 0.0,
+      "n_unreliable": 0,
+      "frac_unreliable": 0.0,
+      "n_proteins": 850,
+      "n_random": 1000,
+      "k": 10
+    },
+    "inherent_family": {
+      "silhouette": -0.0561932809650898,
+      "knn_purity_k1": 0.35058823529411764,
+      "knn_purity_k5": 0.17882352941176471,
+      "ami": 0.24960704483993731,
+      "n_classes": 210,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "ablation_contrastive_batch32_s123_late_interaction",
+    "base_model": "ablation_contrastive_batch32",
+    "seed": 123,
+    "late_interaction_retrieval": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.26745098039215687,
+      "precision@5": 0.19788235294117648,
+      "mean_precision": 0.28491503267973856,
+      "n_queries": 850,
+      "n_database": 850,
+      "scoring": "late_interaction"
+    },
+    "rns": {
+      "rns_mean": 0.0,
+      "rns_std": 0.0,
+      "rns_median": 0.0,
+      "n_unreliable": 0,
+      "frac_unreliable": 0.0,
+      "n_proteins": 850,
+      "n_random": 1000,
+      "k": 10
+    },
+    "inherent_family": {
+      "silhouette": -0.05779581516981125,
+      "knn_purity_k1": 0.3447058823529412,
+      "knn_purity_k5": 0.17741176470588238,
+      "ami": 0.2616961642984458,
+      "n_classes": 210,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "ablation_deep_wide_s42_late_interaction",
+    "base_model": "ablation_deep_wide",
+    "seed": 42,
+    "late_interaction_retrieval": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.26588235294117646,
+      "precision@5": 0.20047058823529412,
+      "mean_precision": 0.28525490196078435,
+      "n_queries": 850,
+      "n_database": 850,
+      "scoring": "late_interaction"
+    },
+    "rns": {
+      "rns_mean": 0.0,
+      "rns_std": 0.0,
+      "rns_median": 0.0,
+      "n_unreliable": 0,
+      "frac_unreliable": 0.0,
+      "n_proteins": 850,
+      "n_random": 1000,
+      "k": 10
+    },
+    "inherent_family": {
+      "silhouette": -0.06124759092926979,
+      "knn_purity_k1": 0.38941176470588235,
+      "knn_purity_k5": 0.20047058823529412,
+      "ami": 0.28540197927623795,
+      "n_classes": 210,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "ablation_deep_wide_s123_late_interaction",
+    "base_model": "ablation_deep_wide",
+    "seed": 123,
+    "late_interaction_retrieval": {
+      "precision@1": 0.38941176470588235,
+      "precision@3": 0.27058823529411763,
+      "precision@5": 0.19811764705882354,
+      "mean_precision": 0.2860392156862745,
+      "n_queries": 850,
+      "n_database": 850,
+      "scoring": "late_interaction"
+    },
+    "rns": {
+      "rns_mean": 0.0,
+      "rns_std": 0.0,
+      "rns_median": 0.0,
+      "n_unreliable": 0,
+      "frac_unreliable": 0.0,
+      "n_proteins": 850,
+      "n_random": 1000,
+      "k": 10
+    },
+    "inherent_family": {
+      "silhouette": -0.06586062908172607,
+      "knn_purity_k1": 0.38941176470588235,
+      "knn_purity_k5": 0.19811764705882354,
+      "ami": 0.2855620226124079,
+      "n_classes": 210,
+      "n_proteins": 850
+    }
+  },
+  {
+    "name": "baseline_meanpool_prott5_500",
+    "split_mode": "held_out",
+    "compression": {
+      "K": 1,
+      "D_prime": 1024,
+      "D_original": 1024,
+      "mean_length": 189.44571428571427,
+      "compression_ratio": 0.005278556993333937
+    },
+    "retrieval_family": {
+      "precision@1": 0.8558558558558559,
+      "precision@3": 0.7327327327327327,
+      "precision@5": 0.5603603603603603,
+      "mean_precision": 0.7163163163163163,
+      "n_queries": 111,
+      "n_database": 111
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.9279279279279279,
+      "precision@3": 0.8168168168168167,
+      "precision@5": 0.6594594594594594,
+      "mean_precision": 0.8014014014014013,
+      "n_queries": 111,
+      "n_database": 111
+    },
+    "retrieval_fold": {
+      "precision@1": 0.9279279279279279,
+      "precision@3": 0.8168168168168167,
+      "precision@5": 0.6594594594594594,
+      "mean_precision": 0.8014014014014013,
+      "n_queries": 111,
+      "n_database": 111
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 85,
+      "n_train": 239,
+      "n_test": 111,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 78,
+      "n_train": 239,
+      "n_test": 111,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.018018018018018018,
+      "accuracy_std": 0.0,
+      "n_classes": 76,
+      "n_train": 239,
+      "n_test": 111,
+      "mode": "held_out"
+    },
+    "embed_dim": 1024
+  },
+  {
+    "name": "attnpool_prott5_500_s42",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03533194502731701,
+      "cosine_sim": 0.20151216248134235,
+      "mse_std": 0.004465882720260126,
+      "cosine_sim_std": 0.02486382715090231,
+      "n_proteins": 111
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1024,
+      "mean_length": 189.44571428571427,
+      "compressed_elements": 1024,
+      "original_elements": 193992.41142857142,
+      "compression_ratio": 0.005278556993333937
+    },
+    "retrieval_family": {
+      "precision@1": 0.7747747747747747,
+      "precision@3": 0.6246246246246245,
+      "precision@5": 0.4684684684684684,
+      "mean_precision": 0.6226226226226225,
+      "n_queries": 111,
+      "n_database": 111
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.8198198198198198,
+      "precision@3": 0.7147147147147146,
+      "precision@5": 0.5657657657657656,
+      "mean_precision": 0.7001001001001,
+      "n_queries": 111,
+      "n_database": 111
+    },
+    "retrieval_fold": {
+      "precision@1": 0.8198198198198198,
+      "precision@3": 0.7147147147147146,
+      "precision@5": 0.5657657657657656,
+      "mean_precision": 0.7001001001001,
+      "n_queries": 111,
+      "n_database": 111
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 85,
+      "n_train": 239,
+      "n_test": 111,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 78,
+      "n_train": 239,
+      "n_test": 111,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.02702702702702703,
+      "accuracy_std": 0.0,
+      "n_classes": 76,
+      "n_train": 239,
+      "n_test": 111,
+      "mode": "held_out"
+    },
+    "training_time_s": 687.2529091835022,
+    "seed": 42,
+    "embed_dim": 1024,
+    "K": 8,
+    "latent_dim": 128,
+    "n_heads": 4,
+    "n_encoder_layers": 2,
+    "n_proj_layers": 1,
+    "n_train": 239,
+    "n_test": 111,
+    "n_eval": 111,
+    "epochs": 200,
+    "batch_size": 8,
+    "contrastive_weight": 0.0,
+    "best_epoch": 43
+  },
+  {
+    "name": "attnpool_prott5_500_s123",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03505803129493116,
+      "cosine_sim": 0.21249441735379332,
+      "mse_std": 0.004403949155980365,
+      "cosine_sim_std": 0.02275345332938516,
+      "n_proteins": 111
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1024,
+      "mean_length": 189.44571428571427,
+      "compressed_elements": 1024,
+      "original_elements": 193992.41142857142,
+      "compression_ratio": 0.005278556993333937
+    },
+    "retrieval_family": {
+      "precision@1": 0.7477477477477478,
+      "precision@3": 0.5885885885885886,
+      "precision@5": 0.4648648648648649,
+      "mean_precision": 0.6004004004004004,
+      "n_queries": 111,
+      "n_database": 111
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.8198198198198198,
+      "precision@3": 0.6876876876876876,
+      "precision@5": 0.5567567567567566,
+      "mean_precision": 0.6880880880880881,
+      "n_queries": 111,
+      "n_database": 111
+    },
+    "retrieval_fold": {
+      "precision@1": 0.8198198198198198,
+      "precision@3": 0.6876876876876876,
+      "precision@5": 0.5567567567567566,
+      "mean_precision": 0.6880880880880881,
+      "n_queries": 111,
+      "n_database": 111
+    },
+    "classification_family": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 85,
+      "n_train": 239,
+      "n_test": 111,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.0,
+      "accuracy_std": 0.0,
+      "n_classes": 78,
+      "n_train": 239,
+      "n_test": 111,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.02702702702702703,
+      "accuracy_std": 0.0,
+      "n_classes": 76,
+      "n_train": 239,
+      "n_test": 111,
+      "mode": "held_out"
+    },
+    "training_time_s": 596.9247071743011,
+    "seed": 123,
+    "embed_dim": 1024,
+    "K": 8,
+    "latent_dim": 128,
+    "n_heads": 4,
+    "n_encoder_layers": 2,
+    "n_proj_layers": 1,
+    "n_train": 239,
+    "n_test": 111,
+    "n_eval": 111,
+    "epochs": 200,
+    "batch_size": 8,
+    "contrastive_weight": 0.0,
+    "best_epoch": 47
+  }
+]

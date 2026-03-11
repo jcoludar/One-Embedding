@@ -1,0 +1,460 @@
+[
+  {
+    "name": "channel_prot_t5_unsup_d256_s123",
+    "plm": "ProtT5-XL",
+    "method": "channel_unsup",
+    "latent_dim": 256,
+    "seed": 123,
+    "reconstruction": {
+      "mse": 0.013646513006704695,
+      "cosine_sim": 0.8094968310524435,
+      "mse_std": 0.002925616459532797,
+      "cosine_sim_std": 0.03101682775478101,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.5729411764705883,
+      "precision@3": 0.4,
+      "precision@5": 0.2865882352941177,
+      "mean_precision": 0.419843137254902,
+      "mrr": 0.6597820791184316,
+      "map": 0.3271167737849442,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.7181510710259301,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 1080.1069371700287
+  },
+  {
+    "name": "channel_prot_t5_contrastive_d256_s123",
+    "plm": "ProtT5-XL",
+    "method": "channel_contrastive",
+    "latent_dim": 256,
+    "seed": 123,
+    "pre_finetune_recon": {
+      "mse": 0.013646513006704695,
+      "cosine_sim": 0.8094968310524435,
+      "mse_std": 0.002925616459532797,
+      "cosine_sim_std": 0.03101682775478101,
+      "n_proteins": 850
+    },
+    "post_finetune_recon": {
+      "mse": 0.04836215392631643,
+      "cosine_sim": 0.5220149409069734,
+      "mse_std": 0.00540429108973023,
+      "cosine_sim_std": 0.035403081023011124,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.7847058823529411,
+      "precision@3": 0.6560784313725491,
+      "precision@5": 0.4915294117647059,
+      "mean_precision": 0.6441045751633987,
+      "mrr": 0.8586697528855085,
+      "map": 0.5729094836061309,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.8974069898534386,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 478.5937738418579
+  },
+  {
+    "name": "channel_prot_t5_unsup_d256_s456",
+    "plm": "ProtT5-XL",
+    "method": "channel_unsup",
+    "latent_dim": 256,
+    "seed": 456,
+    "reconstruction": {
+      "mse": 0.01031056239927078,
+      "cosine_sim": 0.8619572647880105,
+      "mse_std": 0.002562318198596957,
+      "cosine_sim_std": 0.025811067262321793,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.6058823529411764,
+      "precision@3": 0.4435294117647059,
+      "precision@5": 0.3284705882352942,
+      "mean_precision": 0.4592941176470588,
+      "mrr": 0.7005112009173822,
+      "map": 0.37416607126836227,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.6471251409244645,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 1108.2381739616394
+  },
+  {
+    "name": "channel_prot_t5_contrastive_d256_s456",
+    "plm": "ProtT5-XL",
+    "method": "channel_contrastive",
+    "latent_dim": 256,
+    "seed": 456,
+    "pre_finetune_recon": {
+      "mse": 0.01031056239927078,
+      "cosine_sim": 0.8619572647880105,
+      "mse_std": 0.002562318198596957,
+      "cosine_sim_std": 0.025811067262321793,
+      "n_proteins": 850
+    },
+    "post_finetune_recon": {
+      "mse": 0.02436634677955333,
+      "cosine_sim": 0.693683919135262,
+      "mse_std": 0.002993448526720149,
+      "cosine_sim_std": 0.032879651100682444,
+      "n_proteins": 850
+    },
+    "retrieval_family": {
+      "precision@1": 0.7929411764705883,
+      "precision@3": 0.6749019607843136,
+      "precision@5": 0.5096470588235295,
+      "mean_precision": 0.6591633986928104,
+      "mrr": 0.8641685914141671,
+      "map": 0.5892860016547625,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.9210822998872604,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 491.47584414482117
+  },
+  {
+    "name": "r3_prott5_cb513_unsup_d256_s42",
+    "plm": "ProtT5-XL",
+    "dataset": "CB513",
+    "method": "unsup",
+    "dim": 256,
+    "model_seed": 42,
+    "q3_mean": 0.8349821835214325,
+    "q3_std": 0.008527530982579504,
+    "q8_mean": 0.6908428423931688,
+    "q8_std": 0.011096064727605008
+  },
+  {
+    "name": "r3_prott5_cb513_contrastive_d256_s42",
+    "plm": "ProtT5-XL",
+    "dataset": "CB513",
+    "method": "contrastive",
+    "dim": 256,
+    "model_seed": 42,
+    "q3_mean": 0.8343384771857557,
+    "q3_std": 0.007486777431047617,
+    "q8_mean": 0.6915405995570155,
+    "q8_std": 0.01056659311680128
+  },
+  {
+    "name": "r3_prott5_cb513_unsup_d256_s123",
+    "plm": "ProtT5-XL",
+    "dataset": "CB513",
+    "method": "unsup",
+    "dim": 256,
+    "model_seed": 123,
+    "q3_mean": 0.8323652362562521,
+    "q3_std": 0.008227975272522588,
+    "q8_mean": 0.6889873348420436,
+    "q8_std": 0.011937471134399956
+  },
+  {
+    "name": "r3_prott5_cb513_contrastive_d256_s123",
+    "plm": "ProtT5-XL",
+    "dataset": "CB513",
+    "method": "contrastive",
+    "dim": 256,
+    "model_seed": 123,
+    "q3_mean": 0.8324018599296309,
+    "q3_std": 0.008101359231068266,
+    "q8_mean": 0.6899991151135206,
+    "q8_std": 0.01073000277714526
+  },
+  {
+    "name": "r3_prott5_cb513_unsup_d256_s456",
+    "plm": "ProtT5-XL",
+    "dataset": "CB513",
+    "method": "unsup",
+    "dim": 256,
+    "model_seed": 456,
+    "q3_mean": 0.8379410026363069,
+    "q3_std": 0.007928980483126739,
+    "q8_mean": 0.6939369521392713,
+    "q8_std": 0.011650843521262288
+  },
+  {
+    "name": "r3_prott5_cb513_contrastive_d256_s456",
+    "plm": "ProtT5-XL",
+    "dataset": "CB513",
+    "method": "contrastive",
+    "dim": 256,
+    "model_seed": 456,
+    "q3_mean": 0.8285023782091775,
+    "q3_std": 0.00721945405597397,
+    "q8_mean": 0.6865475963499916,
+    "q8_std": 0.011111020252611556
+  },
+  {
+    "name": "r3_chezod_ESM2-650M_original",
+    "plm": "ESM2-650M",
+    "dataset": "CheZOD",
+    "method": "original",
+    "dim": 1280,
+    "spearman_rho": 0.6771339339344183,
+    "p_value": 0.0,
+    "mse": 18.584449768066406,
+    "n_train_residues": 132545,
+    "n_test_residues": 12516
+  },
+  {
+    "name": "r3_chezod_ESM2-650M_pca_d256",
+    "plm": "ESM2-650M",
+    "dataset": "CheZOD",
+    "method": "pca",
+    "dim": 256,
+    "spearman_rho": 0.6582046420272138,
+    "p_value": 0.0,
+    "mse": 20.27851676940918,
+    "n_train_residues": 132545,
+    "n_test_residues": 12516
+  },
+  {
+    "name": "r3_chezod_ESM2-650M_unsup_d256",
+    "plm": "ESM2-650M",
+    "dataset": "CheZOD",
+    "method": "unsup",
+    "dim": 256,
+    "checkpoint": "channel_unsup_d256_s123",
+    "spearman_rho": 0.6206088166695336,
+    "p_value": 0.0,
+    "mse": 23.85267448425293,
+    "n_train_residues": 132545,
+    "n_test_residues": 12516
+  },
+  {
+    "name": "r3_chezod_ESM2-650M_contrastive_d256",
+    "plm": "ESM2-650M",
+    "dataset": "CheZOD",
+    "method": "contrastive",
+    "dim": 256,
+    "checkpoint": "channel_contrastive_d256_s123",
+    "spearman_rho": 0.6150244073941937,
+    "p_value": 0.0,
+    "mse": 24.77423858642578,
+    "n_train_residues": 132545,
+    "n_test_residues": 12516
+  },
+  {
+    "name": "r3_chezod_ProtT5-XL_original",
+    "plm": "ProtT5-XL",
+    "dataset": "CheZOD",
+    "method": "original",
+    "dim": 1024,
+    "spearman_rho": 0.6632457792905582,
+    "p_value": 0.0,
+    "mse": 20.16731834411621,
+    "n_train_residues": 132545,
+    "n_test_residues": 12516
+  },
+  {
+    "name": "r3_chezod_ProtT5-XL_pca_d256",
+    "plm": "ProtT5-XL",
+    "dataset": "CheZOD",
+    "method": "pca",
+    "dim": 256,
+    "spearman_rho": 0.5913107011723456,
+    "p_value": 0.0,
+    "mse": 30.169443130493164,
+    "n_train_residues": 132545,
+    "n_test_residues": 12516
+  },
+  {
+    "name": "r3_chezod_ProtT5-XL_unsup_d256",
+    "plm": "ProtT5-XL",
+    "dataset": "CheZOD",
+    "method": "unsup",
+    "dim": 256,
+    "checkpoint": "channel_prot_t5_unsup_d256_s42",
+    "spearman_rho": 0.5562902926279375,
+    "p_value": 0.0,
+    "mse": 33.3336181640625,
+    "n_train_residues": 132545,
+    "n_test_residues": 12516
+  },
+  {
+    "name": "r3_chezod_ProtT5-XL_contrastive_d256",
+    "plm": "ProtT5-XL",
+    "dataset": "CheZOD",
+    "method": "contrastive",
+    "dim": 256,
+    "checkpoint": "channel_prot_t5_contrastive_d256_s42",
+    "spearman_rho": 0.5183739009481767,
+    "p_value": 0.0,
+    "mse": 35.74967575073242,
+    "n_train_residues": 132545,
+    "n_test_residues": 12516
+  },
+  {
+    "name": "r3_tmbed_ESM2-650M_original",
+    "plm": "ESM2-650M",
+    "dataset": "TMbed",
+    "method": "original",
+    "dim": 1280,
+    "accuracy_mean": 0.9878548842399294,
+    "accuracy_std": 0.003286133737962584,
+    "macro_f1_mean": 0.8645844561657586,
+    "macro_f1_std": 0.01933112141042948
+  },
+  {
+    "name": "r3_tmbed_ESM2-650M_unsup_d256",
+    "plm": "ESM2-650M",
+    "dataset": "TMbed",
+    "method": "unsup",
+    "dim": 256,
+    "checkpoint": "channel_unsup_d256_s123",
+    "accuracy_mean": 0.9860918482896066,
+    "accuracy_std": 0.0036917763487110873,
+    "macro_f1_mean": 0.7672977798750553,
+    "macro_f1_std": 0.08488752077234235
+  },
+  {
+    "name": "r3_tmbed_ESM2-650M_contrastive_d256",
+    "plm": "ESM2-650M",
+    "dataset": "TMbed",
+    "method": "contrastive",
+    "dim": 256,
+    "checkpoint": "channel_contrastive_d256_s123",
+    "accuracy_mean": 0.9857943094435191,
+    "accuracy_std": 0.00377809475407738,
+    "macro_f1_mean": 0.7612456566766678,
+    "macro_f1_std": 0.08007995424361601
+  },
+  {
+    "name": "r3_tmbed_ProtT5-XL_original",
+    "plm": "ProtT5-XL",
+    "dataset": "TMbed",
+    "method": "original",
+    "dim": 1024,
+    "accuracy_mean": 0.9885000979301317,
+    "accuracy_std": 0.0029042498022305223,
+    "macro_f1_mean": 0.7948831281811383,
+    "macro_f1_std": 0.08330696438079818
+  },
+  {
+    "name": "r3_tmbed_ProtT5-XL_unsup_d256",
+    "plm": "ProtT5-XL",
+    "dataset": "TMbed",
+    "method": "unsup",
+    "dim": 256,
+    "checkpoint": "channel_prot_t5_unsup_d256_s42",
+    "accuracy_mean": 0.9794570140086153,
+    "accuracy_std": 0.005291215074687749,
+    "macro_f1_mean": 0.6730221500149219,
+    "macro_f1_std": 0.04551950340480365
+  },
+  {
+    "name": "r3_tmbed_ProtT5-XL_contrastive_d256",
+    "plm": "ProtT5-XL",
+    "dataset": "TMbed",
+    "method": "contrastive",
+    "dim": 256,
+    "checkpoint": "channel_prot_t5_contrastive_d256_s42",
+    "accuracy_mean": 0.9777799219437502,
+    "accuracy_std": 0.006341929773219209,
+    "macro_f1_mean": 0.657164397970183,
+    "macro_f1_std": 0.03956840896279163
+  },
+  {
+    "name": "r3_ts115_ESM2-650M_original",
+    "plm": "ESM2-650M",
+    "dataset": "TS115",
+    "method": "original",
+    "dim": 1280,
+    "q3_mean": 0.8018225936354718,
+    "q3_std": 0.008869626467168736,
+    "q8_mean": 0.6713277239906675,
+    "q8_std": 0.011064023731534138
+  },
+  {
+    "name": "r3_ts115_ESM2-650M_unsup_d256",
+    "plm": "ESM2-650M",
+    "dataset": "TS115",
+    "method": "unsup",
+    "dim": 256,
+    "checkpoint": "channel_unsup_d256_s123",
+    "q3_mean": 0.8248342032375792,
+    "q3_std": 0.005633110391646752,
+    "q8_mean": 0.7134757496892186,
+    "q8_std": 0.0070055309972863085
+  },
+  {
+    "name": "r3_ts115_ESM2-650M_contrastive_d256",
+    "plm": "ESM2-650M",
+    "dataset": "TS115",
+    "method": "contrastive",
+    "dim": 256,
+    "checkpoint": "channel_contrastive_d256_s123",
+    "q3_mean": 0.8245399978859189,
+    "q3_std": 0.004886797822040155,
+    "q8_mean": 0.7147638184894402,
+    "q8_std": 0.007369673372838493
+  },
+  {
+    "name": "r3_ts115_ProtT5-XL_original",
+    "plm": "ProtT5-XL",
+    "dataset": "TS115",
+    "method": "original",
+    "dim": 1024,
+    "q3_mean": 0.8103060827786385,
+    "q3_std": 0.012731123007306448,
+    "q8_mean": 0.6805402445855914,
+    "q8_std": 0.008096704905133248
+  },
+  {
+    "name": "r3_ts115_ProtT5-XL_unsup_d256",
+    "plm": "ProtT5-XL",
+    "dataset": "TS115",
+    "method": "unsup",
+    "dim": 256,
+    "checkpoint": "channel_prot_t5_unsup_d256_s42",
+    "q3_mean": 0.8212778273489513,
+    "q3_std": 0.007898825482081963,
+    "q8_mean": 0.7094792922588656,
+    "q8_std": 0.00414925835529797
+  },
+  {
+    "name": "r3_ts115_ProtT5-XL_contrastive_d256",
+    "plm": "ProtT5-XL",
+    "dataset": "TS115",
+    "method": "contrastive",
+    "dim": 256,
+    "checkpoint": "channel_prot_t5_contrastive_d256_s42",
+    "q3_mean": 0.8205196148497323,
+    "q3_std": 0.006311785726544983,
+    "q8_mean": 0.7077957618905596,
+    "q8_std": 0.0012500715884779005
+  }
+]

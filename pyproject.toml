@@ -1,0 +1,28 @@
+[project]
+name = "proteembedexplorations"
+version = "0.1.0"
+description = "Sequence-only learned compression of PLM per-residue embeddings (1024d to 256d) with >98% downstream task retention"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "biopython>=1.86",
+    "fair-esm>=2.0.0",
+    "h5py>=3.16.0",
+    "matplotlib>=3.10.0",
+    "numpy>=2.0.0",
+    "optuna>=4.0.0",
+    "pandas>=2.0.0",
+    "scikit-learn>=1.4.0",
+    "sentencepiece>=0.2.0",
+    "torch>=2.0.0",
+    "tqdm>=4.66.0",
+    "transformers>=4.40.0",
+]
+
+[project.optional-dependencies]
+biocentral = ["biocentral-api"]
+
+[tool.uv]
+# Allow importing src as a package
+package = false

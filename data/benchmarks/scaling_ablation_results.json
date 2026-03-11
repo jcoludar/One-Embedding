@@ -1,0 +1,272 @@
+[
+  {
+    "name": "scaling_contrastive_f010",
+    "step": "S1",
+    "fraction": 0.1,
+    "n_train_proteins": 46,
+    "n_train_families": 22,
+    "retrieval": {
+      "precision@1": 0.6447058823529411,
+      "precision@5": 0.363764705882353,
+      "mrr": 0.7379383560163816
+    },
+    "classification": {
+      "accuracy_mean": 0.5332581736189402,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 11.266425132751465
+  },
+  {
+    "name": "scaling_contrastive_f025",
+    "step": "S1",
+    "fraction": 0.25,
+    "n_train_proteins": 242,
+    "n_train_families": 107,
+    "retrieval": {
+      "precision@1": 0.7376470588235294,
+      "precision@5": 0.4418823529411765,
+      "mrr": 0.8199183022494109
+    },
+    "classification": {
+      "accuracy_mean": 0.608793686583991,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 53.965538024902344
+  },
+  {
+    "name": "scaling_contrastive_f050",
+    "step": "S1",
+    "fraction": 0.5,
+    "n_train_proteins": 717,
+    "n_train_families": 269,
+    "retrieval": {
+      "precision@1": 0.78,
+      "precision@5": 0.4788235294117647,
+      "mrr": 0.8568505354557678
+    },
+    "classification": {
+      "accuracy_mean": 0.6719278466741826,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 157.3640010356903
+  },
+  {
+    "name": "scaling_contrastive_f075",
+    "step": "S1",
+    "fraction": 0.75,
+    "n_train_proteins": 1211,
+    "n_train_families": 369,
+    "retrieval": {
+      "precision@1": 0.7976470588235294,
+      "precision@5": 0.4929411764705882,
+      "mrr": 0.8691875511367256
+    },
+    "classification": {
+      "accuracy_mean": 0.6989853438556933,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 300.69341015815735
+  },
+  {
+    "name": "scaling_contrastive_f100",
+    "step": "S1",
+    "fraction": 1.0,
+    "n_train_proteins": 1643,
+    "n_train_families": 395,
+    "retrieval": {
+      "precision@1": 0.7976470588235294,
+      "precision@5": 0.5028235294117647,
+      "mrr": 0.8677611203782158
+    },
+    "classification": {
+      "accuracy_mean": 0.7068771138669673,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 388.84456300735474
+  },
+  {
+    "name": "ablation_no_layernorm",
+    "step": "S3",
+    "ablation": "no_layernorm",
+    "latent_dim": 256,
+    "retrieval": {
+      "precision@1": 0.7929411764705883,
+      "precision@5": 0.5018823529411764,
+      "mrr": 0.8664400663505001
+    },
+    "classification": {
+      "accuracy_mean": 0.6437429537767756,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.016535831885412335,
+      "cosine_sim": 0.7561830013639786,
+      "mse_std": 0.0032904172106529863,
+      "cosine_sim_std": 0.031155122881462712,
+      "n_proteins": 850
+    },
+    "training_time_s": 1269.995954990387
+  },
+  {
+    "name": "ablation_no_residual",
+    "step": "S3",
+    "ablation": "no_residual",
+    "latent_dim": 256,
+    "retrieval": {
+      "precision@1": 0.6388235294117647,
+      "precision@5": 0.3541176470588236,
+      "mrr": 0.7312604806112744
+    },
+    "classification": {
+      "accuracy_mean": 0.2976324689966178,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.8087317754941828,
+      "cosine_sim": 0.28670589232269456,
+      "mse_std": 0.1605001320291172,
+      "cosine_sim_std": 0.0639698669901919,
+      "n_proteins": 850
+    },
+    "training_time_s": 1323.0031991004944
+  },
+  {
+    "name": "ablation_no_decoder_freeze",
+    "step": "S3",
+    "ablation": "no_decoder_freeze",
+    "latent_dim": 256,
+    "retrieval": {
+      "precision@1": 0.8070588235294117,
+      "precision@5": 0.5025882352941177,
+      "mrr": 0.8723836555401182
+    },
+    "classification": {
+      "accuracy_mean": 0.705749718151071,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.012715689067674034,
+      "cosine_sim": 0.8282986342906952,
+      "mse_std": 0.0027057628945754727,
+      "cosine_sim_std": 0.030816528282585333,
+      "n_proteins": 850
+    },
+    "training_time_s": 463.07223200798035
+  },
+  {
+    "name": "prot_t5_contrastive_d128_s42",
+    "step": "S4",
+    "plm": "ProtT5-XL",
+    "latent_dim": 128,
+    "seed": 42,
+    "retrieval": {
+      "precision@1": 0.7705882352941177,
+      "precision@5": 0.47058823529411764,
+      "mrr": 0.8467605929722247
+    },
+    "classification": {
+      "accuracy_mean": 0.8759864712514093,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.08789127110558398,
+      "cosine_sim": 0.3541124303901897,
+      "mse_std": 0.007969937460361348,
+      "cosine_sim_std": 0.03716039972156759,
+      "n_proteins": 850
+    },
+    "training_time_s": 392.8576431274414
+  },
+  {
+    "name": "prot_t5_contrastive_d128_s123",
+    "step": "S4",
+    "plm": "ProtT5-XL",
+    "latent_dim": 128,
+    "seed": 123,
+    "retrieval": {
+      "precision@1": 0.7835294117647059,
+      "precision@5": 0.4938823529411765,
+      "mrr": 0.8589150990207303
+    },
+    "classification": {
+      "accuracy_mean": 0.636978579481398,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.029012575592188273,
+      "cosine_sim": 0.6130397036846946,
+      "mse_std": 0.003454618304132427,
+      "cosine_sim_std": 0.04450449934689071,
+      "n_proteins": 850
+    },
+    "training_time_s": 363.08455872535706
+  },
+  {
+    "name": "prot_t5_contrastive_d128_s456",
+    "step": "S4",
+    "plm": "ProtT5-XL",
+    "latent_dim": 128,
+    "seed": 456,
+    "retrieval": {
+      "precision@1": 0.7764705882352941,
+      "precision@5": 0.4931764705882353,
+      "mrr": 0.8532485099849312
+    },
+    "classification": {
+      "accuracy_mean": 0.6426155580608793,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "reconstruction": {
+      "mse": 0.02843210350283805,
+      "cosine_sim": 0.617173949935857,
+      "mse_std": 0.003818725624751312,
+      "cosine_sim_std": 0.04973487456410417,
+      "n_proteins": 850
+    },
+    "training_time_s": 400.23241209983826
+  }
+]

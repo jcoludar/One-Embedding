@@ -1,0 +1,350 @@
+[
+  {
+    "name": "attention_pool_K8_K4_500",
+    "reconstruction": {
+      "mse": 0.05422027041419771,
+      "cosine_sim": 0.7465701602714162,
+      "mse_std": 0.022734920235232416,
+      "cosine_sim_std": 0.11692889644868337,
+      "n_proteins": 497
+    },
+    "compression": {
+      "K": 4,
+      "D_prime": 128,
+      "D_original": 480,
+      "mean_length": 187.28571428571428,
+      "compressed_elements": 512,
+      "original_elements": 89897.14285714286,
+      "compression_ratio": 0.005695397915077549
+    },
+    "retrieval_family": {
+      "precision@1": 0.5975855130784709,
+      "precision@3": 0.3930248155600268,
+      "precision@5": 0.28531187122736423,
+      "mean_precision": 0.42530739995528727
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.6297786720321932,
+      "precision@3": 0.4453386988598256,
+      "precision@5": 0.3372233400402415,
+      "mean_precision": 0.4707802369774201
+    },
+    "retrieval_fold": {
+      "precision@1": 0.6398390342052314,
+      "precision@3": 0.4607645875251509,
+      "precision@5": 0.3529175050301811,
+      "mean_precision": 0.48450704225352115
+    },
+    "classification_family": {
+      "accuracy_mean": 0.5835276590231895,
+      "accuracy_std": 0.013246534525197584,
+      "n_classes": 160,
+      "n_samples": 497
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.6176965928229046,
+      "accuracy_std": 0.004793367016452887,
+      "n_classes": 146,
+      "n_samples": 497
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.6036322710195621,
+      "accuracy_std": 0.0052386967223733705,
+      "n_classes": 132,
+      "n_samples": 497
+    },
+    "training_time_s": 1428.174226284027,
+    "K": 4,
+    "strategy": "attention_pool_K8"
+  },
+  {
+    "name": "attention_pool_K8_K8_500",
+    "reconstruction": {
+      "mse": 0.057343569387432555,
+      "cosine_sim": 0.732749386572502,
+      "mse_std": 0.02310496325378847,
+      "cosine_sim_std": 0.11741031900846341,
+      "n_proteins": 497
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 480,
+      "mean_length": 187.28571428571428,
+      "compressed_elements": 1024,
+      "original_elements": 89897.14285714286,
+      "compression_ratio": 0.011390795830155098
+    },
+    "retrieval_family": {
+      "precision@1": 0.6277665995975855,
+      "precision@3": 0.4124748490945674,
+      "precision@5": 0.29859154929577464,
+      "mean_precision": 0.4462776659959759
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.6659959758551308,
+      "precision@3": 0.4641180415828303,
+      "precision@5": 0.3492957746478873,
+      "mean_precision": 0.4931365973619495
+    },
+    "retrieval_fold": {
+      "precision@1": 0.6680080482897385,
+      "precision@3": 0.47619047619047616,
+      "precision@5": 0.3641851106639839,
+      "mean_precision": 0.5027945450480662
+    },
+    "classification_family": {
+      "accuracy_mean": 0.6036322710195621,
+      "accuracy_std": 0.0052386967223733705,
+      "n_classes": 160,
+      "n_samples": 497
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.6518817204301075,
+      "accuracy_std": 0.014784946236559127,
+      "n_classes": 146,
+      "n_samples": 497
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.6257611089519368,
+      "accuracy_std": 0.0032711491125793635,
+      "n_classes": 132,
+      "n_samples": 497
+    },
+    "training_time_s": 1334.7095458507538,
+    "K": 8,
+    "strategy": "attention_pool_K8"
+  },
+  {
+    "name": "attention_pool_K8_K16_500",
+    "reconstruction": {
+      "mse": 0.055969133328504006,
+      "cosine_sim": 0.7378414810543329,
+      "mse_std": 0.023016630759919565,
+      "cosine_sim_std": 0.11820213166716237,
+      "n_proteins": 497
+    },
+    "compression": {
+      "K": 16,
+      "D_prime": 128,
+      "D_original": 480,
+      "mean_length": 187.28571428571428,
+      "compressed_elements": 2048,
+      "original_elements": 89897.14285714286,
+      "compression_ratio": 0.022781591660310196
+    },
+    "retrieval_family": {
+      "precision@1": 0.607645875251509,
+      "precision@3": 0.4084507042253521,
+      "precision@5": 0.3006036217303823,
+      "mean_precision": 0.4389000670690812
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.6378269617706237,
+      "precision@3": 0.4621059691482227,
+      "precision@5": 0.35050301810865186,
+      "mean_precision": 0.48347864967583276
+    },
+    "retrieval_fold": {
+      "precision@1": 0.6438631790744467,
+      "precision@3": 0.4761904761904762,
+      "precision@5": 0.3678068410462777,
+      "mean_precision": 0.4959534987704002
+    },
+    "classification_family": {
+      "accuracy_mean": 0.601583754372328,
+      "accuracy_std": 0.012874076952973157,
+      "n_classes": 160,
+      "n_samples": 497
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.6418577535950252,
+      "accuracy_std": 0.0033035367275554006,
+      "n_classes": 146,
+      "n_samples": 497
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.6196965280476745,
+      "accuracy_std": 0.010825560305739057,
+      "n_classes": 132,
+      "n_samples": 497
+    },
+    "training_time_s": 5014.306303024292,
+    "K": 16,
+    "strategy": "attention_pool_K8"
+  },
+  {
+    "name": "hierarchical_K8_K4_500",
+    "reconstruction": {
+      "mse": 0.05926257846745807,
+      "cosine_sim": 0.7245232479073392,
+      "mse_std": 0.027550976458580505,
+      "cosine_sim_std": 0.13556159921022987,
+      "n_proteins": 497
+    },
+    "compression": {
+      "K": 4,
+      "D_prime": 128,
+      "D_original": 480,
+      "mean_length": 187.28571428571428,
+      "compressed_elements": 512,
+      "original_elements": 89897.14285714286,
+      "compression_ratio": 0.005695397915077549
+    },
+    "retrieval_family": {
+      "precision@1": 0.43259557344064387,
+      "precision@3": 0.2937625754527163,
+      "precision@5": 0.21046277665995977,
+      "mean_precision": 0.3122736418511067
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.47484909456740443,
+      "precision@3": 0.3380281690140845,
+      "precision@5": 0.24989939637826963,
+      "mean_precision": 0.35425888665325284
+    },
+    "retrieval_fold": {
+      "precision@1": 0.4949698189134809,
+      "precision@3": 0.3561368209255533,
+      "precision@5": 0.2668008048289739,
+      "mean_precision": 0.37263581488933606
+    },
+    "classification_family": {
+      "accuracy_mean": 0.42052888975255864,
+      "accuracy_std": 0.0028582070216349453,
+      "n_classes": 160,
+      "n_samples": 497
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.45672204948827566,
+      "accuracy_std": 0.009141404326985375,
+      "n_classes": 146,
+      "n_samples": 497
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.44264963078118924,
+      "accuracy_std": 0.0031335017489312056,
+      "n_classes": 132,
+      "n_samples": 497
+    },
+    "training_time_s": 1053.5775480270386,
+    "K": 4,
+    "strategy": "hierarchical_K8"
+  },
+  {
+    "name": "hierarchical_K8_K8_500",
+    "reconstruction": {
+      "mse": 0.05793102139933128,
+      "cosine_sim": 0.7318680399140601,
+      "mse_std": 0.0246882349545227,
+      "cosine_sim_std": 0.1272970583763401,
+      "n_proteins": 497
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 480,
+      "mean_length": 187.28571428571428,
+      "compressed_elements": 1024,
+      "original_elements": 89897.14285714286,
+      "compression_ratio": 0.011390795830155098
+    },
+    "retrieval_family": {
+      "precision@1": 0.45271629778672035,
+      "precision@3": 0.2843729040912139,
+      "precision@5": 0.20885311871227366,
+      "mean_precision": 0.3153141068634026
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.49295774647887325,
+      "precision@3": 0.3272971160295104,
+      "precision@5": 0.24547283702213285,
+      "mean_precision": 0.35524256651017216
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5070422535211268,
+      "precision@3": 0.34071093226022797,
+      "precision@5": 0.2599597585513079,
+      "mean_precision": 0.3692376481108875
+    },
+    "classification_family": {
+      "accuracy_mean": 0.44063350174893123,
+      "accuracy_std": 0.005149630781189268,
+      "n_classes": 160,
+      "n_samples": 497
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.4446576629097033,
+      "accuracy_std": 0.005141533877445259,
+      "n_classes": 146,
+      "n_samples": 497
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.45270598523124755,
+      "accuracy_std": 0.0051253400699572405,
+      "n_classes": 132,
+      "n_samples": 497
+    },
+    "training_time_s": 1020.4264161586761,
+    "K": 8,
+    "strategy": "hierarchical_K8"
+  },
+  {
+    "name": "hierarchical_K8_K16_500",
+    "reconstruction": {
+      "mse": 0.05773286265836395,
+      "cosine_sim": 0.7349689327015484,
+      "mse_std": 0.024605139298215593,
+      "cosine_sim_std": 0.12328747582154194,
+      "n_proteins": 497
+    },
+    "compression": {
+      "K": 16,
+      "D_prime": 128,
+      "D_original": 480,
+      "mean_length": 187.28571428571428,
+      "compressed_elements": 2048,
+      "original_elements": 89897.14285714286,
+      "compression_ratio": 0.022781591660310196
+    },
+    "retrieval_family": {
+      "precision@1": 0.44064386317907445,
+      "precision@3": 0.29107981220657275,
+      "precision@5": 0.22132796780684105,
+      "mean_precision": 0.31768388106416273
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.482897384305835,
+      "precision@3": 0.33869885982562037,
+      "precision@5": 0.26237424547283705,
+      "mean_precision": 0.3613234965347642
+    },
+    "retrieval_fold": {
+      "precision@1": 0.4909456740442656,
+      "precision@3": 0.3554661301140174,
+      "precision@5": 0.27967806841046283,
+      "mean_precision": 0.3753632908562486
+    },
+    "classification_family": {
+      "accuracy_mean": 0.4225531156885607,
+      "accuracy_std": 0.008898497214665124,
+      "n_classes": 160,
+      "n_samples": 497
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.45277885736494367,
+      "accuracy_std": 0.031092110376991833,
+      "n_classes": 146,
+      "n_samples": 497
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.45067366239150153,
+      "accuracy_std": 0.015189791423759563,
+      "n_classes": 132,
+      "n_samples": 497
+    },
+    "training_time_s": 1025.3523659706116,
+    "K": 16,
+    "strategy": "hierarchical_K8"
+  }
+]

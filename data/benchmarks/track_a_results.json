@@ -1,0 +1,870 @@
+[
+  {
+    "name": "mlp_ae_deep_d128_s42",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": false,
+    "vicreg_weight": 0.0,
+    "n_params": 1644416,
+    "seed": 42,
+    "retrieval_family": {
+      "precision@1": 0.4788235294117647,
+      "precision@3": 0.327843137254902,
+      "precision@5": 0.24376470588235294,
+      "mean_precision": 0.3501437908496732,
+      "mrr": 0.5779987610999168,
+      "map": 0.27752644822896516,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.6223529411764706,
+      "precision@3": 0.4611764705882353,
+      "precision@5": 0.36400000000000005,
+      "mean_precision": 0.48250980392156867,
+      "mrr": 0.7050673795036105,
+      "map": 0.2872171868825534,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.5377677564825254,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 23.856457948684692
+  },
+  {
+    "name": "mlp_ae_deep_d128_s123",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": false,
+    "vicreg_weight": 0.0,
+    "n_params": 1644416,
+    "seed": 123,
+    "retrieval_family": {
+      "precision@1": 0.47294117647058825,
+      "precision@3": 0.3309803921568628,
+      "precision@5": 0.23976470588235296,
+      "mean_precision": 0.3478954248366013,
+      "mrr": 0.5702418411098072,
+      "map": 0.27575067718830926,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.6141176470588235,
+      "precision@3": 0.45921568627450976,
+      "precision@5": 0.3574117647058824,
+      "mean_precision": 0.4769150326797385,
+      "mrr": 0.6956360546654682,
+      "map": 0.28462996316013434,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.5445321307779031,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 23.356838703155518
+  },
+  {
+    "name": "mlp_ae_deep_d256_s42",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": false,
+    "vicreg_weight": 0.0,
+    "n_params": 1710080,
+    "seed": 42,
+    "retrieval_family": {
+      "precision@1": 0.48705882352941177,
+      "precision@3": 0.32941176470588235,
+      "precision@5": 0.24447058823529413,
+      "mean_precision": 0.3536470588235294,
+      "mrr": 0.5813831308196801,
+      "map": 0.27998746391981183,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.6364705882352941,
+      "precision@3": 0.4588235294117647,
+      "precision@5": 0.36,
+      "mean_precision": 0.4850980392156862,
+      "mrr": 0.7097740408691492,
+      "map": 0.28862623855598196,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.5851183765501691,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 23.47812509536743
+  },
+  {
+    "name": "mlp_ae_deep_d256_s123",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": false,
+    "vicreg_weight": 0.0,
+    "n_params": 1710080,
+    "seed": 123,
+    "retrieval_family": {
+      "precision@1": 0.47294117647058825,
+      "precision@3": 0.32431372549019605,
+      "precision@5": 0.2447058823529412,
+      "mean_precision": 0.3473202614379085,
+      "mrr": 0.571748112695514,
+      "map": 0.2763824972157526,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.62,
+      "precision@3": 0.4545098039215686,
+      "precision@5": 0.3618823529411765,
+      "mean_precision": 0.47879738562091506,
+      "mrr": 0.699100337936163,
+      "map": 0.2874576476721392,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.5715896279594137,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 23.51807403564453
+  },
+  {
+    "name": "mlp_ae_deep_res_d128_s42",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": true,
+    "vicreg_weight": 0.0,
+    "n_params": 2594688,
+    "seed": 42,
+    "retrieval_family": {
+      "precision@1": 0.5494117647058824,
+      "precision@3": 0.38196078431372543,
+      "precision@5": 0.2823529411764706,
+      "mean_precision": 0.40457516339869287,
+      "mrr": 0.6420356965853261,
+      "map": 0.3149909373004289,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.72,
+      "precision@3": 0.5337254901960784,
+      "precision@5": 0.41952941176470593,
+      "mean_precision": 0.5577516339869281,
+      "mrr": 0.7783551940127507,
+      "map": 0.3251988260886012,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.6843291995490417,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 26.217529296875
+  },
+  {
+    "name": "mlp_ae_deep_res_d128_s123",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": true,
+    "vicreg_weight": 0.0,
+    "n_params": 2594688,
+    "seed": 123,
+    "retrieval_family": {
+      "precision@1": 0.5376470588235294,
+      "precision@3": 0.37254901960784315,
+      "precision@5": 0.2788235294117647,
+      "mean_precision": 0.39633986928104575,
+      "mrr": 0.6298705578244321,
+      "map": 0.3086238882380056,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.7011764705882353,
+      "precision@3": 0.5203921568627451,
+      "precision@5": 0.41223529411764703,
+      "mean_precision": 0.5446013071895425,
+      "mrr": 0.761833106643137,
+      "map": 0.3178447144210647,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.6798196166854565,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 25.90380597114563
+  },
+  {
+    "name": "mlp_ae_deep_res_d256_s42",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": true,
+    "vicreg_weight": 0.0,
+    "n_params": 2627584,
+    "seed": 42,
+    "retrieval_family": {
+      "precision@1": 0.5905882352941176,
+      "precision@3": 0.42,
+      "precision@5": 0.3098823529411765,
+      "mean_precision": 0.440156862745098,
+      "mrr": 0.6840606762041502,
+      "map": 0.346119520154083,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.7705882352941177,
+      "precision@3": 0.5898039215686274,
+      "precision@5": 0.46705882352941175,
+      "mean_precision": 0.6091503267973856,
+      "mrr": 0.82204074308111,
+      "map": 0.3629041098093697,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.7237880496054115,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 25.45393681526184
+  },
+  {
+    "name": "mlp_ae_deep_res_d256_s123",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": true,
+    "vicreg_weight": 0.0,
+    "n_params": 2627584,
+    "seed": 123,
+    "retrieval_family": {
+      "precision@1": 0.5929411764705882,
+      "precision@3": 0.4164705882352941,
+      "precision@5": 0.30305882352941177,
+      "mean_precision": 0.43749019607843137,
+      "mrr": 0.6802030039863037,
+      "map": 0.3431350571085595,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.7670588235294118,
+      "precision@3": 0.584313725490196,
+      "precision@5": 0.45929411764705885,
+      "mean_precision": 0.6035555555555555,
+      "mrr": 0.8175845186815331,
+      "map": 0.35617089044527034,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.7181510710259301,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 25.406638145446777
+  },
+  {
+    "name": "mlp_ae_deep_res_vicreg_d128_s42",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": true,
+    "vicreg_weight": 0.1,
+    "n_params": 2594688,
+    "seed": 42,
+    "retrieval_family": {
+      "precision@1": 0.5305882352941177,
+      "precision@3": 0.3835294117647059,
+      "precision@5": 0.28541176470588236,
+      "mean_precision": 0.399843137254902,
+      "mrr": 0.6301258093901325,
+      "map": 0.32543239863885914,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.6858823529411765,
+      "precision@3": 0.5254901960784314,
+      "precision@5": 0.4185882352941177,
+      "mean_precision": 0.5433202614379086,
+      "mrr": 0.7554014183185317,
+      "map": 0.3425400539279397,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.6708004509582863,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 28.441755056381226
+  },
+  {
+    "name": "mlp_ae_deep_res_vicreg_d128_s123",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": true,
+    "vicreg_weight": 0.1,
+    "n_params": 2594688,
+    "seed": 123,
+    "retrieval_family": {
+      "precision@1": 0.508235294117647,
+      "precision@3": 0.3847058823529412,
+      "precision@5": 0.28635294117647064,
+      "mean_precision": 0.39309803921568626,
+      "mrr": 0.6178730938946047,
+      "map": 0.3249117657776358,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.6729411764705883,
+      "precision@3": 0.5313725490196078,
+      "precision@5": 0.42094117647058826,
+      "mean_precision": 0.541751633986928,
+      "mrr": 0.7467740586087164,
+      "map": 0.3431034190799443,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.6459977452085682,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 27.867322206497192
+  },
+  {
+    "name": "mlp_ae_deep_res_vicreg_d256_s42",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": true,
+    "vicreg_weight": 0.1,
+    "n_params": 2627584,
+    "seed": 42,
+    "retrieval_family": {
+      "precision@1": 0.5352941176470588,
+      "precision@3": 0.395686274509804,
+      "precision@5": 0.3018823529411765,
+      "mean_precision": 0.4109542483660131,
+      "mrr": 0.6371589092032748,
+      "map": 0.341839992895072,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.7094117647058824,
+      "precision@3": 0.5525490196078432,
+      "precision@5": 0.44611764705882356,
+      "mean_precision": 0.5693594771241831,
+      "mrr": 0.7780443000769408,
+      "map": 0.3648595457255735,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.6786922209695603,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 27.50959610939026
+  },
+  {
+    "name": "mlp_ae_deep_res_vicreg_d256_s123",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": true,
+    "vicreg_weight": 0.1,
+    "n_params": 2627584,
+    "seed": 123,
+    "retrieval_family": {
+      "precision@1": 0.5435294117647059,
+      "precision@3": 0.3925490196078431,
+      "precision@5": 0.29411764705882354,
+      "mean_precision": 0.4100653594771242,
+      "mrr": 0.6453795479477431,
+      "map": 0.33978637203329054,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.7035294117647058,
+      "precision@3": 0.543921568627451,
+      "precision@5": 0.43741176470588244,
+      "mean_precision": 0.5616209150326797,
+      "mrr": 0.7715775087802113,
+      "map": 0.35718724898968873,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.6764374295377678,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 26.891214847564697
+  },
+  {
+    "name": "mlp_ae_contrastive_d128_s42",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "seed": 42,
+    "retrieval_family": {
+      "precision@1": 0.7235294117647059,
+      "precision@3": 0.576078431372549,
+      "precision@5": 0.4423529411764706,
+      "mean_precision": 0.5806535947712418,
+      "mrr": 0.8077631917850824,
+      "map": 0.5045667338075668,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.9023529411764706,
+      "precision@3": 0.7835294117647059,
+      "precision@5": 0.6623529411764706,
+      "mean_precision": 0.7827450980392158,
+      "mrr": 0.9290913935536368,
+      "map": 0.5689448945466659,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.8196166854565953,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 14.177932977676392
+  },
+  {
+    "name": "mlp_ae_contrastive_d256_s42",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "seed": 42,
+    "retrieval_family": {
+      "precision@1": 0.7258823529411764,
+      "precision@3": 0.5843137254901961,
+      "precision@5": 0.4428235294117647,
+      "mean_precision": 0.5843398692810458,
+      "mrr": 0.8131300787528357,
+      "map": 0.5100840221181856,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.9152941176470588,
+      "precision@3": 0.7921568627450981,
+      "precision@5": 0.6710588235294117,
+      "mean_precision": 0.7928366013071896,
+      "mrr": 0.9384689336802419,
+      "map": 0.5867137872731484,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.8342728297632469,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 8.632656812667847
+  },
+  {
+    "name": "mlp_ae_contrastive_d128_s123",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "seed": 123,
+    "retrieval_family": {
+      "precision@1": 0.7105882352941176,
+      "precision@3": 0.5666666666666667,
+      "precision@5": 0.42705882352941177,
+      "mean_precision": 0.5681045751633987,
+      "mrr": 0.8007068509894838,
+      "map": 0.4948983068588995,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.8823529411764706,
+      "precision@3": 0.7603921568627452,
+      "precision@5": 0.6454117647058824,
+      "mean_precision": 0.7627189542483661,
+      "mrr": 0.9162683311862665,
+      "map": 0.5625049383165899,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.818489289740699,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 13.912216186523438
+  },
+  {
+    "name": "mlp_ae_contrastive_d256_s123",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "seed": 123,
+    "retrieval_family": {
+      "precision@1": 0.7329411764705882,
+      "precision@3": 0.5964705882352941,
+      "precision@5": 0.44964705882352946,
+      "mean_precision": 0.5930196078431372,
+      "mrr": 0.8210311923918518,
+      "map": 0.5146732354154635,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.9117647058823529,
+      "precision@3": 0.7941176470588235,
+      "precision@5": 0.6738823529411764,
+      "mean_precision": 0.7932549019607843,
+      "mrr": 0.9384415441435986,
+      "map": 0.5808235730206244,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.8444193912063134,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 8.542646884918213
+  },
+  {
+    "name": "mlp_ae_deep_res_d256_s456",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": true,
+    "vicreg_weight": 0.0,
+    "n_params": 2627584,
+    "seed": 456,
+    "retrieval_family": {
+      "precision@1": 0.5929411764705882,
+      "precision@3": 0.4184313725490196,
+      "precision@5": 0.3072941176470589,
+      "mean_precision": 0.43955555555555553,
+      "mrr": 0.6837796433398671,
+      "map": 0.3444032990697091,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.7694117647058824,
+      "precision@3": 0.5866666666666667,
+      "precision@5": 0.46399999999999997,
+      "mean_precision": 0.6066928104575163,
+      "mrr": 0.8214805535925218,
+      "map": 0.3594879226037855,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.7282976324689966,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 26.975959062576294
+  },
+  {
+    "name": "mlp_ae_deep_res_d256_s789",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "hidden_dims": [
+      512,
+      256
+    ],
+    "use_residual": true,
+    "vicreg_weight": 0.0,
+    "n_params": 2627584,
+    "seed": 789,
+    "retrieval_family": {
+      "precision@1": 0.5929411764705882,
+      "precision@3": 0.42,
+      "precision@5": 0.30470588235294116,
+      "mean_precision": 0.4392156862745098,
+      "mrr": 0.6824475797659925,
+      "map": 0.3441669793542852,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.7670588235294118,
+      "precision@3": 0.5901960784313725,
+      "precision@5": 0.4614117647058824,
+      "mean_precision": 0.6062222222222222,
+      "mrr": 0.8182399480579549,
+      "map": 0.35892678655126703,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.7125140924464487,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 27.95210599899292
+  },
+  {
+    "name": "mlp_ae_contrastive_d128_s456",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "seed": 456,
+    "retrieval_family": {
+      "precision@1": 0.7141176470588235,
+      "precision@3": 0.5615686274509805,
+      "precision@5": 0.42847058823529416,
+      "mean_precision": 0.5680522875816995,
+      "mrr": 0.803357606910466,
+      "map": 0.4900930810992412,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.8788235294117647,
+      "precision@3": 0.7611764705882353,
+      "precision@5": 0.6392941176470588,
+      "mean_precision": 0.759764705882353,
+      "mrr": 0.9159444224727178,
+      "map": 0.55672878424817,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.830890642615558,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 12.870020866394043
+  },
+  {
+    "name": "mlp_ae_contrastive_d256_s456",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "seed": 456,
+    "retrieval_family": {
+      "precision@1": 0.7764705882352941,
+      "precision@3": 0.6556862745098039,
+      "precision@5": 0.4936470588235294,
+      "mean_precision": 0.6419346405228757,
+      "mrr": 0.8513962249228114,
+      "map": 0.5677277344666285,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.951764705882353,
+      "precision@3": 0.8686274509803921,
+      "precision@5": 0.7447058823529412,
+      "mean_precision": 0.855032679738562,
+      "mrr": 0.9663383286265244,
+      "map": 0.6514229556889779,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.8850056369785795,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 9.56124997138977
+  },
+  {
+    "name": "mlp_ae_contrastive_d128_s789",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "seed": 789,
+    "retrieval_family": {
+      "precision@1": 0.6964705882352941,
+      "precision@3": 0.564313725490196,
+      "precision@5": 0.4268235294117647,
+      "mean_precision": 0.5625359477124183,
+      "mrr": 0.7908042349505795,
+      "map": 0.48890570753502915,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.8741176470588236,
+      "precision@3": 0.7529411764705882,
+      "precision@5": 0.6367058823529412,
+      "mean_precision": 0.7545882352941176,
+      "mrr": 0.909489507099802,
+      "map": 0.5536018449156817,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.830890642615558,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 13.177221298217773
+  },
+  {
+    "name": "mlp_ae_contrastive_d256_s789",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "seed": 789,
+    "retrieval_family": {
+      "precision@1": 0.7741176470588236,
+      "precision@3": 0.6576470588235294,
+      "precision@5": 0.49223529411764705,
+      "mean_precision": 0.6413333333333333,
+      "mrr": 0.8519699391307702,
+      "map": 0.5673283773251275,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.9505882352941176,
+      "precision@3": 0.8662745098039215,
+      "precision@5": 0.74,
+      "mean_precision": 0.8522875816993464,
+      "mrr": 0.9663034905827977,
+      "map": 0.6552768294702221,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.8906426155580609,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 9.414779901504517
+  }
+]

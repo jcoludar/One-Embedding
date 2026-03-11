@@ -1,0 +1,918 @@
+[
+  {
+    "name": "token_diversity_attnpool_default_s42",
+    "base_model": "attnpool_default",
+    "seed": 42,
+    "mean_pairwise_cos": 0.9999972305955822,
+    "std_pairwise_cos": 2.877753482411519e-06,
+    "mean_effective_rank": 1.0257996000359422,
+    "std_effective_rank": 0.008130271919696019,
+    "n_proteins": 2493
+  },
+  {
+    "name": "token_diversity_attnpool_default_s123",
+    "base_model": "attnpool_default",
+    "seed": 123,
+    "mean_pairwise_cos": 0.9999936274434016,
+    "std_pairwise_cos": 3.148095786909192e-06,
+    "mean_effective_rank": 1.0477190439893385,
+    "std_effective_rank": 0.010148624066163486,
+    "n_proteins": 2493
+  },
+  {
+    "name": "token_diversity_attnpool_default_s456",
+    "base_model": "attnpool_default",
+    "seed": 456,
+    "mean_pairwise_cos": 0.9999992920603563,
+    "std_pairwise_cos": 2.1152189348744175e-06,
+    "mean_effective_rank": 1.0093247444793005,
+    "std_effective_rank": 0.004821994359955998,
+    "n_proteins": 2493
+  },
+  {
+    "name": "token_diversity_ablation_latent256_s42",
+    "base_model": "ablation_latent256",
+    "seed": 42,
+    "mean_pairwise_cos": 0.9999999813033164,
+    "std_pairwise_cos": 1.1827740929306494e-07,
+    "mean_effective_rank": 1.0007948396636936,
+    "std_effective_rank": 0.0011217737985871033,
+    "n_proteins": 2493
+  },
+  {
+    "name": "token_diversity_ablation_latent512_s42",
+    "base_model": "ablation_latent512",
+    "seed": 42,
+    "mean_pairwise_cos": 0.999999994787881,
+    "std_pairwise_cos": 4.26917094184575e-08,
+    "mean_effective_rank": 1.0000038585495232,
+    "std_effective_rank": 5.7605292766797465e-06,
+    "n_proteins": 2493
+  },
+  {
+    "name": "token_diversity_ablation_deep_wide_s42",
+    "base_model": "ablation_deep_wide",
+    "seed": 42,
+    "mean_pairwise_cos": 0.999999999521824,
+    "std_pairwise_cos": 7.343311489688768e-09,
+    "mean_effective_rank": 1.0004237521666095,
+    "std_effective_rank": 0.0002746117444653071,
+    "n_proteins": 2493
+  },
+  {
+    "name": "distance_alignment",
+    "spearman_rho": 0.5066500364535204,
+    "spearman_pval": 0.0,
+    "auc_meanpool": 0.8140304072310178,
+    "auc_compressed": 0.873350078457137,
+    "auc_gap": -0.05931967122611914,
+    "n_pairs": 124750,
+    "n_same_family": 453
+  },
+  {
+    "name": "mlp_ae_meanpool_d128",
+    "split_mode": "held_out",
+    "latent_dim": 128,
+    "retrieval_family": {
+      "precision@1": 0.5882352941176471,
+      "precision@3": 0.4223529411764706,
+      "precision@5": 0.3070588235294118,
+      "mean_precision": 0.43921568627450985,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.7192784667418264,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 13.129645109176636
+  },
+  {
+    "name": "mlp_ae_meanpool_d256",
+    "split_mode": "held_out",
+    "latent_dim": 256,
+    "retrieval_family": {
+      "precision@1": 0.6,
+      "precision@3": 0.44156862745098036,
+      "precision@5": 0.3214117647058824,
+      "mean_precision": 0.45432679738562093,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.7294250281848929,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 13.093821048736572
+  },
+  {
+    "name": "pca_init_attnpool_s42",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03649736213771736,
+      "cosine_sim": 0.707581836756538,
+      "mse_std": 0.008919983718800355,
+      "cosine_sim_std": 0.09312429402737019,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.39294117647058824,
+      "precision@3": 0.2776470588235294,
+      "precision@5": 0.20447058823529413,
+      "mean_precision": 0.29168627450980394,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5117647058823529,
+      "precision@3": 0.383921568627451,
+      "precision@5": 0.3032941176470588,
+      "mean_precision": 0.39966013071895423,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5294117647058824,
+      "precision@3": 0.4027450980392157,
+      "precision@5": 0.323764705882353,
+      "mean_precision": 0.418640522875817,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.43968432919954903,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.5073280721533259,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.5152198421645998,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 2585.099987745285,
+    "seed": 42,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_params": 1553536,
+    "best_epoch": 50
+  },
+  {
+    "name": "pca_frozen_attnpool_s42",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03618398034506861,
+      "cosine_sim": 0.7099262975243961,
+      "mse_std": 0.008902237100605004,
+      "cosine_sim_std": 0.09245692604621264,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.4411764705882353,
+      "precision@3": 0.30823529411764705,
+      "precision@5": 0.2298823529411765,
+      "mean_precision": 0.3264313725490196,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5811764705882353,
+      "precision@3": 0.4329411764705882,
+      "precision@5": 0.3388235294117647,
+      "mean_precision": 0.45098039215686275,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.6,
+      "precision@3": 0.4537254901960784,
+      "precision@5": 0.36164705882352943,
+      "mean_precision": 0.4717908496732026,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.5298759864712514,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.5760992108229989,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.5896279594137542,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 2522.4684710502625,
+    "seed": 42,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_params": 1553536,
+    "best_epoch": 55
+  },
+  {
+    "name": "pca_init_attnpool_s123",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036237091644502735,
+      "cosine_sim": 0.7094779795758864,
+      "mse_std": 0.008863493982898245,
+      "cosine_sim_std": 0.09202945104498426,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.4023529411764706,
+      "precision@3": 0.2890196078431373,
+      "precision@5": 0.21223529411764708,
+      "mean_precision": 0.30120261437908497,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5352941176470588,
+      "precision@3": 0.40274509803921565,
+      "precision@5": 0.3197647058823529,
+      "mean_precision": 0.4192679738562091,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5529411764705883,
+      "precision@3": 0.42313725490196075,
+      "precision@5": 0.33976470588235297,
+      "mean_precision": 0.4386143790849673,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.46223224351747466,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.5107102593010147,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.5129650507328072,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 2069.4018437862396,
+    "seed": 123,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_params": 1553536,
+    "best_epoch": 56
+  },
+  {
+    "name": "pca_frozen_attnpool_s123",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.036519183938336724,
+      "cosine_sim": 0.708399639340008,
+      "mse_std": 0.00912695577778579,
+      "cosine_sim_std": 0.09435536801354877,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.4623529411764706,
+      "precision@3": 0.32078431372549016,
+      "precision@5": 0.2388235294117647,
+      "mean_precision": 0.34065359477124185,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.6082352941176471,
+      "precision@3": 0.44862745098039214,
+      "precision@5": 0.3571764705882353,
+      "mean_precision": 0.47134640522875815,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.6247058823529412,
+      "precision@3": 0.4682352941176471,
+      "precision@5": 0.37976470588235295,
+      "mean_precision": 0.49090196078431375,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.5569334836527621,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.608793686583991,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.6110484780157835,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 1996.406554698944,
+    "seed": 123,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_params": 1553536,
+    "best_epoch": 63
+  },
+  {
+    "name": "vicreg_s42",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03746262306237922,
+      "cosine_sim": 0.6989573071634069,
+      "mse_std": 0.00915452706854424,
+      "cosine_sim_std": 0.09639030831532122,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.21764705882352942,
+      "precision@3": 0.16509803921568625,
+      "precision@5": 0.12870588235294117,
+      "mean_precision": 0.17048366013071892,
+      "mrr": 0.33082281594094787,
+      "map": 0.1418276323211671,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.31176470588235294,
+      "precision@3": 0.2337254901960784,
+      "precision@5": 0.1988235294117647,
+      "mean_precision": 0.24810457516339868,
+      "mrr": 0.4311449075290153,
+      "map": 0.15516537473965986,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.32823529411764707,
+      "precision@3": 0.25058823529411767,
+      "precision@5": 0.2164705882352941,
+      "mean_precision": 0.26509803921568625,
+      "mrr": 0.45210888998403403,
+      "map": 0.1634112879575028,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.2615558060879369,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.33934611048478014,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.342728297632469,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 2090.2988138198853,
+    "seed": 42,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_params": 1553536,
+    "best_epoch": 65
+  },
+  {
+    "name": "vicreg_s123",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03700980841236956,
+      "cosine_sim": 0.7025817313615014,
+      "mse_std": 0.009071067692268123,
+      "cosine_sim_std": 0.09519585223478172,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.2411764705882353,
+      "precision@3": 0.176078431372549,
+      "precision@5": 0.13529411764705881,
+      "mean_precision": 0.18418300653594769,
+      "mrr": 0.3535703633035168,
+      "map": 0.14830807619730685,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.3235294117647059,
+      "precision@3": 0.25372549019607843,
+      "precision@5": 0.20470588235294118,
+      "mean_precision": 0.26065359477124184,
+      "mrr": 0.4499661387576863,
+      "map": 0.15920854596381212,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.3411764705882353,
+      "precision@3": 0.27215686274509804,
+      "precision@5": 0.22258823529411767,
+      "mean_precision": 0.278640522875817,
+      "mrr": 0.4703226806849348,
+      "map": 0.16548547175679318,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.26042841037204056,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.3370913190529876,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.35174746335963925,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 2019.8249559402466,
+    "seed": 123,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_params": 1553536,
+    "best_epoch": 62
+  },
+  {
+    "name": "token_ortho_s42",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.0401965976572212,
+      "cosine_sim": 0.6816513986096663,
+      "mse_std": 0.010925237542018216,
+      "cosine_sim_std": 0.10573572537276628,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.3776470588235294,
+      "precision@3": 0.2631372549019608,
+      "precision@5": 0.1967058823529412,
+      "mean_precision": 0.2791633986928105,
+      "mrr": 0.4897519576985961,
+      "map": 0.22066227467821517,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.5152941176470588,
+      "precision@3": 0.3756862745098039,
+      "precision@5": 0.29788235294117654,
+      "mean_precision": 0.39628758169934636,
+      "mrr": 0.6167736874016602,
+      "map": 0.23334550362540088,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5270588235294118,
+      "precision@3": 0.39333333333333337,
+      "precision@5": 0.31905882352941184,
+      "mean_precision": 0.41315032679738567,
+      "mrr": 0.6304458552270334,
+      "map": 0.23779171612681493,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.3810597519729425,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.3641488162344983,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.3506200676437429,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 2073.4151690006256,
+    "seed": 42,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_params": 1553536,
+    "best_epoch": 85
+  },
+  {
+    "name": "token_ortho_s123",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03778396649176584,
+      "cosine_sim": 0.7010952711455962,
+      "mse_std": 0.009940543590059544,
+      "cosine_sim_std": 0.0996031854306009,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.35058823529411764,
+      "precision@3": 0.2556862745098039,
+      "precision@5": 0.19388235294117648,
+      "mean_precision": 0.266718954248366,
+      "mrr": 0.4716868204368394,
+      "map": 0.21282854387761638,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.4894117647058824,
+      "precision@3": 0.3678431372549019,
+      "precision@5": 0.2948235294117647,
+      "mean_precision": 0.38402614379084965,
+      "mrr": 0.5977714770958517,
+      "map": 0.22779784395768726,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.5070588235294118,
+      "precision@3": 0.39176470588235296,
+      "precision@5": 0.3181176470588235,
+      "mean_precision": 0.4056470588235294,
+      "mrr": 0.6156719335498059,
+      "map": 0.23288674660883135,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.3878241262683202,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.3900789177001127,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.3878241262683202,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 2028.1873407363892,
+    "seed": 123,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_params": 1553536,
+    "best_epoch": 70
+  },
+  {
+    "name": "combined_fix_s42",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03765964390271727,
+      "cosine_sim": 0.6987539865339504,
+      "mse_std": 0.00896641765723515,
+      "cosine_sim_std": 0.095308304002081,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.3176470588235294,
+      "precision@3": 0.23137254901960783,
+      "precision@5": 0.17317647058823532,
+      "mean_precision": 0.24073202614379086,
+      "mrr": 0.42961349029858786,
+      "map": 0.1910327773637197,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.4294117647058823,
+      "precision@3": 0.3368627450980392,
+      "precision@5": 0.2611764705882353,
+      "mean_precision": 0.3424836601307189,
+      "mrr": 0.5403768939204749,
+      "map": 0.20050105424095618,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.4470588235294118,
+      "precision@3": 0.3509803921568628,
+      "precision@5": 0.2771764705882353,
+      "mean_precision": 0.35840522875817,
+      "mrr": 0.5567191816870063,
+      "map": 0.20435038084273227,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.3697857948139797,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.43404735062006766,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.4317925591882751,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 2137.43958902359,
+    "seed": 42,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_params": 1553536,
+    "best_epoch": 26
+  },
+  {
+    "name": "token_diversity_combined_fix_s42",
+    "mean_pairwise_cos": 0.22170101741842127,
+    "std_pairwise_cos": 0.05457475100690154,
+    "mean_effective_rank": 3.8942131007484377,
+    "std_effective_rank": 0.0506486597219131,
+    "n_proteins": 2493
+  },
+  {
+    "name": "combined_fix_s123",
+    "split_mode": "held_out",
+    "reconstruction": {
+      "mse": 0.03800321353489862,
+      "cosine_sim": 0.6945156031145769,
+      "mse_std": 0.008962218397183808,
+      "cosine_sim_std": 0.09626340565800856,
+      "n_proteins": 850
+    },
+    "compression": {
+      "K": 8,
+      "D_prime": 128,
+      "D_original": 1280,
+      "mean_length": 175.22743682310468,
+      "compressed_elements": 1024,
+      "original_elements": 224291.119133574,
+      "compression_ratio": 0.00456549507602291
+    },
+    "retrieval_family": {
+      "precision@1": 0.3176470588235294,
+      "precision@3": 0.21490196078431373,
+      "precision@5": 0.16541176470588234,
+      "mean_precision": 0.2326535947712418,
+      "mrr": 0.41570111861743386,
+      "map": 0.18347504042890705,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_superfamily": {
+      "precision@1": 0.41058823529411764,
+      "precision@3": 0.3007843137254902,
+      "precision@5": 0.24329411764705883,
+      "mean_precision": 0.31822222222222224,
+      "mrr": 0.51502294989298,
+      "map": 0.19274890908444303,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "retrieval_fold": {
+      "precision@1": 0.43529411764705883,
+      "precision@3": 0.32588235294117646,
+      "precision@5": 0.26705882352941174,
+      "mean_precision": 0.3427450980392157,
+      "mrr": 0.5410192702534363,
+      "map": 0.19668744770391108,
+      "n_queries": 850,
+      "n_database": 850
+    },
+    "classification_family": {
+      "accuracy_mean": 0.3754227733934611,
+      "accuracy_std": 0.0,
+      "n_classes": 605,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_superfamily": {
+      "accuracy_mean": 0.4588500563697858,
+      "accuracy_std": 0.0,
+      "n_classes": 416,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "classification_fold": {
+      "accuracy_mean": 0.4881623449830891,
+      "accuracy_std": 0.0,
+      "n_classes": 317,
+      "n_train": 1606,
+      "n_test": 887,
+      "mode": "held_out"
+    },
+    "training_time_s": 2092.4757220745087,
+    "seed": 123,
+    "embed_dim": 1280,
+    "K": 8,
+    "latent_dim": 128,
+    "n_params": 1553536,
+    "best_epoch": 12
+  },
+  {
+    "name": "token_diversity_combined_fix_s123",
+    "mean_pairwise_cos": 0.3206597805871956,
+    "std_pairwise_cos": 0.05583676380092916,
+    "mean_effective_rank": 3.9923427798489195,
+    "std_effective_rank": 0.16104700357497517,
+    "n_proteins": 2493
+  }
+]

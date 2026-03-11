@@ -1,0 +1,40 @@
+{
+  "tmbed_pca_comparison": {
+    "ESM2-650M_original_1280": {
+      "accuracy_mean": 0.9943,
+      "accuracy_std": 0.0001,
+      "f1_mean": 0.9247,
+      "f1_std": 0.0017
+    },
+    "ESM2-650M_PCA-256": {
+      "accuracy_mean": 0.9918,
+      "accuracy_std": 0.0002,
+      "f1_mean": 0.8819,
+      "f1_std": 0.0006
+    },
+    "ESM2-650M_PCA-128": {
+      "accuracy_mean": 0.9894,
+      "accuracy_std": 0.0002,
+      "f1_mean": 0.8384,
+      "f1_std": 0.0011
+    },
+    "ProtT5-XL_original_1024": {
+      "accuracy_mean": 0.9922,
+      "accuracy_std": 0.0003,
+      "f1_mean": 0.9064,
+      "f1_std": 0.0053
+    },
+    "ProtT5-XL_PCA-256": {
+      "accuracy_mean": 0.9822,
+      "accuracy_std": 0.0006,
+      "f1_mean": 0.7258,
+      "f1_std": 0.02
+    },
+    "ProtT5-XL_PCA-128": {
+      "accuracy_mean": 0.9713,
+      "accuracy_std": 0.0003,
+      "f1_mean": 0.4922,
+      "f1_std": 0.0009
+    }
+  }
+}
