@@ -1,4 +1,4 @@
-"""Per-residue evaluation tasks: SS3, SS8, disorder prediction, TM topology.
+"""Per-residue evaluation tasks: SS3, SS8, disorder, TM topology, SignalP, PPI, epitope.
 
 Evaluates how well compressed per-residue embeddings retain residue-level
 information by training linear probes on compressed vs. original embeddings.
@@ -680,6 +680,320 @@ def evaluate_tm_probe(
         "accuracy": float(acc),
         "macro_f1": float(macro_f1),
         "per_class_f1": per_class,
+        "n_train_residues": len(X_train),
+        "n_test_residues": len(X_test),
+    }
+
+
+# ── Signal Peptide (SignalP6) ──────────────────────────────────
+
+
+# SignalP6 annotated FASTA uses: S=signal, I=inside, O=outside, and other types
+SIGNALP_LABELS = {"S": 1, "I": 0, "O": 0}  # Binary: signal vs non-signal
+
+
+def load_signalp6_annotated(
+    fasta_path: Path | str,
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Load SignalP6 annotated FASTA (header/sequence/topology triplets).
+
+    File format (same as TMbed):
+        >UniProtID|KINGDOM|TYPE|PARTITION
+        AMINO_ACID_SEQUENCE
+        SIGNAL_ANNOTATION_STRING
+
+    Annotation chars: S=signal peptide, I=cytoplasm, O=extracellular.
+
+    Args:
+        fasta_path: Path to annotated FASTA (e.g. train_set.fasta).
+
+    Returns:
+        sequences: {protein_id: amino_acid_string}
+        signal_labels: {protein_id: annotation_string (S/I/O per residue)}
+    """
+    fasta_path = Path(fasta_path)
+    if not fasta_path.exists():
+        return {}, {}
+
+    sequences: dict[str, str] = {}
+    signal_labels: dict[str, str] = {}
+
+    with open(fasta_path) as f:
+        lines = [line.strip() for line in f if line.strip()]
+
+    i = 0
+    while i < len(lines):
+        if not lines[i].startswith(">"):
+            i += 1
+            continue
+
+        header = lines[i][1:].split("|")
+        pid = header[0]  # UniProt accession
+
+        if i + 2 >= len(lines):
+            break
+
+        seq = lines[i + 1]
+        annotation = lines[i + 2]
+
+        if annotation.startswith(">") or len(annotation) != len(seq):
+            i += 1
+            continue
+
+        # Only keep if annotation chars are valid
+        valid = all(ch in SIGNALP_LABELS for ch in annotation)
+        if valid:
+            sequences[pid] = seq
+            signal_labels[pid] = annotation
+
+        i += 3
+
+    return sequences, signal_labels
+
+
+def evaluate_signalp_probe(
+    embeddings: dict[str, np.ndarray],
+    signal_labels: dict[str, str],
+    train_ids: list[str],
+    test_ids: list[str],
+    max_len: int = 512,
+) -> dict[str, float]:
+    """Train a per-residue binary probe for signal peptide prediction.
+
+    Args:
+        embeddings: {protein_id: (L, D) array}.
+        signal_labels: {protein_id: "SSSSOOOO..."} per residue.
+        train_ids, test_ids: Protein IDs.
+
+    Returns: {accuracy, macro_f1, signal_f1, n_train_residues, n_test_residues}
+    """
+    X_train, y_train = [], []
+    X_test, y_test = [], []
+
+    for pid in train_ids:
+        if pid not in embeddings or pid not in signal_labels:
+            continue
+        emb = embeddings[pid][:max_len]
+        labels = signal_labels[pid][:max_len]
+        for vec, label in zip(emb, labels):
+            if label in SIGNALP_LABELS:
+                X_train.append(vec)
+                y_train.append(SIGNALP_LABELS[label])
+
+    for pid in test_ids:
+        if pid not in embeddings or pid not in signal_labels:
+            continue
+        emb = embeddings[pid][:max_len]
+        labels = signal_labels[pid][:max_len]
+        for vec, label in zip(emb, labels):
+            if label in SIGNALP_LABELS:
+                X_test.append(vec)
+                y_test.append(SIGNALP_LABELS[label])
+
+    if len(X_train) < 10 or len(X_test) < 10:
+        return {"accuracy": 0.0, "n_train_residues": len(X_train), "n_test_residues": len(X_test)}
+
+    X_train = np.array(X_train, dtype=np.float32)
+    y_train = np.array(y_train)
+    X_test = np.array(X_test, dtype=np.float32)
+    y_test = np.array(y_test)
+
+    clf = LogisticRegression(max_iter=500, C=1.0, solver="lbfgs", random_state=42)
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+
+    acc = accuracy_score(y_test, y_pred)
+    macro_f1 = f1_score(y_test, y_pred, average="macro", zero_division=0)
+    signal_f1 = f1_score(y_test, y_pred, pos_label=1, zero_division=0)
+
+    return {
+        "accuracy": float(acc),
+        "macro_f1": float(macro_f1),
+        "signal_f1": float(signal_f1),
+        "n_train_residues": len(X_train),
+        "n_test_residues": len(X_test),
+    }
+
+
+# ── PPI Interface Residues (ProteinGLUE) ─────────────────────
+
+
+def load_proteinglue_binary(
+    data_dir: Path | str,
+    task: str = "ppi",
+) -> tuple[dict[str, str], dict[str, np.ndarray], list[str], list[str]]:
+    """Load ProteinGLUE binary per-residue task (PPI or epitope).
+
+    Expected files in data_dir/proteinglue/{task}/:
+        train_sequences.fasta
+        train_labels.txt   (one line per protein: space-separated 0/1)
+        test_sequences.fasta
+        test_labels.txt
+
+    If TFRecord source was pre-converted, these files should exist.
+
+    Returns:
+        sequences, labels, train_ids, test_ids
+    """
+    data_dir = Path(data_dir) / "proteinglue" / task
+    if not data_dir.exists():
+        return {}, {}, [], []
+
+    sequences: dict[str, str] = {}
+    labels: dict[str, np.ndarray] = {}
+    train_ids: list[str] = []
+    test_ids: list[str] = []
+
+    for split, id_list in [("train", train_ids), ("test", test_ids)]:
+        seq_path = data_dir / f"{split}_sequences.fasta"
+        label_path = data_dir / f"{split}_labels.txt"
+
+        if not seq_path.exists() or not label_path.exists():
+            continue
+
+        split_seqs = _parse_fasta_simple(seq_path)
+        split_labels: dict[str, np.ndarray] = {}
+
+        with open(label_path) as f:
+            for line_idx, line in enumerate(f):
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split("\t")
+                if len(parts) >= 2:
+                    pid = parts[0]
+                    vals = np.array([int(x) for x in parts[1].split()], dtype=np.int32)
+                    split_labels[pid] = vals
+
+        for pid, seq in split_seqs.items():
+            if pid in split_labels and len(split_labels[pid]) == len(seq):
+                sequences[pid] = seq
+                labels[pid] = split_labels[pid]
+                id_list.append(pid)
+
+    return sequences, labels, train_ids, test_ids
+
+
+def evaluate_ppi_probe(
+    embeddings: dict[str, np.ndarray],
+    ppi_labels: dict[str, np.ndarray],
+    train_ids: list[str],
+    test_ids: list[str],
+    max_len: int = 512,
+) -> dict[str, float]:
+    """Train a per-residue binary probe for PPI interface prediction.
+
+    Args:
+        embeddings: {protein_id: (L, D) array}.
+        ppi_labels: {protein_id: (L,) int array (0/1)}.
+        train_ids, test_ids: Protein IDs.
+
+    Returns: {accuracy, macro_f1, interface_f1, n_train_residues, n_test_residues}
+    """
+    X_train, y_train = [], []
+    X_test, y_test = [], []
+
+    for pid in train_ids:
+        if pid not in embeddings or pid not in ppi_labels:
+            continue
+        emb = embeddings[pid][:max_len]
+        lbl = ppi_labels[pid][:max_len]
+        L = min(len(emb), len(lbl))
+        for i in range(L):
+            X_train.append(emb[i])
+            y_train.append(lbl[i])
+
+    for pid in test_ids:
+        if pid not in embeddings or pid not in ppi_labels:
+            continue
+        emb = embeddings[pid][:max_len]
+        lbl = ppi_labels[pid][:max_len]
+        L = min(len(emb), len(lbl))
+        for i in range(L):
+            X_test.append(emb[i])
+            y_test.append(lbl[i])
+
+    if len(X_train) < 10 or len(X_test) < 10:
+        return {"accuracy": 0.0, "n_train_residues": len(X_train), "n_test_residues": len(X_test)}
+
+    X_train = np.array(X_train, dtype=np.float32)
+    y_train = np.array(y_train)
+    X_test = np.array(X_test, dtype=np.float32)
+    y_test = np.array(y_test)
+
+    clf = LogisticRegression(max_iter=500, C=1.0, solver="lbfgs", random_state=42)
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+
+    acc = accuracy_score(y_test, y_pred)
+    macro_f1 = f1_score(y_test, y_pred, average="macro", zero_division=0)
+    interface_f1 = f1_score(y_test, y_pred, pos_label=1, zero_division=0)
+
+    return {
+        "accuracy": float(acc),
+        "macro_f1": float(macro_f1),
+        "interface_f1": float(interface_f1),
+        "n_train_residues": len(X_train),
+        "n_test_residues": len(X_test),
+    }
+
+
+def evaluate_epitope_probe(
+    embeddings: dict[str, np.ndarray],
+    epitope_labels: dict[str, np.ndarray],
+    train_ids: list[str],
+    test_ids: list[str],
+    max_len: int = 512,
+) -> dict[str, float]:
+    """Train a per-residue binary probe for epitope region prediction.
+
+    Same structure as PPI probe but for antibody-binding residues.
+
+    Returns: {accuracy, macro_f1, epitope_f1, n_train_residues, n_test_residues}
+    """
+    X_train, y_train = [], []
+    X_test, y_test = [], []
+
+    for pid in train_ids:
+        if pid not in embeddings or pid not in epitope_labels:
+            continue
+        emb = embeddings[pid][:max_len]
+        lbl = epitope_labels[pid][:max_len]
+        L = min(len(emb), len(lbl))
+        for i in range(L):
+            X_train.append(emb[i])
+            y_train.append(lbl[i])
+
+    for pid in test_ids:
+        if pid not in embeddings or pid not in epitope_labels:
+            continue
+        emb = embeddings[pid][:max_len]
+        lbl = epitope_labels[pid][:max_len]
+        L = min(len(emb), len(lbl))
+        for i in range(L):
+            X_test.append(emb[i])
+            y_test.append(lbl[i])
+
+    if len(X_train) < 10 or len(X_test) < 10:
+        return {"accuracy": 0.0, "n_train_residues": len(X_train), "n_test_residues": len(X_test)}
+
+    X_train = np.array(X_train, dtype=np.float32)
+    y_train = np.array(y_train)
+    X_test = np.array(X_test, dtype=np.float32)
+    y_test = np.array(y_test)
+
+    clf = LogisticRegression(max_iter=500, C=1.0, solver="lbfgs", random_state=42)
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+
+    acc = accuracy_score(y_test, y_pred)
+    macro_f1 = f1_score(y_test, y_pred, average="macro", zero_division=0)
+    epitope_f1 = f1_score(y_test, y_pred, pos_label=1, zero_division=0)
+
+    return {
+        "accuracy": float(acc),
+        "macro_f1": float(macro_f1),
+        "epitope_f1": float(epitope_f1),
         "n_train_residues": len(X_train),
         "n_test_residues": len(X_test),
     }
