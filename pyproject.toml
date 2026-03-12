@@ -26,3 +26,8 @@ biocentral = ["biocentral-api"]
 [tool.uv]
 # Allow importing src as a package
 package = false
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

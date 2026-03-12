@@ -651,18 +651,73 @@ Joint training (recon_weight=1.0, contrastive_weight=0.5, 200 epochs) **did not 
 **Experiment**: `experiments/14_two_head_training.py`
 **Results**: `data/benchmarks/two_head_results.json`
 
-### 9C: External Validation (MEDIUM — NEXT)
+### 9C: External Validation (DONE — Experiment 15)
 
-| Dataset | Task | Size | Purpose |
-|---------|------|------|---------|
-| ToxProt | Binary toxicity | 8138 proteins | Generalization beyond SCOPe |
-| DeepLoc | Subcellular localization (10-class) | ~14k proteins | Different task type |
+**ToxFam toxicity**: Compressed d256 **outperforms** original 1024d (F1 0.956 vs 0.941, MCC 0.911 vs 0.882). ChannelCompressor acts as regularizer.
 
-### 9D: Publication Preparation (LOW)
+**TMbed PCA baselines**: ESM2 PCA-256 F1=0.882, ProtT5 PCA-256 F1=0.726 vs ChannelCompressor ProtT5 F1=0.657. SCOPe-trained compressor transfers less well to membrane topology than plain PCA.
 
-- Pareto curves, trade-off visualizations, architecture diagrams
-- Methods section: "Learned per-residue compression of PLM embeddings"
-- Consolidate all results into publication-ready tables
+**Experiment**: `experiments/15_external_validation.py`
+**Results**: `data/benchmarks/external_validation_results.json`
+
+---
+
+## Phase 10: Audit & Publication Prep (DONE)
+
+### 10A: HPO Contrastive (DONE — Experiment 16)
+
+30-trial Optuna search found Ret@1=0.801 +/- 0.001 vs baseline 0.795 +/- 0.010 (p=0.29, not significant). Key insight: optimal temperature=0.13 (not 0.07), dropout=0.20 (not 0.10), recon_reg=0.01 (not 0.1). Benefit is lower variance, not higher mean.
+
+**Experiment**: `experiments/16_hpo_contrastive.py`
+**Results**: `data/benchmarks/hpo_contrastive_results.json`
+
+### 10B: Scaling, Ablations, Pareto (DONE — Experiment 17)
+
+- **Scaling**: Performance saturates at ~75% data (1211 proteins). Even 25% gives Ret@1=0.738.
+- **Failure analysis**: 58% of families achieve perfect Ret@1=1.0; only 3% completely fail. Class e (multi-domain) hardest, class f (membrane) easiest.
+- **Ablations**: Residual connections CRITICAL (-0.169). LayerNorm minor (-0.015). Decoder freeze doesn't matter for retrieval but unfreezing improves CosSim (0.828 vs 0.59) — free lunch.
+- **d128 ProtT5 contrastive**: Ret@1=0.777 +/- 0.005 (8x compression, 97.7% of d256).
+
+**Experiment**: `experiments/17_scaling_and_ablations.py`
+**Results**: `data/benchmarks/scaling_ablation_results.json`
+
+---
+
+## Phase 12: One Embedding Transforms (DONE — Experiment 18)
+
+**Goal**: Find mathematically principled pooling transforms (DCT, Haar wavelet, spectral fingerprint) that capture sequence order information beyond mean pooling.
+
+**Key results**:
+- DCT K=1 === mean pool (mathematically verified)
+- Higher K monotonically hurts ProtT5 retrieval (curse of dimensionality)
+- ESM2 DCT K=8: Ret@1=0.781 (+3.4pp vs mean 0.747) — spectral transforms help un-tuned PLMs
+- Brillouin hypothesis REJECTED: spectral fingerprint (phase-free PSD) does NOT correlate better with structure
+- Late interaction ≈ mean pool (0.809 vs 0.808)
+- TM-score structural correlation: mean best (Spearman ρ=0.093), Haar close (0.091)
+- Haar wavelet reconstruction lossless (MSE=0, CosSim=1.0)
+
+**Module**: `src/one_embedding/` (embedding, transforms, registry, pipeline, io, similarity, enriched_transforms)
+**Experiment**: `experiments/18_one_embedding.py`
+**Results**: `data/benchmarks/one_embedding_results.json`
+**Tests**: `tests/test_one_embedding.py` (35/35), `tests/test_enriched_transforms.py` (29/29)
+
+---
+
+## Phase 13: Enriched Pooling (DONE — Experiment 19)
+
+**Goal**: Beat mean pool by computing rich statistics (moments, autocovariance, Gram features, Fisher vectors) then PCA-reducing back to where cosine similarity works. The "enrich then reduce" strategy.
+
+**Key results**:
+- **ProtT5**: Best enriched (autocov@512d) = 0.809 vs mean = 0.808 — NOT significant (p=0.754)
+- **ESM2**: DCT K=8+PCA@512d = 0.784 (+3.7pp vs mean 0.747). PCA improved over raw DCT.
+- Fisher vectors (0.620), Gram features (0.182) — poor for protein family retrieval
+- Feature importance: PCA loads on half_diff (N-to-C gradient) and skewness, not autocovariance
+
+**Conclusion**: For contrastive-optimized ProtT5, mean pool is essentially optimal — InfoNCE already encodes all linearly separable family signal into the mean direction. For un-tuned PLMs (ESM2), DCT+PCA is a free lunch.
+
+**Module**: `src/one_embedding/enriched_transforms.py`
+**Experiment**: `experiments/19_enriched_pooling.py`
+**Results**: `data/benchmarks/enriched_pooling_results.json`
 
 ---
 
@@ -737,6 +792,16 @@ src/evaluation/reconstruction.py     MSE + cosine similarity
 src/evaluation/retrieval.py          Precision@K, MRR, MAP by label hierarchy
 src/evaluation/classification.py     Linear probe (LogisticRegression, 5-fold CV)
 src/evaluation/per_residue_tasks.py  SS3, disorder, TM topology linear probes (Phase 8)
+src/evaluation/statistical_tests.py  Paired bootstrap, permutation tests, Cohen's d
+src/evaluation/structural_validation.py  TM-score structural validation (Experiment 18)
+src/one_embedding/__init__.py        One Embedding module exports
+src/one_embedding/embedding.py       OneEmbedding dataclass
+src/one_embedding/transforms.py      DCT, Haar, spectral transforms
+src/one_embedding/enriched_transforms.py  Moment pool, autocov, Gram, Fisher vector, pipeline
+src/one_embedding/registry.py        Transform registry
+src/one_embedding/pipeline.py        OneEmbedding pipeline
+src/one_embedding/io.py              H5 I/O for OneEmbedding
+src/one_embedding/similarity.py      Similarity computation
 src/utils/device.py                  MPS/CPU device management
 src/utils/h5_store.py                HDF5 read/write for variable-length embeddings
 ```
@@ -757,6 +822,11 @@ experiments/11_channel_compression.py        Phase 8: Per-residue channel compre
 experiments/12_per_residue_validation.py     Phase 9A: Per-residue validation on CB513
 experiments/13_robust_validation.py          Phase 9B: Multi-seed + cross-dataset validation
 experiments/14_two_head_training.py          Phase 9B: Two-head joint training (negative result)
+experiments/15_external_validation.py        Phase 9C: ToxFam + TMbed PCA external validation
+experiments/16_hpo_contrastive.py            Phase 10A: Optuna HPO (30 trials)
+experiments/17_scaling_and_ablations.py      Phase 10B: Scaling, failure analysis, ablations, Pareto
+experiments/18_one_embedding.py              Phase 12: One Embedding transforms + structural validation
+experiments/19_enriched_pooling.py           Phase 13: Enriched pooling (6 transforms + PCA)
 ```
 
 ### Data
@@ -793,6 +863,21 @@ data/splits/cb513_probe_splits.json          CB513 80/20 splits (3 seeds)
 data/checkpoints/channel/                    Phase 8 model checkpoints
 data/benchmarks/robust_validation_results.json   Experiment 13 results
 data/benchmarks/two_head_results.json            Experiment 14 results
+data/benchmarks/external_validation_results.json Experiment 15 results
+data/benchmarks/hpo_contrastive_results.json     Experiment 16 results
+data/benchmarks/hpo_study.json                   HPO Optuna study details
+data/benchmarks/scaling_ablation_results.json    Experiment 17 results
+data/benchmarks/failure_analysis.json            Per-family failure analysis
+data/benchmarks/one_embedding_results.json       Experiment 18 results
+data/benchmarks/enriched_pooling_results.json    Experiment 19 results
 data/residue_embeddings/esm2_650m_validation.h5  1280-dim, 2683 proteins (CheZOD+TMbed+TS115)
 data/residue_embeddings/prot_t5_xl_validation.h5 1024-dim, 2683 proteins (CheZOD+TMbed+TS115)
+data/one_embeddings/prot_t5_xl_*.h5              One Embedding H5 files (various transforms)
+data/structures/pdb/                             Cached PDB files for TM-score validation
+data/structures/tm_scores_200.npz                Pre-computed TM-score matrix (200 proteins)
+data/splits/hpo_val_split.json                   HPO validation split
+data/checkpoints/channel/hpo_*                   HPO trial checkpoints
+data/checkpoints/channel/ablation_*              Architecture ablation checkpoints
+data/plots/pareto_compression_vs_retrieval.png   Pareto frontier plot
+data/plots/scaling_curve.png                     Data scaling curve
 ```
