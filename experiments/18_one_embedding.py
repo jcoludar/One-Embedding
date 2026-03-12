@@ -43,6 +43,7 @@ from src.one_embedding.transforms import (
     spectral_moments,
 )
 from src.utils.device import get_device
+from src.evaluation.retrieval import evaluate_retrieval_from_vectors as retrieval_from_vectors
 from src.utils.h5_store import load_residue_embeddings
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -81,88 +82,6 @@ def save_results(results: list[dict]):
 
 def is_done(results: list[dict], name: str) -> bool:
     return any(r.get("name") == name for r in results)
-
-
-def retrieval_from_vectors(
-    vectors: dict[str, np.ndarray],
-    metadata: list[dict],
-    label_key: str = "family",
-    k_values: list[int] | None = None,
-    query_ids: list[str] | None = None,
-    database_ids: list[str] | None = None,
-) -> dict[str, float]:
-    """Evaluate retrieval from pre-computed vectors (any dimensionality).
-
-    Same logic as src.evaluation.retrieval.evaluate_retrieval but accepts
-    pre-computed vectors directly instead of running a model.
-    """
-    if k_values is None:
-        k_values = [1, 3, 5]
-
-    id_to_label = {m["id"]: m[label_key] for m in metadata if label_key in m}
-
-    db_ids = [pid for pid in vectors if pid in id_to_label]
-    if database_ids is not None:
-        db_set = set(database_ids)
-        db_ids = [pid for pid in db_ids if pid in db_set]
-
-    if query_ids is not None:
-        q_ids = [pid for pid in query_ids if pid in id_to_label and pid in vectors]
-    else:
-        q_ids = db_ids
-
-    if len(db_ids) < 2 or len(q_ids) < 1:
-        return {f"precision@{k}": 0.0 for k in k_values}
-
-    db_matrix = np.array([vectors[pid] for pid in db_ids])
-    db_labels = [id_to_label[pid] for pid in db_ids]
-
-    db_norms = np.linalg.norm(db_matrix, axis=1, keepdims=True).clip(1e-8)
-    db_matrix = db_matrix / db_norms
-
-    q_matrix = np.array([vectors[pid] for pid in q_ids])
-    q_labels = [id_to_label[pid] for pid in q_ids]
-
-    q_norms = np.linalg.norm(q_matrix, axis=1, keepdims=True).clip(1e-8)
-    q_matrix = q_matrix / q_norms
-
-    sims = q_matrix @ db_matrix.T
-    db_id_to_idx = {pid: i for i, pid in enumerate(db_ids)}
-
-    results = {}
-    mrr_sum = 0.0
-
-    for qi, qid in enumerate(q_ids):
-        q_label = q_labels[qi]
-        row = sims[qi].copy()
-
-        # Exclude self
-        if qid in db_id_to_idx:
-            row[db_id_to_idx[qid]] = -np.inf
-
-        ranked = np.argsort(row)[::-1]
-
-        for k in k_values:
-            top_k_labels = [db_labels[j] for j in ranked[:k]]
-            correct = sum(1 for lbl in top_k_labels if lbl == q_label)
-            key = f"precision@{k}"
-            results.setdefault(key, 0.0)
-            results[key] += correct / k
-
-        # MRR
-        for rank, idx in enumerate(ranked, 1):
-            if db_labels[idx] == q_label:
-                mrr_sum += 1.0 / rank
-                break
-
-    n_queries = len(q_ids)
-    for k in k_values:
-        results[f"precision@{k}"] /= n_queries
-    results["mrr"] = mrr_sum / n_queries
-    results["n_queries"] = n_queries
-    results["n_database"] = len(db_ids)
-
-    return results
 
 
 # ── Data Loading ─────────────────────────────────────────────────
