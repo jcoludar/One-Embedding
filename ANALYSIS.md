@@ -1,7 +1,7 @@
 # Deep Analysis: Protein Embedding Compression Explorer
 
-**Date**: 2026-03-09
-**Scope**: Cross-phase synthesis of 8 experimental phases, 16+ model configurations, 2 PLMs
+**Date**: 2026-03-12
+**Scope**: Cross-phase synthesis of 13 experimental phases (Experiments 1-19), 20+ model configurations, 2 PLMs
 
 ---
 
@@ -11,7 +11,7 @@ This project set out to build a **sequence-only learned compressor** that reduce
 
 ### Trajectory
 
-Over 8 phases and 3 months, the project evolved from a broken attention-pooling architecture (Ret@1=0.384 under honest evaluation) to a **ChannelCompressor** that achieves:
+Over 13 phases and 19 experiments, the project evolved from a broken attention-pooling architecture (Ret@1=0.384 under honest evaluation) to a **ChannelCompressor** that achieves:
 
 - **Best result**: ProtT5-XL + contrastive ChannelCompressor d256, **Ret@1=0.795 +/- 0.012** (3-seed mean; best single seed=0.808), MRR=0.873, MAP=0.584 at 4x compression (1024d -> 256d)
 - **Best unsupervised**: ProtT5-XL ChannelCompressor d256, **Ret@1=0.631**, CosSim=0.850 — already surpassing the ESM2-650M mean-pool baseline (0.618) while preserving per-residue structure
@@ -646,6 +646,192 @@ Trained unsupervised (200 epochs) + contrastive (100 epochs) at d128 on ProtT5-X
 |:---------:|:-----------:|:-----:|:-----------:|
 | d256 | 4x | 0.795 +/- 0.012 | 0.012 |
 | d128 | 8x | 0.777 +/- 0.005 | 0.005 |
+
+---
+
+## 11. External Validation (Experiment 15)
+
+### 11.1 ToxFam Toxicity Classification
+
+Tested ChannelCompressor d256 (ProtT5-XL contrastive s42) on ToxFam toxicity classification — a task and dataset fully external to training.
+
+| Embedding | Dim | F1 | MCC | Accuracy |
+|-----------|:---:|:--:|:---:|:--------:|
+| ProtT5 original | 1024 | 0.941 | 0.882 | — |
+| **ProtT5 compressed** | **256** | **0.956** | **0.911** | — |
+
+**Compressed embeddings outperform originals on toxicity.** The ChannelCompressor acts as a regularizer, removing noise dimensions that hurt classification. This is the strongest external validation result: not just retention, but *improvement* at 4x compression.
+
+### 11.2 TMbed PCA Baselines
+
+PCA-256 baselines on TMbed membrane topology, to contextualize the ChannelCompressor's TMbed F1=0.657:
+
+| PLM | Compression | TMbed F1 |
+|-----|:-----------:|:--------:|
+| ESM2-650M original (1280d) | 1x | 0.925 |
+| ESM2-650M PCA-256 | 5x | 0.882 |
+| ProtT5-XL original (1024d) | 1x | 0.906 |
+| ProtT5-XL PCA-256 | 4x | 0.726 |
+| ProtT5-XL ChannelCompressor d256 | 4x | 0.657 |
+
+ChannelCompressor (trained on SCOPe structural families) transfers less well to membrane topology than plain PCA. This suggests the contrastive objective optimizes for structural family discrimination at some cost to other per-residue tasks, particularly membrane topology which relies on different embedding dimensions.
+
+**Experiment**: `experiments/15_external_validation.py`
+**Results**: `data/benchmarks/external_validation_results.json`
+
+---
+
+## 12. One Embedding Transforms (Experiment 18)
+
+### 12.1 Motivation
+
+Mean pooling collapses (L, d) → (d,) by averaging, treating the protein as a bag of residues. It discards sequence order, variance, multi-scale structure, and all higher moments. Can mathematically principled transforms that preserve this information beat mean pooling?
+
+### 12.2 ProtT5 Transform Comparison
+
+All transforms applied to ProtT5-XL ChannelCompressor d256 (contrastive s42). Retrieval on 850 test proteins.
+
+| Transform | Dim | Ret@1 | MRR | Notes |
+|-----------|:---:|:-----:|:---:|-------|
+| **mean pool** | **256** | **0.808** | **0.873** | Baseline |
+| DCT K=1 | 256 | 0.808 | 0.873 | === mean pool (mathematically) |
+| DCT K=2 | 512 | 0.800 | 0.871 | -0.008 |
+| Haar L1 | 512 | 0.785 | 0.855 | -0.023 |
+| DCT K=4 | 1024 | 0.779 | 0.855 | -0.029 |
+| Haar L3 | 1024 | 0.761 | 0.841 | -0.047 |
+| DCT K=8 | 2048 | 0.748 | 0.827 | -0.060 |
+| Spectral 4-band | 1024 | 0.702 | 0.765 | -0.106 |
+| Late interaction | variable | 0.809 | 0.877 | +0.001 (≈ mean) |
+
+**Key finding**: For contrastive-optimized ProtT5 embeddings, higher-dimensional transforms monotonically *hurt* retrieval. DCT K=1 is mathematically identical to (scaled) mean pooling. This is the **curse of dimensionality** — cosine similarity degrades in high dimensions, and the additional spectral/wavelet information cannot compensate.
+
+### 12.3 ESM2 Cross-Validation
+
+ESM2-650M ChannelCompressor d256 (contrastive s123) — not contrastive-optimized for family retrieval to the same degree as ProtT5.
+
+| Transform | Dim | Ret@1 | Delta vs Mean |
+|-----------|:---:|:-----:|:-------------:|
+| Mean | 256 | 0.747 | — |
+| **DCT K=8** | **2048** | **0.781** | **+0.034** |
+| Haar L3 | 1024 | 0.734 | -0.013 |
+| Spectral 8-band | 2048 | 0.682 | -0.065 |
+
+**DCT K=8 improves ESM2 by +3.4pp.** For under-optimized PLMs, spectral transforms capture useful information that mean pooling discards. The contrastive loss on ProtT5 already encodes this information into the mean direction.
+
+### 12.4 TM-Score Structural Correlation
+
+Embedding cosine similarity vs experimental TM-scores from PDB structures. 200 proteins, 19,900 pairs.
+
+| Transform | Spearman ρ | Pearson r |
+|-----------|:----------:|:---------:|
+| **mean** | **0.093** | **0.233** |
+| Haar L3 | 0.091 | 0.228 |
+| Haar L2 | 0.089 | 0.221 |
+| Spectral 4-band | 0.041 | 0.121 |
+| DCT K4 | -0.005 | 0.179 |
+| DCT K8 | -0.015 | 0.210 |
+| Spectral moments | -0.020 | 0.051 |
+
+Mean pool has the highest Spearman correlation with structural similarity. DCT K>1 has *negative* Spearman ρ — adding frequency information hurts monotonic rank correlation with TM-scores.
+
+### 12.5 Per-Residue Reconstruction
+
+Haar wavelet reconstruction is lossless at any decomposition level (MSE=0, CosSim=1.0). DCT reconstruction improves with more coefficients:
+
+| Transform | MSE | CosSim |
+|-----------|:---:|:------:|
+| DCT K=1 | 0.168 | 0.158 |
+| DCT K=4 | 0.155 | 0.304 |
+| DCT K=8 | 0.143 | 0.406 |
+| DCT K=16 | 0.123 | 0.524 |
+| Haar L3 | 0.000 | 1.000 |
+
+### 12.6 Hypotheses Tested
+
+1. **DCT K=1 === mean pool** — CONFIRMED. The ortho-normalized DCT coefficient 0 is a scaled mean.
+2. **Brillouin hypothesis** — REJECTED. Spectral fingerprint (phase-free PSD, inspired by Brillouin spectroscopy) does NOT correlate better with structure. Phase carries important discriminative information for contrastive-trained models.
+3. **Late interaction advantage** — REJECTED. ColBERT-style max-sim residue interaction (0.809) provides no meaningful advantage over mean pool (0.808) for family retrieval, while being 40x slower.
+
+**Experiment**: `experiments/18_one_embedding.py`
+**Results**: `data/benchmarks/one_embedding_results.json`
+
+---
+
+## 13. Enriched Pooling (Experiment 19)
+
+### 13.1 The "Enrich Then Reduce" Strategy
+
+The curse of dimensionality killed transforms in Experiment 18 — not the math. If we compute rich statistics from (L, d) then PCA-reduce back to a manageable dimensionality, cosine similarity should work again.
+
+Six enrichment strategies, each producing a high-dimensional raw feature vector:
+- **Moment pool**: [mean | std | skewness | lag-1 autocovariance | N-to-C gradient] → 5×d = 1280d
+- **Autocovariance pool**: [mean | autocov lag 1,2,4,8] → 5×d = 1280d
+- **Gram features**: [mean | top-32 eigenvalues | trace+logdet+effrank | similarity histogram] → 307d
+- **DCT K=8 + PCA**: 2048d → PCA
+- **Haar L3 + PCA**: 1024d → PCA
+- **Fisher vector**: GMM-encoded gradient vectors → 4096d → PCA
+
+### 13.2 ProtT5 Enriched Retrieval
+
+PCA fitted on 1643 train proteins (no data leakage). Evaluated on 850 test proteins.
+
+| Transform | Target Dim | Ret@1 | MRR | Var Explained |
+|-----------|:----------:|:-----:|:---:|:-------------:|
+| **mean (baseline)** | **256** | **0.808** | **0.873** | — |
+| autocov pool | 512 | **0.809** | 0.875 | 96.4% |
+| autocov pool | 256 | 0.800 | 0.870 | 89.4% |
+| moment pool | 512 | 0.771 | 0.842 | 98.7% |
+| Haar L3 + PCA | 512 | 0.764 | 0.842 | 98.7% |
+| autocov pool | 256 | 0.750 | 0.834 | 92.6% |
+| moment pool | 256 | 0.748 | 0.823 | 88.4% |
+| DCT K=8 + PCA | 512 | 0.740 | 0.821 | 94.5% |
+| DCT K=16 + PCA | 512 | 0.705 | 0.788 | 87.1% |
+| DCT K=8 + PCA | 256 | 0.739 | 0.818 | 83.8% |
+| Fisher k=8 | 512 | 0.641 | 0.735 | 73.0% |
+| Fisher k=8 | 256 | 0.620 | 0.717 | 55.7% |
+| Gram features | 256 | 0.182 | 0.264 | 100% |
+
+**Best enriched (autocov@512d) vs mean: Ret@1 0.809 vs 0.808 — NOT significant (p=0.754).** The autocovariance captures genuine sequence order information, but for contrastive-optimized ProtT5, mean pooling already encodes the family-discriminative signal into the mean direction.
+
+### 13.3 ESM2 Enriched Retrieval
+
+| Transform | Target Dim | Ret@1 | Delta vs Mean |
+|-----------|:----------:|:-----:|:-------------:|
+| Mean (baseline) | 256 | 0.747 | — |
+| **DCT K=8 + PCA** | **512** | **0.784** | **+0.037** |
+| DCT K=8 + PCA | 256 | 0.771 | +0.024 |
+| Autocov pool | 512 | 0.754 | +0.007 |
+| Autocov pool | 256 | 0.749 | +0.002 |
+| Moment pool | 512 | 0.692 | -0.055 |
+| Moment pool | 256 | 0.675 | -0.072 |
+
+**DCT K=8 + PCA@512d: Ret@1=0.784 (+3.7pp vs mean 0.747).** PCA even improved over raw 2048d DCT (0.781→0.784 at 512d) by cutting noise dimensions. For un-tuned PLMs, spectral transforms + PCA are a free lunch.
+
+### 13.4 Feature Importance
+
+PCA loadings by feature group for moment pool:
+
+| Feature Group | Top-10 PC Loading | Total Loading |
+|---------------|:-----------------:|:-------------:|
+| half_diff (N→C gradient) | 4.40 | 30.70 |
+| skewness | 4.36 | 211.95 |
+| mean | 0.98 | 10.64 |
+| std | 0.19 | 1.90 |
+| lag-1 autocovariance | 0.07 | 0.81 |
+
+**Surprise**: PCA loads most heavily on half_diff (N-to-C gradient) and skewness, NOT on autocovariance. The sequence order information (lag-1 autocov) has the smallest loading — it exists but doesn't linearly separate families beyond what mean already captures.
+
+### 13.5 Conclusions
+
+1. **For contrastive-optimized ProtT5**: Mean pool is essentially optimal. InfoNCE loss already optimizes the mean direction to be maximally family-discriminative. No enrichment significantly improves retrieval.
+2. **For un-tuned ESM2**: DCT + PCA is a free lunch (+3.7pp Ret@1). Spectral transforms capture useful information that the mean discards, and PCA removes the curse of dimensionality.
+3. **Fisher vectors and Gram features are poor** for protein family retrieval (0.620 and 0.182 respectively). These methods from computer vision do not transfer well to protein embeddings.
+4. **The real insight**: The question is not "can we beat mean pool?" but rather "can we beat *contrastive-optimized* mean pool?" The answer appears to be no — the contrastive loss already extracts all linearly separable family signal from the embedding distribution.
+
+**Experiment**: `experiments/19_enriched_pooling.py`
+**Results**: `data/benchmarks/enriched_pooling_results.json`
+**Module**: `src/one_embedding/enriched_transforms.py`
+**Tests**: `tests/test_enriched_transforms.py` (29/29 pass)
 
 ---
 

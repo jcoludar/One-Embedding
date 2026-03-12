@@ -44,6 +44,9 @@ uv run python experiments/13_robust_validation.py --step R3  # Cross-dataset pro
 5. **8x compression is viable** -- d128 contrastive retains 97.7% of d256 retrieval with lower seed variance.
 6. **Residual connections are critical** -- removing them drops Ret@1 by 0.169; LayerNorm and decoder freezing have minimal impact.
 7. **~1200 proteins suffice** -- performance saturates at 75% of training data.
+8. **Mean pool is optimal for contrastive-trained PLMs** -- DCT, Haar, autocovariance, Fisher vectors, Gram features, and 6 enrichment strategies all fail to significantly beat mean pooling on contrastive-optimized ProtT5 (best enriched: 0.809 vs mean: 0.808, p=0.754).
+9. **Spectral transforms + PCA are a free lunch for un-tuned PLMs** -- ESM2 DCT K=8+PCA: Ret@1=0.784 (+3.7pp vs mean 0.747). The curse of dimensionality, not the math, was the bottleneck.
+10. **Brillouin hypothesis rejected** -- spectral fingerprint (phase-free PSD) does NOT correlate better with protein structure than mean pool. Phase carries essential discriminative information.
 
 ## Requirements
 
@@ -138,7 +141,13 @@ src/
     reconstruction.py       MSE + cosine similarity metrics
     per_residue_tasks.py    SS3/SS8/CheZOD/TMbed probes
     statistical_tests.py    Paired bootstrap, permutation tests, Cohen's d
+    structural_validation.py  TM-score structural validation
     splitting.py            Superfamily-aware train/test splitting
+  one_embedding/
+    transforms.py           DCT, Haar wavelet, spectral transforms
+    enriched_transforms.py  Moment pool, autocovariance, Gram, Fisher vector + PCA pipeline
+    embedding.py            OneEmbedding dataclass
+    pipeline.py, io.py, similarity.py, registry.py
 
 experiments/
   01_extract_residue_embeddings.py  PLM embedding extraction
@@ -152,6 +161,8 @@ experiments/
   15_external_validation.py         ToxFam + TMbed PCA external validation
   16_hpo_contrastive.py             Optuna hyperparameter optimization
   17_scaling_and_ablations.py       Scaling curves, failure analysis, ablations
+  18_one_embedding.py               One Embedding transforms + structural validation
+  19_enriched_pooling.py            Enriched pooling (6 transforms + PCA)
   validate_split_leakage.py         MMseqs2 split leakage validation
   archive/                          Superseded exploration scripts (phases 5-10)
 
