@@ -1,0 +1,472 @@
+{
+  "steps_done": [
+    "B10",
+    "B7",
+    "B8",
+    "B11",
+    "B9",
+    "B13"
+  ],
+  "results": {
+    "retrieval": {
+      "prot_t5_xl_family_cosine": {
+        "ret1": 0.7341176470588235,
+        "mrr": 0.8138807331145195,
+        "map": 0.4982019152266411,
+        "n_queries": 850
+      },
+      "prot_t5_xl_superfamily_cosine": {
+        "ret1": 0.9,
+        "mrr": 0.9240763173392047,
+        "map": 0.5394380404486213,
+        "n_queries": 850
+      },
+      "prot_t5_xl_fold_cosine": {
+        "ret1": 0.9094117647058824,
+        "mrr": 0.931351329702915,
+        "map": 0.5198667219784595,
+        "n_queries": 850
+      },
+      "prot_t5_xl_family_euclidean": {
+        "ret1": 0.7176470588235294,
+        "mrr": 0.8041388794531623,
+        "map": 0.4630443227463062,
+        "n_queries": 850
+      },
+      "prot_t5_xl_superfamily_euclidean": {
+        "ret1": 0.888235294117647,
+        "mrr": 0.9173797705383029,
+        "map": 0.49036867292866043,
+        "n_queries": 850
+      },
+      "prot_t5_xl_fold_euclidean": {
+        "ret1": 0.8976470588235295,
+        "mrr": 0.9236568397978766,
+        "map": 0.47104603495209163,
+        "n_queries": 850
+      },
+      "esm2_650m_family_cosine": {
+        "ret1": 0.6176470588235294,
+        "mrr": 0.6986199163043135,
+        "map": 0.35485992048163617,
+        "n_queries": 850
+      },
+      "esm2_650m_superfamily_cosine": {
+        "ret1": 0.8105882352941176,
+        "mrr": 0.8428662271290747,
+        "map": 0.3710611367836953,
+        "n_queries": 850
+      },
+      "esm2_650m_fold_cosine": {
+        "ret1": 0.8223529411764706,
+        "mrr": 0.8541371703063932,
+        "map": 0.36459342095471986,
+        "n_queries": 850
+      },
+      "esm2_650m_family_euclidean": {
+        "ret1": 0.6047058823529412,
+        "mrr": 0.6811554078004366,
+        "map": 0.34071099117837794,
+        "n_queries": 850
+      },
+      "esm2_650m_superfamily_euclidean": {
+        "ret1": 0.7847058823529411,
+        "mrr": 0.8241740616204075,
+        "map": 0.35192756001597497,
+        "n_queries": 850
+      },
+      "esm2_650m_fold_euclidean": {
+        "ret1": 0.7952941176470588,
+        "mrr": 0.8363508790190965,
+        "map": 0.3452937183899786,
+        "n_queries": 850
+      },
+      "esmc_300m_family_cosine": {
+        "ret1": 0.38588235294117645,
+        "mrr": 0.46951872685064694,
+        "map": 0.19743806338879366,
+        "n_queries": 850
+      },
+      "esmc_300m_superfamily_cosine": {
+        "ret1": 0.5047058823529412,
+        "mrr": 0.5890461316841524,
+        "map": 0.19789998104583115,
+        "n_queries": 850
+      },
+      "esmc_300m_fold_cosine": {
+        "ret1": 0.52,
+        "mrr": 0.6066172625618058,
+        "map": 0.1998529483196964,
+        "n_queries": 850
+      },
+      "esmc_300m_family_euclidean": {
+        "ret1": 0.38,
+        "mrr": 0.4640177465132719,
+        "map": 0.1918552194703098,
+        "n_queries": 850
+      },
+      "esmc_300m_superfamily_euclidean": {
+        "ret1": 0.49058823529411766,
+        "mrr": 0.5833609596500222,
+        "map": 0.19198746095184213,
+        "n_queries": 850
+      },
+      "esmc_300m_fold_euclidean": {
+        "ret1": 0.5058823529411764,
+        "mrr": 0.6004481980320202,
+        "map": 0.19347291273197115,
+        "n_queries": 850
+      }
+    },
+    "hierarchy": {
+      "prot_t5_xl_cosine": {
+        "metric": "cosine",
+        "n_proteins": 850,
+        "within_family_mean": 0.30150842666625977,
+        "within_family_std": 0.157211571931839,
+        "within_family_median": 0.29457083344459534,
+        "within_family_n_pairs": 1380,
+        "same_superfamily_mean": 0.5224205255508423,
+        "same_superfamily_std": 0.17547492682933807,
+        "same_superfamily_median": 0.533781111240387,
+        "same_superfamily_n_pairs": 3170,
+        "same_fold_mean": 0.6436262726783752,
+        "same_fold_std": 0.13707980513572693,
+        "same_fold_median": 0.6662541627883911,
+        "same_fold_n_pairs": 1960,
+        "unrelated_mean": 0.7104504108428955,
+        "unrelated_std": 0.10784175992012024,
+        "unrelated_median": 0.7211219072341919,
+        "unrelated_n_pairs": 50000,
+        "separation_ratio": 2.356320248486104,
+        "ordering_correct": true
+      },
+      "prot_t5_xl_euclidean": {
+        "metric": "euclidean",
+        "n_proteins": 850,
+        "within_family_mean": 1.0525797605514526,
+        "within_family_std": 0.3308982849121094,
+        "within_family_median": 1.0331244468688965,
+        "within_family_n_pairs": 1380,
+        "same_superfamily_mean": 1.3997870683670044,
+        "same_superfamily_std": 0.3345184922218323,
+        "same_superfamily_median": 1.4223825931549072,
+        "same_superfamily_n_pairs": 3170,
+        "same_fold_mean": 1.6437627077102661,
+        "same_fold_std": 0.25978484749794006,
+        "same_fold_median": 1.6616084575653076,
+        "same_fold_n_pairs": 1960,
+        "unrelated_mean": 1.680951714515686,
+        "unrelated_std": 0.24010016024112701,
+        "unrelated_median": 1.6761767864227295,
+        "unrelated_n_pairs": 50000,
+        "separation_ratio": 1.5969827442198068,
+        "ordering_correct": true
+      },
+      "esm2_650m_cosine": {
+        "metric": "cosine",
+        "n_proteins": 850,
+        "within_family_mean": 0.07641492784023285,
+        "within_family_std": 0.09126925468444824,
+        "within_family_median": 0.04598662257194519,
+        "within_family_n_pairs": 1380,
+        "same_superfamily_mean": 0.10428836196660995,
+        "same_superfamily_std": 0.11028065532445908,
+        "same_superfamily_median": 0.07075592875480652,
+        "same_superfamily_n_pairs": 3170,
+        "same_fold_mean": 0.15071146190166473,
+        "same_fold_std": 0.16766700148582458,
+        "same_fold_median": 0.07921001315116882,
+        "same_fold_n_pairs": 1960,
+        "unrelated_mean": 0.134796604514122,
+        "unrelated_std": 0.10372097045183182,
+        "unrelated_median": 0.10348504781723022,
+        "unrelated_n_pairs": 50000,
+        "separation_ratio": 1.7640087915276537,
+        "ordering_correct": false
+      },
+      "esm2_650m_euclidean": {
+        "metric": "euclidean",
+        "n_proteins": 850,
+        "within_family_mean": 2.54683256149292,
+        "within_family_std": 1.1456388235092163,
+        "within_family_median": 2.23044490814209,
+        "within_family_n_pairs": 1380,
+        "same_superfamily_mean": 3.132777452468872,
+        "same_superfamily_std": 1.2244287729263306,
+        "same_superfamily_median": 2.8072690963745117,
+        "same_superfamily_n_pairs": 3170,
+        "same_fold_mean": 3.697727918624878,
+        "same_fold_std": 1.5993638038635254,
+        "same_fold_median": 3.1315298080444336,
+        "same_fold_n_pairs": 1960,
+        "unrelated_mean": 3.7070565223693848,
+        "unrelated_std": 1.1056263446807861,
+        "unrelated_median": 3.40208101272583,
+        "unrelated_n_pairs": 50000,
+        "separation_ratio": 1.4555556491693182,
+        "ordering_correct": true
+      },
+      "esmc_300m_cosine": {
+        "metric": "cosine",
+        "n_proteins": 850,
+        "within_family_mean": 0.17028917372226715,
+        "within_family_std": 0.12944842875003815,
+        "within_family_median": 0.13900837302207947,
+        "within_family_n_pairs": 1380,
+        "same_superfamily_mean": 0.25061020255088806,
+        "same_superfamily_std": 0.1790187805891037,
+        "same_superfamily_median": 0.1968177855014801,
+        "same_superfamily_n_pairs": 3170,
+        "same_fold_mean": 0.294206827878952,
+        "same_fold_std": 0.18716391921043396,
+        "same_fold_median": 0.23963341116905212,
+        "same_fold_n_pairs": 1960,
+        "unrelated_mean": 0.3147033751010895,
+        "unrelated_std": 0.1724737137556076,
+        "unrelated_median": 0.2724788188934326,
+        "unrelated_n_pairs": 50000,
+        "separation_ratio": 1.8480527459388254,
+        "ordering_correct": true
+      },
+      "esmc_300m_euclidean": {
+        "metric": "euclidean",
+        "n_proteins": 850,
+        "within_family_mean": 0.4597761631011963,
+        "within_family_std": 0.18459567427635193,
+        "within_family_median": 0.4297587275505066,
+        "within_family_n_pairs": 1380,
+        "same_superfamily_mean": 0.5775898098945618,
+        "same_superfamily_std": 0.23907805979251862,
+        "same_superfamily_median": 0.5147495269775391,
+        "same_superfamily_n_pairs": 3170,
+        "same_fold_mean": 0.6311215758323669,
+        "same_fold_std": 0.23344363272190094,
+        "same_fold_median": 0.5694504976272583,
+        "same_fold_n_pairs": 1960,
+        "unrelated_mean": 0.6812715530395508,
+        "unrelated_std": 0.2567508816719055,
+        "unrelated_median": 0.6097167134284973,
+        "unrelated_n_pairs": 50000,
+        "separation_ratio": 1.4817461358682997,
+        "ordering_correct": true
+      }
+    },
+    "per_residue": {
+      "prot_t5_xl_ss3": {
+        "q3": 0.8401745068285281,
+        "per_class_acc": {
+          "H": 0.8736414666188941,
+          "E": 0.7922959443407432,
+          "C": 0.84033404994212
+        },
+        "n_train_residues": 108213,
+        "n_test_residues": 26360
+      },
+      "prot_t5_xl_ss8": {
+        "q8": 0.6977617602427921,
+        "per_class_acc": {
+          "H": 0.9151730742919688,
+          "B": 0.07222222222222222,
+          "E": 0.84221941080788,
+          "G": 0.24494142705005326,
+          "I": 0.2,
+          "T": 0.5506391347099312,
+          "S": 0.2748148148148148,
+          "C": 0.6843764780072521
+        },
+        "n_train_residues": 108213,
+        "n_test_residues": 26360
+      },
+      "esm2_650m_ss3": {
+        "q3": 0.839453717754173,
+        "per_class_acc": {
+          "H": 0.8628926310760778,
+          "E": 0.7989139657220431,
+          "C": 0.8429799900777245
+        },
+        "n_train_residues": 108213,
+        "n_test_residues": 26360
+      },
+      "esm2_650m_ss8": {
+        "q8": 0.7065250379362671,
+        "per_class_acc": {
+          "H": 0.9136680804487618,
+          "B": 0.13333333333333333,
+          "E": 0.8396891378998735,
+          "G": 0.26198083067092653,
+          "I": 0.328,
+          "T": 0.5503113733202228,
+          "S": 0.32666666666666666,
+          "C": 0.6943086867412896
+        },
+        "n_train_residues": 108213,
+        "n_test_residues": 26360
+      },
+      "prot_t5_xl_disorder": {
+        "spearman_rho": 0.6632457792905582,
+        "p_value": 0.0,
+        "mse": 20.16731834411621,
+        "n_train_residues": 132545,
+        "n_test_residues": 12516
+      },
+      "esm2_650m_disorder": {
+        "spearman_rho": 0.6771339339344183,
+        "p_value": 0.0,
+        "mse": 18.584449768066406,
+        "n_train_residues": 132545,
+        "n_test_residues": 12516
+      },
+      "prot_t5_xl_tm": {
+        "accuracy": 0.9880534154070444,
+        "macro_f1": 0.8578633873200645,
+        "per_class_f1": {
+          "H": 0.8650425367362722,
+          "B": 0.7567567567567568,
+          "S": 0.8158473954512105,
+          "O": 0.9938068603360186
+        },
+        "n_train_residues": 388108,
+        "n_test_residues": 98773
+      },
+      "esm2_650m_tm": {
+        "accuracy": 0.9884685086005285,
+        "macro_f1": 0.8767583705840017,
+        "per_class_f1": {
+          "H": 0.8621359223300971,
+          "B": 0.8187672493100276,
+          "S": 0.8321273516642547,
+          "O": 0.9940029590316279
+        },
+        "n_train_residues": 388108,
+        "n_test_residues": 98773
+      },
+      "esmc_300m_ss3": {
+        "q3": 0.8416540212443095,
+        "per_class_acc": {
+          "H": 0.8713722680042996,
+          "E": 0.794671644323774,
+          "C": 0.8439722176285761
+        },
+        "n_train_residues": 108213,
+        "n_test_residues": 26360
+      },
+      "esmc_300m_ss8": {
+        "q8": 0.7050834597875569,
+        "per_class_acc": {
+          "H": 0.9237925844848817,
+          "B": 0.019444444444444445,
+          "E": 0.8512560997650461,
+          "G": 0.21512247071352503,
+          "I": 0.072,
+          "T": 0.5457227138643068,
+          "S": 0.267037037037037,
+          "C": 0.7125965631404698
+        },
+        "n_train_residues": 108213,
+        "n_test_residues": 26360
+      },
+      "esmc_300m_disorder": {
+        "spearman_rho": 0.6562172420436044,
+        "p_value": 0.0,
+        "mse": 20.143722534179688,
+        "n_train_residues": 132545,
+        "n_test_residues": 12516
+      },
+      "esmc_300m_tm": {
+        "accuracy": 0.9848691627603394,
+        "macro_f1": 0.8406380963217925,
+        "per_class_f1": {
+          "H": 0.8613303269447576,
+          "B": 0.7174975562072337,
+          "S": 0.7916018662519441,
+          "O": 0.9921226358832346
+        },
+        "n_train_residues": 401123,
+        "n_test_residues": 101118
+      },
+      "esmc_300m_signalp": {
+        "accuracy": 0.9946402775715192,
+        "macro_f1": 0.973393373725452,
+        "signal_f1": 0.9496171580862135,
+        "n_train_residues": 888720,
+        "n_test_residues": 222213
+      }
+    },
+    "scope_to_uniprot_coverage": 0.9626955475330926,
+    "biology": {
+      "prot_t5_xl_go": {
+        "spearman_rho": 0.20252817470798745,
+        "p_value": 0.0,
+        "n_pairs": 50000,
+        "n_proteins": 792
+      },
+      "prot_t5_xl_ec": {
+        "ec_level1_ret1": 0.8140243902439024,
+        "ec_level2_ret1": 0.6920731707317073,
+        "ec_level3_ret1": 0.6341463414634146,
+        "ec_full_ret1": 0.4146341463414634,
+        "n_proteins": 328
+      },
+      "prot_t5_xl_pfam": {
+        "pfam_ret1": 0.7172774869109948,
+        "pfam_mrr": 0.7600864307577113,
+        "n_proteins": 382
+      },
+      "prot_t5_xl_taxonomy": {
+        "spearman_rho": 0.3556227909567981,
+        "p_value": 0.0,
+        "n_pairs": 50000,
+        "n_proteins": 834
+      },
+      "esm2_650m_go": {
+        "spearman_rho": 0.01735589122784972,
+        "p_value": 0.00010398911778422704,
+        "n_pairs": 50000,
+        "n_proteins": 792
+      },
+      "esm2_650m_ec": {
+        "ec_level1_ret1": 0.698170731707317,
+        "ec_level2_ret1": 0.5670731707317073,
+        "ec_level3_ret1": 0.5121951219512195,
+        "ec_full_ret1": 0.3323170731707317,
+        "n_proteins": 328
+      },
+      "esm2_650m_pfam": {
+        "pfam_ret1": 0.6151832460732984,
+        "pfam_mrr": 0.6630859860909231,
+        "n_proteins": 382
+      },
+      "esm2_650m_taxonomy": {
+        "spearman_rho": 0.09011674737359844,
+        "p_value": 1.1674069819362606e-90,
+        "n_pairs": 50000,
+        "n_proteins": 834
+      },
+      "esmc_300m_go": {
+        "spearman_rho": 0.07397796778453,
+        "p_value": 1.263200227955296e-61,
+        "n_pairs": 50000,
+        "n_proteins": 792
+      },
+      "esmc_300m_ec": {
+        "ec_level1_ret1": 0.4969512195121951,
+        "ec_level2_ret1": 0.3719512195121951,
+        "ec_level3_ret1": 0.3201219512195122,
+        "ec_full_ret1": 0.22560975609756098,
+        "n_proteins": 328
+      },
+      "esmc_300m_pfam": {
+        "pfam_ret1": 0.3717277486910995,
+        "pfam_mrr": 0.441509165948633,
+        "n_proteins": 382
+      },
+      "esmc_300m_taxonomy": {
+        "spearman_rho": 0.1534037825030669,
+        "p_value": 6.591511269426846e-261,
+        "n_pairs": 50000,
+        "n_proteins": 834
+      }
+    }
+  }
+}

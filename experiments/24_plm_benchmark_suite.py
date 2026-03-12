@@ -134,12 +134,26 @@ def load_metadata() -> list[dict]:
 
 
 def load_plm_embeddings(plm_stem: str, dataset: str = "medium5k") -> dict[str, np.ndarray]:
-    """Load H5 embeddings for a PLM + dataset combination."""
+    """Load H5 embeddings for a PLM + dataset combination.
+
+    If H5 keys contain pipe characters (e.g. 'id|org|name'), remap to first
+    token so they match label IDs used by evaluation functions.
+    """
     h5_path = DATA_DIR / "residue_embeddings" / f"{plm_stem}_{dataset}.h5"
     if not h5_path.exists():
         print(f"  WARNING: {h5_path} not found, skipping")
         return {}
-    return load_residue_embeddings(h5_path)
+    embeddings = load_residue_embeddings(h5_path)
+    # Remap pipe-separated keys (e.g. ESM-C extractions) to first token
+    needs_remap = any("|" in k for k in list(embeddings.keys())[:5])
+    if needs_remap:
+        remapped = {}
+        for k, v in embeddings.items():
+            short_key = k.split("|")[0]
+            remapped[short_key] = v
+        print(f"    Remapped {len(remapped)} H5 keys (stripped pipe suffixes)")
+        return remapped
+    return embeddings
 
 
 def load_validation_embeddings(plm_stem: str, prefix: str) -> dict[str, np.ndarray]:
