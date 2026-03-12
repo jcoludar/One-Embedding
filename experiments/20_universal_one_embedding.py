@@ -113,7 +113,8 @@ def load_raw_embeddings(plm: str, dataset: str = "medium5k") -> dict[str, np.nda
 def load_metadata() -> list[dict]:
     meta_path = DATA_DIR / "proteins" / "metadata_5k.csv"
     metadata = load_metadata_csv(meta_path)
-    return filter_by_family_size(metadata, min_size=5)
+    metadata, _ = filter_by_family_size(metadata, min_members=3)
+    return metadata
 
 
 def compute_retrieval(
@@ -452,12 +453,9 @@ def step_U6(results: list[dict]):
 
             if raw_dim > target_dim:
                 print(f"    Applying PCA: {raw_dim} → {target_dim}")
-                pipeline = EnrichedTransformPipeline(
-                    transform_fn=transform_fn,
-                    target_dim=target_dim,
-                )
-                train_matrices = [embeddings[pid][:MAX_LEN] for pid in train_ids if pid in embeddings]
-                pipeline.fit(train_matrices)
+                pipeline = EnrichedTransformPipeline(transform_fn=transform_fn)
+                train_matrices = {pid: embeddings[pid][:MAX_LEN] for pid in train_ids if pid in embeddings}
+                pipeline.fit(train_matrices, target_dim=target_dim)
 
                 vectors = {}
                 for pid in test_ids:
