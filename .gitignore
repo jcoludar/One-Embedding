@@ -43,3 +43,4 @@ data/proteins/metadata*.csv
 
 # uv
 .python-version
+.worktrees/
