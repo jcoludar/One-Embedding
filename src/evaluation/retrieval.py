@@ -1,6 +1,7 @@
-"""kNN retrieval benchmarks by family/fold using cosine similarity."""
+"""kNN retrieval benchmarks by family/fold using cosine or Euclidean distance."""
 
 import numpy as np
+from scipy.spatial.distance import cdist
 
 from src.compressors.base import SequenceCompressor
 from src.utils.device import get_device
@@ -186,6 +187,7 @@ def evaluate_retrieval_from_vectors(
     k_values: list[int] | None = None,
     query_ids: list[str] | None = None,
     database_ids: list[str] | None = None,
+    metric: str = "cosine",
 ) -> dict[str, float]:
     """Evaluate retrieval from pre-computed vectors (any dimensionality).
 
@@ -199,10 +201,14 @@ def evaluate_retrieval_from_vectors(
         k_values: List of k values for precision@k.
         query_ids: If provided, only compute metrics for these proteins.
         database_ids: If provided, restrict the database to these IDs.
+        metric: Distance metric — "cosine" (default) or "euclidean".
 
     Returns:
         Dict with precision@k, mrr, map, n_queries, n_database.
     """
+    if metric not in ("cosine", "euclidean"):
+        raise ValueError(f"metric must be 'cosine' or 'euclidean', got '{metric}'")
+
     if k_values is None:
         k_values = [1, 3, 5]
 
@@ -224,16 +230,20 @@ def evaluate_retrieval_from_vectors(
     db_matrix = np.array([vectors[pid] for pid in db_ids])
     db_labels = [id_to_label[pid] for pid in db_ids]
 
-    db_norms = np.linalg.norm(db_matrix, axis=1, keepdims=True).clip(1e-8)
-    db_matrix = db_matrix / db_norms
-
     q_matrix = np.array([vectors[pid] for pid in q_ids])
     q_labels = [id_to_label[pid] for pid in q_ids]
 
-    q_norms = np.linalg.norm(q_matrix, axis=1, keepdims=True).clip(1e-8)
-    q_matrix = q_matrix / q_norms
+    if metric == "cosine":
+        db_norms = np.linalg.norm(db_matrix, axis=1, keepdims=True).clip(1e-8)
+        db_matrix = db_matrix / db_norms
+        q_norms = np.linalg.norm(q_matrix, axis=1, keepdims=True).clip(1e-8)
+        q_matrix = q_matrix / q_norms
+        sims = q_matrix @ db_matrix.T
+    else:
+        # Euclidean: use negative distance as similarity (smaller distance = higher similarity)
+        dists = cdist(q_matrix, db_matrix, metric="euclidean")
+        sims = -dists
 
-    sims = q_matrix @ db_matrix.T
     db_id_to_idx = {pid: i for i, pid in enumerate(db_ids)}
 
     results = {}
