@@ -27,6 +27,7 @@ Thumbs.db
 
 # Data (large files — tracked separately or not at all)
 data/residue_embeddings/*.h5
+data/one_embeddings/*.h5
 data/checkpoints/**/*.pt
 data/checkpoints/**/history.json
 data/per_residue_benchmarks/

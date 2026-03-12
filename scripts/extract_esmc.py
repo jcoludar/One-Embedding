@@ -258,9 +258,13 @@ def extract(dataset_name: str):
                 else:
                     emb_np = np.array(embeddings, dtype=np.float32)
 
-                # If shape is (1, L, D), squeeze batch dim
+                # If shape is (1, L+2, D), squeeze batch dim
                 if emb_np.ndim == 3 and emb_np.shape[0] == 1:
                     emb_np = emb_np[0]
+
+                # Strip BOS and EOS tokens: (L+2, D) -> (L, D)
+                if emb_np.shape[0] == len(seq) + 2:
+                    emb_np = emb_np[1:-1]
 
                 # Verify shape: should be (L, 960)
                 if emb_np.ndim != 2:
@@ -343,6 +347,9 @@ def main():
         help="Dataset to extract embeddings for.",
     )
     args = parser.parse_args()
+
+    # Force line-buffered output for subprocess visibility
+    sys.stdout.reconfigure(line_buffering=True)
 
     print("=" * 60)
     print("ESM-C 300M Embedding Extraction (Standalone)")
