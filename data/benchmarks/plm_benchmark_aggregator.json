@@ -1,0 +1,104 @@
+{
+  "raw_results": {
+    "prot_t5_xl": {
+      "scop_family_ret1": 0.7341176470588235,
+      "scop_sf_ret1": 0.9,
+      "scop_fold_ret1": 0.9094117647058824,
+      "scop_separation": 2.356320248486104,
+      "ss3_q3": 0.8401745068285281,
+      "ss8_q8": 0.6977617602427921,
+      "disorder_rho": 0.6632457792905582,
+      "tm_f1": 0.8578633873200645,
+      "go_rho": 0.20252817470798745,
+      "ec_ret1": 0.4146341463414634,
+      "pfam_ret1": 0.7172774869109948,
+      "taxonomy_rho": 0.3556227909567981,
+      "embedding_dim": 1024.0
+    },
+    "esm2_650m": {
+      "scop_family_ret1": 0.6176470588235294,
+      "scop_sf_ret1": 0.8105882352941176,
+      "scop_fold_ret1": 0.8223529411764706,
+      "scop_separation": 1.7640087915276537,
+      "ss3_q3": 0.839453717754173,
+      "ss8_q8": 0.7065250379362671,
+      "disorder_rho": 0.6771339339344183,
+      "tm_f1": 0.8767583705840017,
+      "go_rho": 0.01735589122784972,
+      "ec_ret1": 0.3323170731707317,
+      "pfam_ret1": 0.6151832460732984,
+      "taxonomy_rho": 0.09011674737359844,
+      "embedding_dim": 1280.0
+    },
+    "esmc_300m": {
+      "scop_family_ret1": 0.38588235294117645,
+      "scop_sf_ret1": 0.5047058823529412,
+      "scop_fold_ret1": 0.52,
+      "scop_separation": 1.8480527459388254,
+      "ss3_q3": 0.8416540212443095,
+      "ss8_q8": 0.7050834597875569,
+      "disorder_rho": 0.6562172420436044,
+      "tm_f1": 0.8406380963217925,
+      "signalp_f1": 0.973393373725452,
+      "go_rho": 0.07397796778453,
+      "ec_ret1": 0.22560975609756098,
+      "pfam_ret1": 0.3717277486910995,
+      "taxonomy_rho": 0.1534037825030669,
+      "embedding_dim": 960.0
+    }
+  },
+  "normalized_scores": {
+    "esm2_650m": {
+      "disorder_rho": 1.0,
+      "ec_ret1": 0.5,
+      "embedding_dim": 0.0,
+      "go_rho": 0.0,
+      "pfam_ret1": 0.5,
+      "scop_family_ret1": 0.5,
+      "scop_fold_ret1": 0.5,
+      "scop_separation": 0.0,
+      "scop_sf_ret1": 0.5,
+      "ss3_q3": 0.0,
+      "ss8_q8": 1.0,
+      "taxonomy_rho": 0.0,
+      "tm_f1": 1.0
+    },
+    "esmc_300m": {
+      "disorder_rho": 0.0,
+      "ec_ret1": 0.0,
+      "embedding_dim": 1.0,
+      "go_rho": 0.5,
+      "pfam_ret1": 0.0,
+      "scop_family_ret1": 0.0,
+      "scop_fold_ret1": 0.0,
+      "scop_separation": 0.5,
+      "scop_sf_ret1": 0.0,
+      "signalp_f1": 1.0,
+      "ss3_q3": 1.0,
+      "ss8_q8": 0.5,
+      "taxonomy_rho": 0.5,
+      "tm_f1": 0.0
+    },
+    "prot_t5_xl": {
+      "disorder_rho": 0.5,
+      "ec_ret1": 1.0,
+      "embedding_dim": 0.5,
+      "go_rho": 1.0,
+      "pfam_ret1": 1.0,
+      "scop_family_ret1": 1.0,
+      "scop_fold_ret1": 1.0,
+      "scop_separation": 1.0,
+      "scop_sf_ret1": 1.0,
+      "ss3_q3": 0.5,
+      "ss8_q8": 0.0,
+      "taxonomy_rho": 1.0,
+      "tm_f1": 0.5
+    }
+  },
+  "composite_scores": {
+    "esm2_650m": 0.3,
+    "esmc_300m": 0.45,
+    "prot_t5_xl": 0.775
+  },
+  "summary_table": "| Task | esm2_650m | esmc_300m | prot_t5_xl |\n|------|------|------|------|\n| **Retrieval** |  |  |  |\n| Ret@1 | 0.618 | 0.386 | 0.734 |\n| Fold Ret@1 | 0.822 | 0.520 | 0.909 |\n| SF Ret@1 | 0.811 | 0.505 | 0.900 |\n| **Hierarchy** |  |  |  |\n| Sep. Ratio | 1.764 | 1.848 | 2.356 |\n| **Per Residue** |  |  |  |\n| Disorder rho | 0.677 | 0.656 | 0.663 |\n| SignalP F1 | - | 0.973 | - |\n| SS3 Q3 | 0.839 | 0.842 | 0.840 |\n| SS8 Q8 | 0.707 | 0.705 | 0.698 |\n| TM F1 | 0.877 | 0.841 | 0.858 |\n| **Biology** |  |  |  |\n| EC Ret@1 | 0.332 | 0.226 | 0.415 |\n| GO rho | 0.017 | 0.074 | 0.203 |\n| Pfam Ret@1 | 0.615 | 0.372 | 0.717 |\n| Tax. rho | 0.090 | 0.153 | 0.356 |\n| **Efficiency** |  |  |  |\n| Emb. Dim | 1280.000 | 960.000 | 1024.000 |\n| **Composite** | **0.300** | **0.450** | **0.775** |"
+}

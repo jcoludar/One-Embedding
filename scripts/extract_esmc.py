@@ -37,7 +37,7 @@ def read_fasta(path):
             if line.startswith(">"):
                 if current_id is not None:
                     sequences[current_id] = "".join(current_seq)
-                current_id = line[1:].split()[0]
+                current_id = line[1:].split()[0].split("|")[0]
                 current_seq = []
             else:
                 current_seq.append(line)
@@ -61,7 +61,7 @@ def read_annotated_fasta_triplets(path):
     i = 0
     while i < len(lines):
         if lines[i].startswith(">"):
-            prot_id = lines[i][1:].split()[0]
+            prot_id = lines[i][1:].split()[0].split("|")[0]
             seq = lines[i + 1] if i + 1 < len(lines) else ""
             sequences[prot_id] = seq
             i += 3  # skip header, sequence, annotation
