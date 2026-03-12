@@ -142,6 +142,27 @@ def load_plm_embeddings(plm_stem: str, dataset: str = "medium5k") -> dict[str, n
     return load_residue_embeddings(h5_path)
 
 
+def load_validation_embeddings(plm_stem: str, prefix: str) -> dict[str, np.ndarray]:
+    """Load embeddings from validation H5, stripping a prefix from IDs.
+
+    The validation H5 stores IDs like 'chezod_26672' or 'tmbed_1afo_A'.
+    This returns {original_id: embedding} by stripping the prefix.
+    """
+    h5_path = DATA_DIR / "residue_embeddings" / f"{plm_stem}_validation.h5"
+    if not h5_path.exists():
+        return {}
+    import h5py
+    result = {}
+    with h5py.File(str(h5_path), "r") as f:
+        for key in f.keys():
+            if key.startswith(prefix):
+                original_id = key[len(prefix):]
+                result[original_id] = np.array(f[key], dtype=np.float32)
+    if result:
+        print(f"  Loaded {len(result)} {prefix.rstrip('_')} embeddings from {h5_path.name}")
+    return result
+
+
 def pool_mean(embeddings: dict[str, np.ndarray], ids: list[str]) -> dict[str, np.ndarray]:
     return {pid: embeddings[pid][:MAX_LEN].mean(axis=0) for pid in ids if pid in embeddings}
 
@@ -453,12 +474,12 @@ def step_B9(results: dict):
                 print(f"  {plm_name} disorder already done, skipping.")
                 continue
 
+            # Try dedicated seth H5, then validation H5 (prefix=chezod_), then medium5k
             embeddings = load_plm_embeddings(plm_stem, "seth")
             if not embeddings:
-                # Try medium5k as fallback (SETH proteins may have been extracted there)
-                embeddings = load_plm_embeddings(plm_stem, "medium5k")
-                if not embeddings:
-                    continue
+                embeddings = load_validation_embeddings(plm_stem, "chezod_")
+            if not embeddings:
+                continue
 
             print(f"  {plm_name} disorder probe...")
             dis = evaluate_disorder_probe(embeddings, disorder_scores, train_ids_seth, test_ids_seth)
@@ -474,12 +495,6 @@ def step_B9(results: dict):
     tmbed_path = DATA_DIR / "per_residue_benchmarks" / "TMbed" / "cv_00_annotated.fasta"
     if tmbed_path.exists():
         tm_sequences, tm_labels = load_tmbed_annotated(tmbed_path)
-        avail_tm = list(tm_sequences.keys())
-        rng = random.Random(42)
-        rng.shuffle(avail_tm)
-        n_train = int(len(avail_tm) * 0.8)
-        train_ids_tm = avail_tm[:n_train]
-        test_ids_tm = avail_tm[n_train:]
 
         for plm_name, dim, plm_stem in PLMS:
             tm_key = f"{plm_name}_tm"
@@ -487,9 +502,28 @@ def step_B9(results: dict):
                 print(f"  {plm_name} TM already done, skipping.")
                 continue
 
+            # Try dedicated tmbed H5, then validation H5 (prefix=tmbed_)
             embeddings = load_plm_embeddings(plm_stem, "tmbed")
             if not embeddings:
+                embeddings = load_validation_embeddings(plm_stem, "tmbed_")
+            if not embeddings:
                 continue
+
+            # Remap TMbed IDs: load_tmbed_annotated uses first |‑token,
+            # but validation H5 stripped 'tmbed_' prefix leaving e.g. '1afo_A'
+            # Need to match against whatever IDs overlap
+            avail_tm = [pid for pid in tm_labels if pid in embeddings]
+            if not avail_tm:
+                # Try matching by stripping header parts
+                print(f"    No direct ID overlap. Checking ID mapping...")
+                del embeddings
+                continue
+
+            rng = random.Random(42)
+            rng.shuffle(avail_tm)
+            n_train = int(len(avail_tm) * 0.8)
+            train_ids_tm = avail_tm[:n_train]
+            test_ids_tm = avail_tm[n_train:]
 
             print(f"  {plm_name} TM probe ({len(train_ids_tm)} train, {len(test_ids_tm)} test)...")
             tm = evaluate_tm_probe(embeddings, tm_labels, train_ids_tm, test_ids_tm)
