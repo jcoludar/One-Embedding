@@ -1,10 +1,32 @@
-"""One Embedding: unified per-protein + per-residue representation.
+"""One Embedding: universal codec for PLM per-residue embeddings.
 
-Mathematically principled transforms (DCT, Haar wavelet, spectral fingerprint)
-applied to compressed PLM per-residue embeddings to create a single embedding
-that serves both protein-level and residue-level downstream tasks.
+Compresses raw PLM output (L, D) into a self-contained representation that
+serves both protein-level retrieval and per-residue structure prediction.
+
+Quick start::
+
+    from src.one_embedding.codec import OneEmbeddingCodec
+
+    codec = OneEmbeddingCodec(d_out=512, dct_k=4)
+    encoded = codec.encode(raw)       # raw: (L, 1024) → {per_residue, protein_vec}
+    codec.save(encoded, "out.h5")     # self-contained H5 file
+
+    loaded = OneEmbeddingCodec.load("out.h5")
+    loaded["protein_vec"]             # (2048,) for UMAP / retrieval
+    loaded["per_residue"]             # (L, 512) for SS3 / disorder probes
+
+Key classes:
+    OneEmbeddingCodec  -- encode/save/load compressed embeddings (codec.py)
+    OneEmbedding       -- dataclass for embedding + metadata (embedding.py)
+
+Transform modules:
+    transforms.py           -- DCT, Haar wavelet, spectral fingerprint
+    universal_transforms.py -- random projection, feature hashing, power mean
+    enriched_transforms.py  -- moment pool, autocovariance, Fisher vector, PCA
+    path_transforms.py      -- displacement DCT, signatures, curvature, gyration
 """
 
+from src.one_embedding.codec import OneEmbeddingCodec
 from src.one_embedding.embedding import OneEmbedding
 from src.one_embedding.hrr import (
     hrr_bind,
@@ -61,6 +83,7 @@ from src.one_embedding.universal_transforms import (
 __all__ = [
     "EnrichedTransformPipeline",
     "OneEmbedding",
+    "OneEmbeddingCodec",
     "autocovariance_pool",
     "curvature_enriched",
     "dct_pool",
