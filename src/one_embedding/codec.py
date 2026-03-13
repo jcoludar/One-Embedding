@@ -27,12 +27,27 @@ from src.one_embedding.universal_transforms import random_orthogonal_project
 
 
 class OneEmbeddingCodec:
-    """Training-free codec: random projection + DCT pooling."""
+    """Training-free codec: random projection + DCT pooling.
 
-    def __init__(self, d_out: int = 512, dct_k: int = 4, seed: int = 42):
+    Args:
+        d_out: Output dimensionality for per-residue (default 512).
+        dct_k: Number of DCT coefficients for protein vector (default 4).
+        seed: Fixed seed for projection matrix (default 42).
+        dtype: Storage dtype — "float16" (default, 25% of raw) or "float32".
+               Computation is always float32; dtype only affects save/load.
+    """
+
+    def __init__(
+        self,
+        d_out: int = 512,
+        dct_k: int = 4,
+        seed: int = 42,
+        dtype: str = "float16",
+    ):
         self.d_out = d_out
         self.dct_k = dct_k
         self.seed = seed
+        self.dtype = np.dtype(dtype)
         self._proj_cache: dict[int, np.ndarray] = {}
 
     def _get_projection_matrix(self, d_in: int) -> np.ndarray:
@@ -60,8 +75,8 @@ class OneEmbeddingCodec:
         protein_vec = dct_summary(per_residue, K=self.dct_k)
 
         return {
-            "per_residue": per_residue,
-            "protein_vec": protein_vec,
+            "per_residue": per_residue.astype(self.dtype),
+            "protein_vec": protein_vec.astype(self.dtype),
             "metadata": {
                 "codec": "rp_dct",
                 "version": 1,
@@ -71,6 +86,7 @@ class OneEmbeddingCodec:
                 "seed": self.seed,
                 "seq_len": L,
                 "protein_vec_dim": self.dct_k * self.d_out,
+                "dtype": str(self.dtype),
             },
         }
 
@@ -187,6 +203,7 @@ class OneEmbeddingCodec:
                 "d_out": self.d_out,
                 "dct_k": self.dct_k,
                 "seed": self.seed,
+                "dtype": str(self.dtype),
                 "n_proteins": len(keys),
             })
 
