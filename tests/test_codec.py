@@ -43,8 +43,14 @@ class TestEncode:
         assert result["per_residue"].shape == (50, 512)
         assert result["protein_vec"].shape == (2048,)
 
-    def test_output_dtypes(self, codec, raw_embedding):
+    def test_output_dtypes_default_float16(self, codec, raw_embedding):
         result = codec.encode(raw_embedding)
+        assert result["per_residue"].dtype == np.float16
+        assert result["protein_vec"].dtype == np.float16
+
+    def test_output_dtypes_explicit_float32(self, raw_embedding):
+        codec32 = OneEmbeddingCodec(dtype="float32")
+        result = codec32.encode(raw_embedding)
         assert result["per_residue"].dtype == np.float32
         assert result["protein_vec"].dtype == np.float32
 
@@ -58,6 +64,7 @@ class TestEncode:
         assert meta["seed"] == 42
         assert meta["seq_len"] == 50
         assert meta["protein_vec_dim"] == 2048
+        assert meta["dtype"] == "float16"
 
     def test_deterministic(self, codec, raw_embedding):
         r1 = codec.encode(raw_embedding)
@@ -103,6 +110,7 @@ class TestSaveLoad:
         loaded = OneEmbeddingCodec.load(str(path))
         assert loaded["per_residue"].shape == (50, 512)
         assert loaded["protein_vec"].shape == (2048,)
+        assert loaded["per_residue"].dtype == np.float16
 
     def test_file_uses_gzip(self, codec, raw_embedding, tmp_path):
         encoded = codec.encode(raw_embedding)

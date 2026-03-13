@@ -1,0 +1,45 @@
+{
+  "retrieval_float32": {
+    "ret1": 0.78,
+    "mrr": 0.8525954964544342,
+    "n_queries": 850,
+    "ci_95": 0.027848720743668343,
+    "time_s": 0.9737968444824219
+  },
+  "retrieval_float16": {
+    "ret1": 0.78,
+    "mrr": 0.8525954964544342,
+    "n_queries": 850,
+    "ci_95": 0.027848720743668343,
+    "time_s": 0.9754421710968018
+  },
+  "quantization_error": {
+    "max_abs_error_median": 0.0007765293121337891,
+    "max_abs_error_95pct": 0.0009723425027914345,
+    "mean_abs_error_median": 8.00515990704298e-05,
+    "cosine_similarity_mean": 1.0,
+    "cosine_similarity_min": 0.9999998211860657,
+    "n_proteins": 200
+  },
+  "ss3_float32": {
+    "q3": 0.8148330804248862
+  },
+  "ss8_float32": {
+    "q8": 0.6689681335356601
+  },
+  "ss3_float16": {
+    "q3": 0.8148330804248862
+  },
+  "ss8_float16": {
+    "q8": 0.6686646433990895
+  },
+  "storage": {
+    "raw_bytes": 716800,
+    "float32_bytes": 366592,
+    "float16_bytes": 183296,
+    "float32_pct_of_raw": 51.142857142857146,
+    "float16_pct_of_raw": 25.571428571428573,
+    "float16_pct_of_float32": 50.0,
+    "mean_L": 175
+  }
+}

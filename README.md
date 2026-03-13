@@ -1,6 +1,6 @@
 # Protein Embedding Codec: Universal Compression for PLM Embeddings
 
-A training-free codec that compresses protein language model (PLM) per-residue embeddings by 50% while preserving both protein-level retrieval and residue-level structure prediction. Works with any PLM, any dimension, no fitting required -- like JPEG for protein embeddings.
+A training-free codec that compresses protein language model (PLM) per-residue embeddings to 25% of original size (float16) while preserving both protein-level retrieval and residue-level structure prediction. Works with any PLM, any dimension, no fitting required -- like JPEG for protein embeddings.
 
 ## TL;DR
 
@@ -46,8 +46,24 @@ D-compression codecs (rp512, fh512) retain 93-97% of raw per-residue task perfor
 |------|-------|--------|---------|
 | Per-residue only | rp512 or fh512 | (L, 512) | 50% of raw |
 | Retrieval only | [mean\|max] + Euclidean | (2048,) | ~8 KB/protein |
-| Both tasks | rp512 + dct K4 | (L, 512) + (2048,) | 50% + 8 KB |
+| Both tasks | rp512 + dct K4 | (L, 512) + (2048,) | 50% of raw (fp32) / 25% (fp16) |
 | Max retrieval (willing to train) | Trained CC d256 | (L, 256) | 25% of raw |
+
+## Float16: Half the Storage, Zero Quality Loss
+
+![Float16 Benchmark](docs/figures/pub_float16_benchmark.png)
+
+The codec defaults to float16 storage. Benchmarked head-to-head on real ProtT5-XL embeddings:
+
+| Metric | Float32 (51% raw) | Float16 (26% raw) | Delta |
+|--------|:--:|:--:|:--:|
+| Ret@1 | 0.780 | 0.780 | 0.000 |
+| MRR | 0.853 | 0.853 | 0.000 |
+| SS3 Q3 | 0.815 | 0.815 | 0.000 |
+| SS8 Q8 | 0.669 | 0.669 | 0.000 |
+| Storage | 358 KB | **179 KB** | **-50%** |
+
+Max quantization error: 0.001 (cosine similarity 1.000000). Float16 is lossless in practice for both retrieval and linear per-residue probes. All codec output defaults to float16; pass `dtype="float32"` for full precision.
 
 ## Storage Comparison
 
@@ -56,13 +72,14 @@ D-compression codecs (rp512, fh512) retain 93-97% of raw per-residue task perfor
 | Representation | Shape | KB/protein | % of raw |
 |----------------|-------|:----------:|:--------:|
 | Raw ProtT5 | (L, 1024) | 700 | 100% |
-| rp512 / fh512 | (L, 512) | 350 | 50% |
+| **rp512 + dct K4 (fp16)** | **(L, 512) + (2048,)** | **179** | **26%** |
+| rp512 + dct K4 (fp32) | (L, 512) + (2048,) | 358 | 51% |
+| rp512 / fh512 (fp32) | (L, 512) | 350 | 50% |
 | Trained CC d256 | (L, 256) | 175 | 25% |
-| rp512 + dct K4 | (L, 512) + (2048,) | 358 | 51% |
 | [mean\|max] only | (2048,) | 8 | 1% |
 | mean pool only | (1024,) | 4 | <1% |
 
-Float32, uncompressed, mean L=175 residues. Per-protein-only representations (mean pool, [mean|max]) are tiny but lose all per-residue information. The chained codec (rp512+dct K4) stores both per-residue and protein-level at 51% of raw.
+Mean L=175 residues. The default float16 codec achieves 4x compression (26% of raw) while preserving both per-residue and protein-level task performance. Per-protein-only representations (mean pool, [mean|max]) are tiny but lose all per-residue information.
 
 ## Cross-PLM Results
 
