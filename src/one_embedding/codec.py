@@ -4,15 +4,18 @@ Encodes raw PLM per-residue embeddings into a single file containing both
 per-residue and protein-level representations, with metadata for reproducibility.
 
 Usage:
-    # Encode
+    # Encode (float16 default — ~26% of raw PLM size)
     codec = OneEmbeddingCodec(d_out=512, dct_k=4)
     codec.encode_h5(raw_embeddings_h5, "output_dir/")
+
+    # Full precision: dtype="float32" (~51% of raw)
+    codec = OneEmbeddingCodec(d_out=512, dct_k=4, dtype="float32")
 
     # Decode (receiver side — no knowledge of codec internals needed)
     emb = OneEmbeddingCodec.load("output_dir/protein_id.h5")
     emb["per_residue"]   # (L, 512) for per-residue probes
     emb["protein_vec"]   # (2048,) for retrieval/UMAP/clustering
-    emb["metadata"]      # dict with codec params
+    emb["metadata"]      # dict with codec params, dtype
 """
 
 import json
