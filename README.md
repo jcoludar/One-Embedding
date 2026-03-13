@@ -93,6 +93,59 @@ The choice of PLM matters far more than the choice of codec. ProtT5-XL outperfor
 
 Codec performance was validated on enzyme classification (EC numbers), Pfam domain retrieval, Gene Ontology semantic similarity, and SCOPe hierarchy separation. DCT K=4 and [mean|max] lead on EC/Pfam retrieval. Mean pool, rp512, fh512, and cosine deviation best preserve GO semantic similarity and hierarchy structure.
 
+## Evaluation Suite
+
+Every codec is benchmarked against a comprehensive suite spanning retrieval, structure, biology, and per-residue probes. All evaluations use the same SCOPe 5K dataset (family-stratified train/test split, n=850 test queries) unless noted.
+
+### Per-Protein Retrieval
+
+| Metric | What it measures | Dataset |
+|--------|-----------------|---------|
+| Family Ret@1 | Nearest-neighbor same-family match (cosine) | SCOPe 5K |
+| SF Ret@1 | Superfamily-level retrieval | SCOPe 5K |
+| Fold Ret@1 | Fold-level retrieval | SCOPe 5K |
+| MRR | Mean reciprocal rank | SCOPe 5K |
+| MAP | Mean average precision | SCOPe 5K |
+| Hierarchy separation | Distance ratio: unrelated / within-family | SCOPe 5K |
+
+### Biological Annotation Correlation
+
+| Metric | What it measures | Source |
+|--------|-----------------|--------|
+| GO Spearman rho | Embedding similarity vs Gene Ontology Jaccard | UniProt GO terms |
+| EC Ret@1 (4 levels) | Enzyme classification retrieval at each EC hierarchy | UniProt EC numbers |
+| Pfam Ret@1 | Protein domain family retrieval | UniProt Pfam |
+| Taxonomy Spearman rho | Embedding similarity vs taxonomic distance | NCBI taxonomy |
+
+### Per-Residue Probes (LogisticRegression, random_state=42)
+
+| Task | Metric | Dataset | Size |
+|------|--------|---------|------|
+| Secondary structure (3-class) | Q3 accuracy | CB513 | 513 proteins |
+| Secondary structure (8-class) | Q8 accuracy | CB513 | 513 proteins |
+| Intrinsic disorder | Spearman rho | CheZOD/SETH | 1,291 proteins |
+| Transmembrane topology | Macro F1 | TMbed | ~500 proteins |
+| Signal peptide | Signal F1 | SignalP6 | ~10K proteins |
+| PPI interface | Interface F1 | ProteinGLUE | ~2K proteins |
+| Epitope prediction | Epitope F1 | ProteinGLUE | ~2K proteins |
+
+### Reconstruction & Compression Quality
+
+| Metric | What it measures |
+|--------|-----------------|
+| CosSim | Mean cosine similarity between original and reconstructed per-residue embeddings |
+| MSE | Mean squared reconstruction error |
+| Size (bytes/protein) | Actual serialized byte count (mean protein L=175) |
+| Compression ratio | Raw size / compressed size |
+| Encode speed | ms/protein (CPU, 100-protein average after 10 warm-up) |
+| Decode speed | ms/protein (CPU, 100-protein average after 10 warm-up) |
+
+### Structural Validation (optional, compute-intensive)
+
+| Metric | What it measures | Source |
+|--------|-----------------|--------|
+| TM-score Spearman rho | Embedding similarity vs structural alignment score | PDB structures via tmtools |
+
 ## Error Bars and Statistical Notes
 
 **Retrieval Ret@1** is a proportion (n=850 queries). Error bars use normal approximation: SE = sqrt(p(1-p)/n), CI = p +/- 1.96*SE. At p=0.780: CI = +/-0.028.
