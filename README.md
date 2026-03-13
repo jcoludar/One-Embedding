@@ -44,10 +44,10 @@ D-compression codecs (rp512, fh512) retain 93-97% of raw per-residue task perfor
 
 | Goal | Codec | Output | Storage |
 |------|-------|--------|---------|
-| Per-residue only | rp512 or fh512 | (L, 512) | 50% of raw |
+| Per-residue only | rp512 or fh512 | (L, 512) | 50% fp32 / 25% fp16 |
 | Retrieval only | [mean\|max] + Euclidean | (2048,) | ~8 KB/protein |
-| Both tasks | rp512 + dct K4 | (L, 512) + (2048,) | 50% of raw (fp32) / 25% (fp16) |
-| Max retrieval (willing to train) | Trained CC d256 | (L, 256) | 25% of raw |
+| Both tasks | rp512 + dct K4 | (L, 512) + (2048,) | 51% fp32 / 26% fp16 |
+| Max retrieval (willing to train) | Trained CC d256 | (L, 256) | 25% fp32 |
 
 ## Float16: Half the Storage, Zero Quality Loss
 
@@ -75,7 +75,7 @@ Max quantization error: 0.001 (cosine similarity 1.000000). Float16 is lossless 
 | **rp512 + dct K4 (fp16)** | **(L, 512) + (2048,)** | **179** | **26%** |
 | rp512 + dct K4 (fp32) | (L, 512) + (2048,) | 358 | 51% |
 | rp512 / fh512 (fp32) | (L, 512) | 350 | 50% |
-| Trained CC d256 | (L, 256) | 175 | 25% |
+| Trained CC d256 (fp32) | (L, 256) | 175 | 25% |
 | [mean\|max] only | (2048,) | 8 | 1% |
 | mean pool only | (1024,) | 4 | <1% |
 
@@ -110,15 +110,19 @@ Codec performance was validated on enzyme classification (EC numbers), Pfam doma
 ```python
 from src.one_embedding.codec import OneEmbeddingCodec
 
+# Default: float16 storage (~26% of raw size)
 codec = OneEmbeddingCodec(d_out=512, dct_k=4)
 
 # Single protein
 raw = h5f["protein_id"][:]                  # (L, 1024) raw PLM output
-encoded = codec.encode(raw)                 # returns dict
+encoded = codec.encode(raw)                 # returns dict (float16 arrays)
 codec.save(encoded, "protein_id.h5")        # self-contained file
 
 # Batch: entire H5 → single compressed H5
 codec.encode_h5_to_h5("raw_prot_t5.h5", "compressed.h5")
+
+# For full precision (51% of raw): pass dtype="float32"
+codec32 = OneEmbeddingCodec(d_out=512, dct_k=4, dtype="float32")
 ```
 
 ### Using the files (receiver side -- no codec code needed)
@@ -147,10 +151,10 @@ Each protein in the H5 contains:
 
 | Dataset | Shape | Description |
 |---------|-------|-------------|
-| `protein_vec` | (2048,) | Fixed-length protein vector (DCT K=4 of per-residue) |
-| `per_residue` | (L, 512) | Compressed per-residue embeddings (gzip) |
+| `protein_vec` | (2048,) | Fixed-length protein vector (DCT K=4 of per-residue), float16 |
+| `per_residue` | (L, 512) | Compressed per-residue embeddings (gzip), float16 |
 
-Plus JSON metadata in `attrs["metadata"]` with codec params, input dim, sequence length.
+Plus JSON metadata in `attrs["metadata"]` with codec params, input dim, sequence length, dtype.
 
 ## Quick Start
 
@@ -193,9 +197,7 @@ MIT. See [LICENSE](LICENSE).
 
 ![Trained Addendum](docs/figures/pub_trained_addendum.png)
 
-A pointwise MLP (1024 -> 512 -> 256) trained with unsupervised reconstruction then contrastive InfoNCE fine-tuning achieves Ret@1=0.795 +/- 0.012 (3-seed mean), outperforming the best training-free codec by +0.015. The training gain is modest but comes with 4x compression (256d vs 512d for rp512).
-
-![Architecture](docs/figures/readme_architecture.png)
+A pointwise MLP (1024 -> 512 -> 256) trained with unsupervised reconstruction then contrastive InfoNCE fine-tuning achieves Ret@1=0.795 +/- 0.012 (3-seed mean), outperforming the best training-free codec by +0.015. The training gain is modest but comes with 4x compression (256d vs 512d for rp512). Architecture: input (1024) -> LayerNorm -> Linear(512) -> GELU -> Residual -> Linear(256) -> output, with frozen decoder for reconstruction loss.
 
 ### Cross-Dataset Transfer
 
@@ -208,13 +210,9 @@ A pointwise MLP (1024 -> 512 -> 256) trained with unsupervised reconstruction th
 
 ### Scaling and Robustness
 
-![Scaling Curve](docs/figures/readme_scaling.png)
-
-Performance saturates at ~1200 proteins (75% of training data). 30-trial Optuna HPO confirmed near-optimality (p=0.29).
+Performance saturates at ~1200 proteins (75% of training data). 30-trial Optuna HPO confirmed near-optimality (p=0.29). Even 25% of the data (242 proteins) gives Ret@1=0.738.
 
 ### Architecture Ablations
-
-![Ablations](docs/figures/readme_ablations.png)
 
 | Ablation | Ret@1 | Delta |
 |----------|:-----:|:-----:|
@@ -226,8 +224,6 @@ Performance saturates at ~1200 proteins (75% of training data). 30-trial Optuna 
 Residual connections are critical. Unfreezing the decoder is a free lunch (same Ret@1, better reconstruction).
 
 ### Failure Analysis
-
-![Failure by Class](docs/figures/readme_failure_by_class.png)
 
 122/210 families (58%) achieve perfect Ret@1=1.0. Only 6 (3%) completely fail. Class e (multi-domain) is hardest (0.685), class f (membrane) easiest (0.936).
 
@@ -295,6 +291,7 @@ experiments/
   18-19                  One-embedding transforms + enriched pooling
   21-23                  Universal codec candidates + path geometry + Euclidean eval
   25-26                  Universal codec benchmark + chained codecs
+  27                     Float16 vs float32 benchmark
   make_publication_figures.py   Generate all figures in this README
 
 data/

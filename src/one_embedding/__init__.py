@@ -1,15 +1,16 @@
 """One Embedding: universal codec for PLM per-residue embeddings.
 
-Compresses raw PLM output (L, D) into a self-contained representation that
-serves both protein-level retrieval and per-residue structure prediction.
+Compresses raw PLM output (L, D) into a self-contained float16 representation
+(~26% of raw size) that serves both protein-level retrieval and per-residue
+structure prediction with zero quality loss vs float32.
 
 Quick start::
 
     from src.one_embedding.codec import OneEmbeddingCodec
 
-    codec = OneEmbeddingCodec(d_out=512, dct_k=4)
+    codec = OneEmbeddingCodec(d_out=512, dct_k=4)  # float16 default
     encoded = codec.encode(raw)       # raw: (L, 1024) → {per_residue, protein_vec}
-    codec.save(encoded, "out.h5")     # self-contained H5 file
+    codec.save(encoded, "out.h5")     # self-contained H5 file (float16)
 
     loaded = OneEmbeddingCodec.load("out.h5")
     loaded["protein_vec"]             # (2048,) for UMAP / retrieval

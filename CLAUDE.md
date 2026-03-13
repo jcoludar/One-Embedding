@@ -1,7 +1,7 @@
 # Protein Embedding Codec
 
 ## Project Overview
-Training-free universal codec for PLM per-residue embeddings. Compresses (L, D) to (L, 512) while preserving both per-residue tasks (97% SS3 retention) and protein-level retrieval (Ret@1=0.780). Also includes a trained ChannelCompressor (1024d → 256d, Ret@1=0.795) as a comparison point.
+Training-free universal codec for PLM per-residue embeddings. Compresses (L, D) to (L, 512) float16 — 25% of raw size — while preserving both per-residue tasks (97% SS3 retention) and protein-level retrieval (Ret@1=0.780). Float16 benchmarked with zero quality loss. Also includes a trained ChannelCompressor (1024d → 256d fp32, Ret@1=0.795) as a comparison point.
 
 ## Quick Start
 ```bash
@@ -31,9 +31,12 @@ uv run python experiments/17_scaling_and_ablations.py         # Scaling, ablatio
 ```python
 from src.one_embedding.codec import OneEmbeddingCodec
 
-# Encode: raw PLM output → compressed file
-codec = OneEmbeddingCodec(d_out=512, dct_k=4)
+# Encode: raw PLM output → compressed float16 file (~26% of raw size)
+codec = OneEmbeddingCodec(d_out=512, dct_k=4)          # float16 default
 codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.h5")
+
+# For full precision (51% of raw): dtype="float32"
+codec32 = OneEmbeddingCodec(d_out=512, dct_k=4, dtype="float32")
 
 # Decode (receiver side — just h5py, no codec code needed):
 import h5py
