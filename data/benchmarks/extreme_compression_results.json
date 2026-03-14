@@ -1,0 +1,555 @@
+{
+  "steps_done": [
+    "P1A",
+    "P1B",
+    "P1C",
+    "P1D",
+    "P2",
+    "P3"
+  ],
+  "results": {
+    "prot_t5_xl": {
+      "wavelet_db4_50": {
+        "family_ret1": 0.7341176470588235,
+        "mrr": 0.8137410941884515,
+        "cos_sim": 0.9370029038190841,
+        "encode_ms": 27.218582920031622,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 693452,
+        "size_zstd_bytes": 642828,
+        "compression_ratio": 1.0,
+        "ss3_q3": 0.8312594840667679
+      },
+      "wavelet_db4_75": {
+        "family_ret1": 0.7352941176470589,
+        "mrr": 0.814339063471019,
+        "cos_sim": 0.8147936296463013,
+        "encode_ms": 26.11128374992404,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 693452,
+        "size_zstd_bytes": 643322,
+        "compression_ratio": 1.0,
+        "ss3_q3": 0.8190060698027314
+      },
+      "wavelet_db4_90": {
+        "family_ret1": 0.7352941176470589,
+        "mrr": 0.8143678975450355,
+        "cos_sim": 0.6738634964823723,
+        "encode_ms": 27.126142499619164,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 693452,
+        "size_zstd_bytes": 643162,
+        "compression_ratio": 1.0,
+        "ss3_q3": 0.7795902883156297
+      },
+      "wavelet_db4_95": {
+        "family_ret1": 0.7352941176470589,
+        "mrr": 0.8146114351845188,
+        "cos_sim": 0.6042789882421493,
+        "encode_ms": 28.07760625029914,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 693452,
+        "size_zstd_bytes": 643034,
+        "compression_ratio": 1.0,
+        "ss3_q3": 0.7324734446130501
+      },
+      "cur_k32": {
+        "family_ret1": 0.7152941176470589,
+        "mrr": 0.79898780168315,
+        "cos_sim": 0.7183437559008599,
+        "encode_ms": 7.512494589900598,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 693452,
+        "size_zstd_bytes": 643464,
+        "compression_ratio": 1.0,
+        "ss3_q3": 0.6943474962063733
+      },
+      "cur_k64": {
+        "family_ret1": 0.7305882352941176,
+        "mrr": 0.8097716601495236,
+        "cos_sim": 0.8638360646367073,
+        "encode_ms": 9.221394169726409,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 693452,
+        "size_zstd_bytes": 643004,
+        "compression_ratio": 1.0,
+        "ss3_q3": 0.7639605462822459
+      },
+      "cur_k128": {
+        "family_ret1": 0.7329411764705882,
+        "mrr": 0.8121446413137469,
+        "cos_sim": 0.9633018860220909,
+        "encode_ms": 16.197569159558043,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 693452,
+        "size_zstd_bytes": 642452,
+        "compression_ratio": 1.0,
+        "ss3_q3": 0.8105842185128983
+      },
+      "cur_k256": {
+        "family_ret1": 0.7329411764705882,
+        "mrr": 0.8132276560558677,
+        "cos_sim": 0.99636754155159,
+        "encode_ms": 22.277218750095926,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 693452,
+        "size_zstd_bytes": 642064,
+        "compression_ratio": 1.0,
+        "ss3_q3": 0.8334597875569044
+      },
+      "prune_k64": {
+        "fitting": "none",
+        "per_residue": true,
+        "family_ret1": 0.6882352941176471,
+        "mrr": 0.7692706236157776,
+        "ss3_q3": 0.582587253414264,
+        "size_bytes": 43340,
+        "size_zstd_bytes": 40093,
+        "compression_ratio": 16.0,
+        "encode_ms": 0.04149292013607919
+      },
+      "prune_k128": {
+        "fitting": "none",
+        "per_residue": true,
+        "family_ret1": 0.7188235294117648,
+        "mrr": 0.8019146301718901,
+        "ss3_q3": 0.6646813353566009,
+        "size_bytes": 86681,
+        "size_zstd_bytes": 80175,
+        "compression_ratio": 8.0,
+        "encode_ms": 0.046906250063329935
+      },
+      "prune_k256": {
+        "fitting": "none",
+        "per_residue": true,
+        "family_ret1": 0.7282352941176471,
+        "mrr": 0.812191144766805,
+        "ss3_q3": 0.7486342943854325,
+        "size_bytes": 173363,
+        "size_zstd_bytes": 160383,
+        "compression_ratio": 4.0,
+        "encode_ms": 0.06332874996587634
+      },
+      "prune_k512": {
+        "fitting": "none",
+        "per_residue": true,
+        "family_ret1": 0.7352941176470589,
+        "mrr": 0.8182421743450335,
+        "ss3_q3": 0.8048179059180577,
+        "size_bytes": 346726,
+        "size_zstd_bytes": 320826,
+        "compression_ratio": 2.0,
+        "encode_ms": 0.10242916992865503
+      },
+      "delta_order1": {
+        "family_ret1": 0.7341176470588235,
+        "mrr": 0.8138807331145195,
+        "cos_sim": 1.0000000163912772,
+        "size_bytes": 693452,
+        "size_zstd_bytes": 640941,
+        "compression_ratio": 1.0,
+        "encode_ms": 0.026718330336734653,
+        "fitting": "none",
+        "per_residue": true,
+        "ss3_q3": 0.8401745068285281
+      },
+      "int8_raw": {
+        "family_ret1": 0.7341176470588235,
+        "mrr": 0.8138803108363092,
+        "cos_sim": 0.9999817398190498,
+        "encode_ms": 0.30254041019361466,
+        "fitting": "train_free",
+        "per_residue": true,
+        "size_bytes": 173363,
+        "size_zstd_bytes": 632944,
+        "compression_ratio": 4.0,
+        "ss3_q3": 0.8402503793626707
+      },
+      "int4_raw": {
+        "family_ret1": 0.7329411764705882,
+        "mrr": 0.8132746982020754,
+        "cos_sim": 0.9947604766488075,
+        "encode_ms": 0.36173374974168837,
+        "fitting": "train_free",
+        "per_residue": true,
+        "size_bytes": 86681,
+        "size_zstd_bytes": 322269,
+        "compression_ratio": 8.0,
+        "ss3_q3": 0.8388467374810319
+      },
+      "binary_raw": {
+        "family_ret1": 0.7247058823529412,
+        "mrr": 0.8081760095008574,
+        "cos_sim": 0.8073533350229263,
+        "encode_ms": 0.2648399997269735,
+        "fitting": "train_free",
+        "per_residue": true,
+        "size_bytes": 21670,
+        "size_zstd_bytes": 100453,
+        "compression_ratio": 32.0,
+        "ss3_q3": 0.8182852807283764
+      },
+      "int8_rp512": {
+        "family_ret1": 0.7305882352941176,
+        "mrr": 0.8134866841789666,
+        "cos_sim": NaN,
+        "encode_ms": 27.82093250018079,
+        "fitting": "train_free",
+        "per_residue": true,
+        "size_bytes": 86681,
+        "size_zstd_bytes": 311765,
+        "compression_ratio": 8.0,
+        "ss3_q3": 0.8146433990895295
+      },
+      "int4_rp512": {
+        "family_ret1": 0.7294117647058823,
+        "mrr": 0.8129031869008635,
+        "cos_sim": NaN,
+        "encode_ms": 27.801921669743024,
+        "fitting": "train_free",
+        "per_residue": true,
+        "size_bytes": 43340,
+        "size_zstd_bytes": 151334,
+        "compression_ratio": 16.0,
+        "ss3_q3": 0.8138846737481031
+      },
+      "binary_rp512": {
+        "family_ret1": 0.7282352941176471,
+        "mrr": 0.8102944424652772,
+        "cos_sim": NaN,
+        "encode_ms": 27.695645409985445,
+        "fitting": "train_free",
+        "per_residue": true,
+        "size_bytes": 10835,
+        "size_zstd_bytes": 48955,
+        "compression_ratio": 64.0,
+        "ss3_q3": 0.7745447647951441
+      },
+      "pq_M16": {
+        "family_ret1": 0.48470588235294115,
+        "mrr": 0.573246656858718,
+        "cos_sim": 0.4801294727622419,
+        "encode_ms": 1.0660629102494568,
+        "fitting": "corpus_fit",
+        "per_residue": true,
+        "size_bytes": 2708,
+        "size_zstd_bytes": 362780,
+        "compression_ratio": 256.0,
+        "ss3_q3": 0.7602427921092565
+      },
+      "pq_M32": {
+        "family_ret1": 0.6047058823529412,
+        "mrr": 0.6881818639891559,
+        "cos_sim": 0.5493628586742507,
+        "encode_ms": 1.860680830432102,
+        "fitting": "corpus_fit",
+        "per_residue": true,
+        "size_bytes": 5417,
+        "size_zstd_bytes": 393194,
+        "compression_ratio": 128.0,
+        "ss3_q3": 0.7672610015174507
+      },
+      "pq_M64": {
+        "family_ret1": 0.7011764705882353,
+        "mrr": 0.7807475964082234,
+        "cos_sim": 0.6749945107955148,
+        "encode_ms": 3.398709580069408,
+        "fitting": "corpus_fit",
+        "per_residue": true,
+        "size_bytes": 10835,
+        "size_zstd_bytes": 410738,
+        "compression_ratio": 64.0,
+        "ss3_q3": 0.7890743550834598
+      },
+      "rvq_2level": {
+        "family_ret1": 0.3447058823529412,
+        "mrr": 0.43638355388551753,
+        "cos_sim": 0.4155497806860319,
+        "encode_ms": 0.5178829201031476,
+        "fitting": "corpus_fit",
+        "per_residue": true,
+        "size_bytes": 338,
+        "size_zstd_bytes": 246523,
+        "compression_ratio": 2048.0,
+        "ss3_q3": 0.5816009104704097
+      },
+      "rvq_3level": {
+        "family_ret1": 0.36823529411764705,
+        "mrr": 0.46669157586795657,
+        "cos_sim": 0.4287930588314627,
+        "encode_ms": 0.7849566702498123,
+        "fitting": "corpus_fit",
+        "per_residue": true,
+        "size_bytes": 507,
+        "size_zstd_bytes": 398287,
+        "compression_ratio": 1365.3333333333335,
+        "ss3_q3": 0.5832321699544765
+      },
+      "tt_bd4": {
+        "family_ret1": 0.7341176470588235,
+        "mrr": 0.8138807331145195,
+        "cos_sim": 1.0000000090513648,
+        "encode_ms": 4.6078379097161815,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 713932,
+        "compression_ratio": 0.9713138267355135,
+        "ss3_q3": 0.8401745068285281
+      },
+      "tt_bd8": {
+        "family_ret1": 0.7341176470588235,
+        "mrr": 0.8138807331145195,
+        "cos_sim": 1.0000000093255386,
+        "encode_ms": 3.9152200001990427,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 730316,
+        "compression_ratio": 0.9495232753785754,
+        "ss3_q3": 0.8401745068285281
+      },
+      "tt_bd16": {
+        "family_ret1": 0.7341176470588235,
+        "mrr": 0.8138807331145195,
+        "cos_sim": 1.0000000091312566,
+        "encode_ms": 4.288709170068614,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 763084,
+        "compression_ratio": 0.9087493290391842,
+        "ss3_q3": 0.8401745068285281
+      },
+      "tt_bd32": {
+        "family_ret1": 0.7341176470588235,
+        "mrr": 0.8138807331145195,
+        "cos_sim": 1.000000009245647,
+        "encode_ms": 5.122487500193529,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 828620,
+        "compression_ratio": 0.8368759268413247,
+        "ss3_q3": 0.8401745068285281
+      },
+      "nmf_k16": {
+        "family_ret1": 0.3388235294117647,
+        "mrr": 0.4385648627072085,
+        "cos_sim": 0.34959057953253964,
+        "encode_ms": 8.177905000047758,
+        "fitting": "corpus_fit",
+        "per_residue": true,
+        "size_bytes": 10835,
+        "compression_ratio": 64.0,
+        "ss3_q3": 0.7199165402124431
+      },
+      "nmf_k32": {
+        "family_ret1": 0.4258823529411765,
+        "mrr": 0.5147641536960097,
+        "cos_sim": 0.44472728331079686,
+        "encode_ms": 19.74291207967326,
+        "fitting": "corpus_fit",
+        "per_residue": true,
+        "size_bytes": 21670,
+        "compression_ratio": 32.0,
+        "ss3_q3": 0.7726100151745068
+      },
+      "nmf_k64": {
+        "family_ret1": 0.48470588235294115,
+        "mrr": 0.5679103653878348,
+        "cos_sim": 0.5383521058942027,
+        "encode_ms": 85.89106458006427,
+        "fitting": "corpus_fit",
+        "per_residue": true,
+        "size_bytes": 43340,
+        "compression_ratio": 16.0,
+        "ss3_q3": 0.7879362670713201
+      },
+      "ot_100proj": {
+        "family_ret1": 0.562,
+        "mrr": 0.6518442394433877,
+        "n_queries": 500,
+        "n_proteins": 500,
+        "encode_ms": 1516.6595821380615,
+        "fitting": "none",
+        "per_residue": false,
+        "note": "distance metric, not a codec"
+      },
+      "tda_dim1": {
+        "error": "ripser/persim not installed"
+      },
+      "aa_resid_fp16": {
+        "error": "sequences not available"
+      },
+      "aa_resid_int8": {
+        "error": "sequences not available"
+      },
+      "aa_resid_int4": {
+        "error": "sequences not available"
+      },
+      "simhash_512": {
+        "family_ret1": 0.731764705882353,
+        "mrr": 0.8131912609309014,
+        "cos_sim": 0.4839050946611656,
+        "encode_ms": 6.466437089839019,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 10835,
+        "compression_ratio": 64.0,
+        "ss3_q3": 0.7606980273141123
+      },
+      "simhash_2048": {
+        "family_ret1": 0.7376470588235294,
+        "mrr": 0.8163260426060154,
+        "cos_sim": 0.7987398312163512,
+        "encode_ms": 25.173438750207424,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 43340,
+        "compression_ratio": 16.0,
+        "ss3_q3": 0.8196130500758725
+      },
+      "simhash_1024": {
+        "family_ret1": 0.7411764705882353,
+        "mrr": 0.818034139686236,
+        "cos_sim": 0.5630643710212151,
+        "encode_ms": 13.116610419820063,
+        "fitting": "none",
+        "per_residue": true,
+        "size_bytes": 21670,
+        "compression_ratio": 32.0,
+        "ss3_q3": 0.8009104704097116
+      },
+      "E1_wavelet_int8_zstd": {
+        "family_ret1": 0.7352941176470589,
+        "mrr": 0.8142334827772031,
+        "cos_sim": 0.798352673247152,
+        "fitting": "none",
+        "per_residue": true,
+        "pipeline": "wavelet(db4, 75%) -> int8 -> zstd size",
+        "size_bytes": 173363,
+        "compression_ratio": 4.0,
+        "size_zstd_bytes": 616001,
+        "ss3_q3": 0.8189681335356601
+      },
+      "E3_aa_resid_pq": {
+        "error": "AA centroids not available"
+      },
+      "E4_rp512_int8_zstd": {
+        "family_ret1": 0.7305882352941176,
+        "mrr": 0.8134866841789666,
+        "cos_sim": NaN,
+        "fitting": "none",
+        "per_residue": true,
+        "pipeline": "rp512 -> int8 -> zstd size",
+        "size_bytes": 86681,
+        "compression_ratio": 8.0,
+        "size_zstd_bytes": 311765,
+        "ss3_q3": 0.8146433990895295
+      },
+      "E5_delta_int4_zstd": {
+        "family_ret1": 0.13647058823529412,
+        "mrr": 0.20091848392718706,
+        "cos_sim": 0.635699556072202,
+        "fitting": "none",
+        "per_residue": true,
+        "pipeline": "delta -> int4 -> zstd size",
+        "size_bytes": 90265,
+        "compression_ratio": 7.6823596142938175,
+        "size_zstd_bytes": 324238,
+        "ss3_q3": 0.7369499241274658
+      },
+      "E6_rp512_int4_zstd": {
+        "family_ret1": 0.7294117647058823,
+        "mrr": 0.8129031869008635,
+        "cos_sim": NaN,
+        "fitting": "none",
+        "per_residue": true,
+        "pipeline": "rp512 -> int4 -> zstd size",
+        "size_bytes": 43340,
+        "compression_ratio": 16.0,
+        "size_zstd_bytes": 151334,
+        "ss3_q3": 0.8138846737481031
+      },
+      "E2_cur_pq": {
+        "family_ret1": 0.7139303482587065,
+        "mrr": 0.7973545456232212,
+        "cos_sim": 0.6166870901832715,
+        "fitting": "corpus_fit",
+        "per_residue": true,
+        "pipeline": "CUR(k=64) -> PQ(M=8) on selected columns",
+        "size_bytes": 1480,
+        "compression_ratio": 512.0
+      }
+    },
+    "esm2_650m": {
+      "simhash_1024": {
+        "family_ret1": 0.5929411764705882,
+        "mrr": 0.6741828185369159,
+        "cos_sim": 0.457777855435454,
+        "per_residue": true
+      },
+      "simhash_2048": {
+        "family_ret1": 0.6188235294117647,
+        "mrr": 0.6979112059261942,
+        "cos_sim": 0.7158632798791458,
+        "per_residue": true
+      },
+      "wavelet_db4_75": {
+        "family_ret1": 0.6176470588235294,
+        "mrr": 0.6985598593870895,
+        "cos_sim": 0.9103102983033787,
+        "per_residue": true
+      },
+      "wavelet_db4_90": {
+        "family_ret1": 0.6164705882352941,
+        "mrr": 0.6979450884436963,
+        "cos_sim": 0.8610775646404565,
+        "per_residue": true
+      },
+      "wavelet_db4_95": {
+        "family_ret1": 0.6176470588235294,
+        "mrr": 0.6983479506196023,
+        "cos_sim": 0.8391863376589426,
+        "per_residue": true
+      }
+    },
+    "esmc_300m": {
+      "simhash_1024": {
+        "family_ret1": 0.3176470588235294,
+        "mrr": 0.3943169187008091,
+        "cos_sim": 0.32616785252352465,
+        "per_residue": true
+      },
+      "simhash_2048": {
+        "family_ret1": 0.38235294117647056,
+        "mrr": 0.4680790542494997,
+        "cos_sim": 0.8195173560993814,
+        "per_residue": true
+      },
+      "wavelet_db4_75": {
+        "family_ret1": 0.3870588235294118,
+        "mrr": 0.4700568285797829,
+        "cos_sim": 0.8942864099396322,
+        "per_residue": true
+      },
+      "wavelet_db4_90": {
+        "family_ret1": 0.3870588235294118,
+        "mrr": 0.4700545554207072,
+        "cos_sim": 0.8365018816468093,
+        "per_residue": true
+      },
+      "wavelet_db4_95": {
+        "family_ret1": 0.3870588235294118,
+        "mrr": 0.4700104842534655,
+        "cos_sim": 0.8110672475654194,
+        "per_residue": true
+      }
+    }
+  }
+}

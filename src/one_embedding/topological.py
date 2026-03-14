@@ -269,13 +269,15 @@ def simhash_decode_approx(compressed: dict) -> np.ndarray:
     norms = np.linalg.norm(W, axis=1, keepdims=True)
     W /= norms  # (n_bits, D)
 
-    # Least-squares: solve signs ≈ matrix @ W.T → matrix ≈ signs @ pinv(W.T)
-    # pinv(W.T) = pinv of (D, n_bits) = (n_bits, D) ... use lstsq
-    # signs (L, n_bits), W (n_bits, D) → result (L, D)
-    # We want X such that X @ W.T ≈ signs → X ≈ signs @ (W.T)^+
-    Wt = W.T  # (D, n_bits)
-    Wt_pinv = np.linalg.pinv(Wt)  # (n_bits, D)
-    result = (signs @ Wt_pinv).astype(np.float32)  # (L, D)
+    # Solve signs ≈ matrix @ W.T for matrix via least-squares.
+    # Rewrite as: W @ matrix.T = signs.T, solve for matrix.T.
+    # Square random Gaussian matrices (n_bits == D) are ill-conditioned
+    # (cond > 5000) due to Marchenko-Pastur eigenvalue spread. Use rcond
+    # to truncate small singular values and stabilise reconstruction.
+    # W (n_bits, D), signs.T (n_bits, L) → result (D, L)
+    rcond = 0.1 if n_bits == D else None
+    result, _, _, _ = np.linalg.lstsq(W, signs.T, rcond=rcond)
+    result = result.T.astype(np.float32)  # (L, D)
     return result
 
 
