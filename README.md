@@ -318,6 +318,10 @@ Motivation: can we get useful compression WITHOUT training? Tested one-embedding
 
 Nobody had tried: D-compress THEN smart pool. rp512 + dct_K4: 0.780 Ret@1 with 0.815 SS3 -- both tasks from one codec. Fixed kernel mean with median heuristic (0.005 -> 0.728). Cosine deviation weighting: +0.011 over mean pool.
 
+### Phase 19: Extreme Compression Benchmark (Exp 28)
+
+Exhaustive sweep of 39 codecs across 5 categories: wavelet thresholding, CUR decomposition, channel pruning, delta encoding, int8/int4/binary quantization, random projection + quantization, product quantization, residual VQ, tensor train decomposition, NMF, sliced Wasserstein distance, SimHash/LSH, and multi-stage pipelines. Cross-validated on 3 PLMs (ProtT5, ESM2, ESM-C). See [Experiment 28 Results](#experiment-28-extreme-compression) below.
+
 ### Key Lessons
 
 - Architecture matters less than training objective (contrastive >> reconstruction)
@@ -325,6 +329,92 @@ Nobody had tried: D-compress THEN smart pool. rp512 + dct_K4: 0.780 Ret@1 with 0
 - Composition unlocks both-task performance (chain D-compress + smart pool)
 - Always test at scale -- attention pool collapsed when data grew
 - Negative results are informative -- path geometry, Brillouin, two-head all taught us about embedding geometry
+
+---
+
+## Experiment 28: Extreme Compression
+
+We benchmarked 39 compression codecs to answer: can we go beyond the OneEmbeddingCodec's 4x compression while preserving both per-protein retrieval and per-residue quality? **The honest answer: not without trade-offs.**
+
+![Extreme Compression Pareto](docs/figures/pub_extreme_compression_pareto.png)
+
+### The Pareto Front (Ret@1 vs Size)
+
+| Codec | Ret@1 | SS3 Q3 | SS3 Ret% | Size | Ratio | Fitting |
+|-------|:-----:|:------:|:--------:|:----:|:-----:|:-------:|
+| **SimHash-1024** | **0.741** | 0.801 | 94.8% | 21 KB | 32x | None |
+| SimHash-2048 | 0.738 | 0.820 | 97.0% | 42 KB | 16x | None |
+| SimHash-512 | 0.732 | 0.761 | 90.1% | 11 KB | 64x | None |
+| CUR+PQ (pipeline) | 0.714 | -- | -- | 1 KB | 512x | Corpus |
+| *Baseline: raw mean pool* | *0.734* | *0.845* | *100%* | *678 KB* | *1x* | *--* |
+| *OneEmbeddingCodec (rp512+dct K4)* | *0.780* | *0.815* | *96.4%* | *179 KB* | *4x* | *None* |
+
+### What Works (and What Doesn't)
+
+**Winners for honest compression:**
+
+| Codec | Ret@1 | SS3 Q3 | SS3 Ret% | Size | Best For |
+|-------|:-----:|:------:|:--------:|:----:|----------|
+| int8 (raw) | 0.734 | 0.840 | 99.4% | 169 KB | Lossless-quality, 4x |
+| int4 (raw) | 0.733 | 0.839 | 99.3% | 85 KB | Near-lossless, 8x |
+| int4+rp512 | 0.729 | 0.814 | 96.3% | 42 KB | Both tasks, 16x |
+| binary+rp512 | 0.728 | 0.775 | 91.7% | 11 KB | Aggressive, 64x |
+| SimHash-1024 | 0.741 | 0.801 | 94.8% | 21 KB | Retrieval-first, 32x |
+
+**Negative results (do not use):**
+
+| Category | Codecs | Ret@1 | Why |
+|----------|--------|:-----:|-----|
+| NMF | k=16/32/64 | 0.34-0.49 | Negative shift destroys information |
+| RVQ | 2-3 level | 0.35-0.37 | Single-codebook can't represent 1024d |
+| Tensor Train | bd=4-32 | 0.734 | Lossless but NO compression (same size) |
+| OT (Wasserstein) | 100 proj | 0.562 | 758 seconds for 500 proteins |
+| Delta+Int4 | pipeline | 0.136 | Ordering-sensitive, destroys retrieval |
+| PQ (M=16) | -- | 0.485 | Too few subspaces for 1024d |
+
+### The Hard Truth
+
+1. **SimHash-1024 is the only codec that beats raw mean pool on retrieval** (0.741 vs 0.734) while compressing 32x. But it drops SS3 from 0.845 to 0.801 (94.8% retention) -- just below the 95% threshold.
+
+2. **No codec achieves all three: better retrieval + ≥95% SS3 + significant compression.** The codecs that preserve SS3 well (int8, int4) don't improve retrieval. The ones that improve retrieval (SimHash) sacrifice per-residue quality.
+
+3. **The OneEmbeddingCodec (rp512+dct_K4) is still the best both-task codec.** At Ret@1=0.780 it outperforms every extreme codec by 0.039+. The DCT frequency pooling for the protein-level vector is the key -- extreme codecs using plain mean pool can't match it.
+
+4. **Quantization is the real winner for practical compression.** int4 gives 8x compression with 99.3% SS3 retention -- effectively lossless. Combining with rp512 for 16x is the sweet spot for storage-constrained deployments.
+
+5. **Cross-PLM generalization is mixed.** Wavelet thresholding generalizes well across PLMs. SimHash-1024 drops from 0.741 (ProtT5) to 0.593 (ESM2) to 0.318 (ESM-C) -- the random hyperplane projection is less stable across embedding geometries.
+
+### Cross-PLM Validation
+
+| Codec | ProtT5 | ESM2-650M | ESM-C 300M |
+|-------|:------:|:---------:|:----------:|
+| SimHash-2048 | 0.738 | 0.619 | 0.382 |
+| Wavelet db4 75% | 0.735 | 0.618 | 0.387 |
+| SimHash-1024 | 0.741 | 0.593 | 0.318 |
+
+### What This Means for the Codec
+
+The extreme compression experiment confirms that the existing OneEmbeddingCodec design (rp512 + dct_K4, float16) is well-positioned:
+
+- **For maximum quality**: use the default codec (179 KB, Ret@1=0.780, SS3=0.815)
+- **For 8x compression**: apply int4 quantization on top (85 KB, negligible quality loss)
+- **For 16x compression**: int4+rp512 (42 KB, Ret@1=0.729, SS3=0.814)
+- **For retrieval-first use cases**: SimHash-1024 (21 KB, Ret@1=0.741, but SS3 drops to 0.801)
+- **For extreme compression (512x)**: CUR+PQ pipeline (1 KB, Ret@1=0.714, per-residue lost)
+
+The 4KB per-protein-only target was not achievable while retaining per-residue quality. Per-residue information inherently requires O(L x D) storage, and there is no free lunch.
+
+### Techniques Benchmarked
+
+**Category A — Signal Processing:** Wavelet thresholding (db4, 50-95%), CUR decomposition (k=32-256), channel pruning by variance (k=64-512), delta encoding
+
+**Category B — Quantization:** Int8, Int4, Binary (raw and rp512-projected), Product Quantization (M=16/32/64), Residual Vector Quantization (2-3 level)
+
+**Category C — Novel Math:** Tensor Train decomposition (bond dim 4-32), Non-Negative Matrix Factorization (k=16-64), Sliced Wasserstein Distance, Persistent Homology (TDA)
+
+**Category D — Structure-Aware:** SimHash/LSH (512-2048 bits), Amino Acid Residual Coding (skipped -- sequences not stored in H5)
+
+**Category E — Multi-Stage Pipelines:** Wavelet+Int8+zstd, CUR+PQ, rp512+Int8+zstd, Delta+Int4+zstd, rp512+Int4+zstd
 
 ---
 
@@ -336,7 +426,9 @@ src/
   extraction/            ESM2, ProtT5, ESM-C embedding extraction
   training/              Unified trainer with reconstruction + contrastive losses
   evaluation/            Retrieval, classification, per-residue probes, stats
-  one_embedding/         DCT, Haar, enriched transforms, universal codecs
+  one_embedding/         DCT, Haar, enriched transforms, universal codecs,
+                         extreme compression, quantization, tensor decomposition,
+                         topological transforms
 
 experiments/
   01-04                  Setup, baselines, strategy comparison
@@ -345,6 +437,7 @@ experiments/
   21-23                  Universal codec candidates + path geometry + Euclidean eval
   25-26                  Universal codec benchmark + chained codecs
   27                     Float16 vs float32 benchmark
+  28                     Extreme compression benchmark (39 codecs × 3 PLMs)
   make_publication_figures.py   Generate all figures in this README
 
 data/
