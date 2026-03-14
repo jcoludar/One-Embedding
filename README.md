@@ -336,7 +336,7 @@ Exhaustive sweep of 39 codecs across 5 categories: wavelet thresholding, CUR dec
 
 We benchmarked 39 compression codecs to answer: can we go beyond the OneEmbeddingCodec's 4x compression while preserving both per-protein retrieval and per-residue quality? **The honest answer: not without trade-offs.**
 
-![Extreme Compression Pareto](docs/figures/pub_extreme_compression_pareto.png)
+![Extreme Compression Pareto](docs/figures/pub_extreme_pareto.png)
 
 ### The Pareto Front (Ret@1 vs Size)
 
@@ -349,7 +349,15 @@ We benchmarked 39 compression codecs to answer: can we go beyond the OneEmbeddin
 | *Baseline: raw mean pool* | *0.734* | *0.845* | *100%* | *678 KB* | *1x* | *--* |
 | *OneEmbeddingCodec (rp512+dct K4)* | *0.780* | *0.815* | *96.4%* | *179 KB* | *4x* | *None* |
 
+### Per-Residue Quality Across All Codecs
+
+![SS3 Retention](docs/figures/pub_extreme_ss3_retention.png)
+
+Quantization codecs (int8, int4) preserve per-residue quality almost perfectly. Aggressive compression (SimHash, PQ, NMF) trades SS3 for size. The 95% retention threshold separates practical codecs from lossy ones.
+
 ### What Works (and What Doesn't)
+
+![Both-Task Tradeoff](docs/figures/pub_extreme_both_task.png)
 
 **Winners for honest compression:**
 
@@ -384,7 +392,13 @@ We benchmarked 39 compression codecs to answer: can we go beyond the OneEmbeddin
 
 5. **Cross-PLM generalization is mixed.** Wavelet thresholding generalizes well across PLMs. SimHash-1024 drops from 0.741 (ProtT5) to 0.593 (ESM2) to 0.318 (ESM-C) -- the random hyperplane projection is less stable across embedding geometries.
 
+### Category Champions
+
+![Category Summary](docs/figures/pub_extreme_category_summary.png)
+
 ### Cross-PLM Validation
+
+![Cross-PLM](docs/figures/pub_extreme_cross_plm.png)
 
 | Codec | ProtT5 | ESM2-650M | ESM-C 300M |
 |-------|:------:|:---------:|:----------:|
