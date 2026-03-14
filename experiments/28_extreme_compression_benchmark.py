@@ -183,17 +183,32 @@ def eval_retrieval(vectors, metadata, test_ids):
 
 
 def compute_cos_sim(original, reconstructed):
-    """Mean cosine similarity between original and reconstructed matrices."""
+    """Mean per-residue cosine similarity between original and reconstructed.
+
+    Handles D-compressed variants: if D dimensions differ (e.g. 1024 vs 512),
+    returns NaN since vectors are in different spaces and CosSim is undefined.
+    """
     sims = []
     for pid in original:
         if pid not in reconstructed:
             continue
-        orig = original[pid].astype(np.float32).ravel()
-        recon = reconstructed[pid].astype(np.float32).ravel()
-        norm_o = np.linalg.norm(orig)
-        norm_r = np.linalg.norm(recon)
-        if norm_o > 1e-8 and norm_r > 1e-8:
-            sims.append(float(np.dot(orig, recon) / (norm_o * norm_r)))
+        orig = original[pid].astype(np.float32)
+        recon = reconstructed[pid].astype(np.float32)
+        # Different D dimension = different space, CosSim undefined
+        if orig.shape[-1] != recon.shape[-1]:
+            return float("nan")
+        # Truncate to matching L (some codecs may pad/truncate)
+        min_L = min(orig.shape[0], recon.shape[0])
+        orig = orig[:min_L]
+        recon = recon[:min_L]
+        # Per-row cosine similarity
+        dots = np.sum(orig * recon, axis=-1)
+        norm_o = np.linalg.norm(orig, axis=-1)
+        norm_r = np.linalg.norm(recon, axis=-1)
+        valid = (norm_o > 1e-8) & (norm_r > 1e-8)
+        if valid.any():
+            row_sims = dots[valid] / (norm_o[valid] * norm_r[valid])
+            sims.extend(row_sims.tolist())
     return float(np.mean(sims)) if sims else 0.0
 
 
@@ -756,7 +771,7 @@ def step_P1b(results):
                 compressed = encode_fn(m)
                 try:
                     q_sizes.append(compressed_size_bytes(compressed))
-                except (ValueError, KeyError):
+                except (ValueError, KeyError, AttributeError, TypeError):
                     # PQ/RVQ codes: compute from array directly
                     if isinstance(compressed, np.ndarray):
                         q_sizes.append(compressed.nbytes)
@@ -1556,6 +1571,8 @@ def step_P2(results):
                     if pid not in embeddings:
                         continue
                     m = embeddings[pid].astype(np.float32)
+                    if m.shape[0] < 64:  # skip short proteins
+                        continue
                     cd = cur_decompose(m, k=64)
                     cur_train[pid] = cd["C"]  # (L, 64)
 
@@ -1565,6 +1582,8 @@ def step_P2(results):
                         if pid not in embeddings:
                             continue
                         m = embeddings[pid].astype(np.float32)
+                        if m.shape[0] < 64:  # skip short proteins
+                            continue
                         cd = cur_decompose(m, k=64)
                         C = cd["C"]  # (L, 64)
                         codes = pq_encode(C, pq_model_cur)
