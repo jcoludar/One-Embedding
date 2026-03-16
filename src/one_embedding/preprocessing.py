@@ -16,7 +16,7 @@ from sklearn.decomposition import PCA
 
 
 def compute_corpus_stats(
-    embeddings: np.ndarray,
+    embeddings,
     n_sample: int = 50_000,
     n_pcs: int = 3,
     seed: int = 42,
@@ -28,11 +28,10 @@ def compute_corpus_stats(
     rotation matrix.
 
     Args:
-        embeddings: (N, D) matrix of residue embeddings (float32).
+        embeddings: Either (N, D) matrix or dict {id: (L, D)} of residue
+            embeddings. If dict, all residues are stacked.
         n_sample: Maximum number of rows to subsample for PCA fitting.
-            If N <= n_sample, all rows are used.
-        n_pcs: Number of top principal components to extract for
-            all-but-the-top removal.
+        n_pcs: Number of top principal components to extract.
         seed: Random seed for reproducible subsampling.
 
     Returns:
@@ -43,7 +42,10 @@ def compute_corpus_stats(
             explained_variance: (n_pcs,) variance explained by each PC.
             rotation_matrix: (D, D) full PCA rotation matrix (components).
     """
-    embeddings = np.asarray(embeddings, dtype=np.float32)
+    if isinstance(embeddings, dict):
+        embeddings = np.vstack([v.astype(np.float32) for v in embeddings.values()])
+    else:
+        embeddings = np.asarray(embeddings, dtype=np.float32)
     N, D = embeddings.shape
 
     # Subsample if corpus is large

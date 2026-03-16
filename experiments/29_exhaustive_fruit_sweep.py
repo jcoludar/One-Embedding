@@ -86,7 +86,12 @@ def load_metadata():
 
 def load_split():
     with open(SPLIT_PATH) as f:
-        return json.load(f)
+        raw = json.load(f)
+    # Normalize key names (file uses train_ids/test_ids)
+    return {
+        "train": raw.get("train_ids", raw.get("train", [])),
+        "test": raw.get("test_ids", raw.get("test", [])),
+    }
 
 
 def load_plm_embeddings(plm_stem, dataset="medium5k"):
@@ -706,14 +711,14 @@ def step_E(results):
     print("\n  E1: int4 of rp512 output...")
     def _rp_int4_dct(m):
         compressed = random_orthogonal_project(m, d_out=512)
-        q, params = quantize_int4(compressed)
-        deq = dequantize_int4(q, params)
+        q = quantize_int4(compressed)
+        deq = dequantize_int4(q)
         return dct_summary(deq, K=4)
 
     def _rp_int4(m):
         compressed = random_orthogonal_project(m, d_out=512)
-        q, params = quantize_int4(compressed)
-        return dequantize_int4(q, params)
+        q = quantize_int4(compressed)
+        return dequantize_int4(q)
 
     r_e1 = benchmark_protein_vec("rp512_int4_dct_K4", _rp_int4_dct, embeddings,
                                   test_ids, metadata, cb513_data, _rp_int4)
@@ -724,14 +729,14 @@ def step_E(results):
     print("\n  E1b: int8 of rp512 output...")
     def _rp_int8_dct(m):
         compressed = random_orthogonal_project(m, d_out=512)
-        q, params = quantize_int8(compressed)
-        deq = dequantize_int8(q, params)
+        q = quantize_int8(compressed)
+        deq = dequantize_int8(q)
         return dct_summary(deq, K=4)
 
     def _rp_int8(m):
         compressed = random_orthogonal_project(m, d_out=512)
-        q, params = quantize_int8(compressed)
-        return dequantize_int8(q, params)
+        q = quantize_int8(compressed)
+        return dequantize_int8(q)
 
     r_e1b = benchmark_protein_vec("rp512_int8_dct_K4", _rp_int8_dct, embeddings,
                                    test_ids, metadata, cb513_data, _rp_int8)
@@ -770,8 +775,8 @@ def step_E(results):
         dct_coeffs = scipy_dct(Xt, type=2, norm='ortho', axis=1)
         n_keep = max(1, int(L * 0.5))
         truncated = dct_coeffs[:, :n_keep].T.astype(np.float32)
-        q, params = quantize_int4(truncated)
-        deq = dequantize_int4(q, params)
+        q = quantize_int4(truncated)
+        deq = dequantize_int4(q)
         full_coeffs = np.zeros((D, L), dtype=np.float64)
         full_coeffs[:, :n_keep] = deq.T
         return scipy_idct(full_coeffs, type=2, norm='ortho', axis=1).T.astype(np.float32)
@@ -791,8 +796,8 @@ def step_E(results):
         L, D = m.shape
         first_row = m[0:1]  # (1, D) — stored exactly
         deltas = np.diff(m, axis=0)  # (L-1, D)
-        q, params = quantize_int4(deltas)
-        deq = dequantize_int4(q, params)
+        q = quantize_int4(deltas)
+        deq = dequantize_int4(q)
         recon = np.zeros_like(m)
         recon[0] = first_row[0]
         recon[1:] = first_row[0] + np.cumsum(deq, axis=0)
@@ -811,8 +816,8 @@ def step_E(results):
         L, D = m.shape
         first_row = m[0:1]
         deltas = np.diff(m, axis=0)
-        q, params = quantize_int8(deltas)
-        deq = dequantize_int8(q, params)
+        q = quantize_int8(deltas)
+        deq = dequantize_int8(q)
         recon = np.zeros_like(m)
         recon[0] = first_row[0]
         recon[1:] = first_row[0] + np.cumsum(deq, axis=0)
@@ -1140,10 +1145,13 @@ def step_I(results):
     for pid in test_ids:
         if pid not in embeddings:
             continue
-        sh_vecs[pid] = simhash_encode(embeddings[pid][:MAX_LEN].astype(np.float32),
-                                       n_bits=1024).astype(np.float32)
+        sh_result = simhash_encode(embeddings[pid][:MAX_LEN].astype(np.float32),
+                                    n_bits=1024)
+        # Unpack bits from dict, convert to float for distance computation
+        bits = np.unpackbits(sh_result["bits"].flatten())[:1024]
+        sh_vecs[pid] = bits.astype(np.float32)
 
-    ret_sh = eval_retrieval(sh_vecs, metadata, test_ids, metric="hamming")
+    ret_sh = eval_retrieval(sh_vecs, metadata, test_ids, metric="cosine")
     print(f"    SimHash Ret@1={ret_sh['precision@1']:.4f}")
 
     # Level 2: Codec protein_vec
@@ -1163,9 +1171,9 @@ def step_I(results):
     pids_list = [pid for pid in test_ids if pid in sh_vecs and pid in codec_vecs]
     sh_matrix = np.array([sh_vecs[pid] for pid in pids_list])
     codec_matrix = np.array([codec_vecs[pid] for pid in pids_list])
-    id_to_family = {m["protein_id"]: m.get("family", "") for m in metadata}
+    id_to_family = {m.get("protein_id", m.get("id", "")): m.get("family", "") for m in metadata}
 
-    sh_dists = cdist(sh_matrix, sh_matrix, metric="hamming")
+    sh_dists = cdist(sh_matrix, sh_matrix, metric="cosine")
 
     correct, total = 0, 0
     for i, pid in enumerate(pids_list):
