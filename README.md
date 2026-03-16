@@ -408,6 +408,38 @@ PCA512 preserves more SS3 than RP (0.832 vs 0.815) because it's data-adapted, bu
 
 The three-level architecture works but SimHash's coarse filtering (0.417 at 1024-bit) limits cascade quality. For billion-scale retrieval, more SimHash bits (4096+) or learned hashing would be needed.
 
+### Smart Combinations (Part J)
+
+Combine the winning techniques from Parts A–H to find the best stacked pipeline.
+
+| Combination | Ret@1 | SS3 Q3 | Notes |
+|-------------|:-----:|:------:|-------|
+| **ABTT k=3 + [mean\|max] Euclidean** | **0.791** | -- | **New best training-free retrieval** |
+| [mean\|max\|std] Euclidean | 0.789 | -- | Retrieval-only, no RP needed |
+| center + ABTT k=3 + rp512 + dct_K4 | **0.786** | 0.811 | **Best both-task codec** |
+| center + ABTT k=3 + rp512 + int4 | **0.786** | 0.808 | Best compressed both-task (~45 KB) |
+| PCA rot + ABTT k=3 + rp512 | 0.785 | 0.814 | Slight SS3 benefit |
+| ABTT k=3 + rp512 + int4 | 0.784 | 0.809 | int4 regularization |
+| z-score + ABTT k=3 + rp512 | 0.784 | 0.814 | z-score helps SS3 |
+| ABTT k=3 + sparse_rp512 | 0.781 | 0.813 | Deployment-friendly |
+| ABTT k=3 + [mean\|std\|skew] + rp512 pr | 0.780 | 0.811 | Novel vec + standard pr |
+| *ABTT k=3 + rp512 (from Part A)* | *0.786* | *0.811* | *Single best from Part A* |
+| **ESM2: ABTT k=3 + rp512** | **0.755** | -- | **+0.072 vs raw ESM2 (0.684)** |
+
+**Key findings from combinations:**
+
+1. **ABTT k=3 + [mean|max] Euclidean = 0.791** is the new best training-free retrieval (retrieval-only, no per-residue). Stacking ABTT with the existing [mean|max] Euclidean winner (was 0.786) gives another +0.005.
+
+2. **center + ABTT k=3 + rp512 + dct_K4 = 0.786** ties with plain ABTT k=3 + rp512 for both-task codec. Centering doesn't add on top of ABTT — they overlap (ABTT implicitly centers by removing dominant PCs).
+
+3. **int4 quantization stacks**: ABTT k=3 + rp512 + int4 = 0.784. The regularization effect holds even with pre-processing.
+
+4. **ABTT k=3 confirmed optimal**: k=2 (0.784), k=3 (0.786), k=4 (0.785), k=5 (0.785). Plateau at k=3-5.
+
+5. **ESM2 massive improvement**: ABTT k=3 on ESM2 gives +0.072 Ret@1 (0.684→0.755). ESM2 has very concentrated PCs (participation ratio=41 vs ProtT5=374), so removing the dominant components has a much larger effect.
+
+6. **Euclidean metric wins for multi-stat vectors**: [mean|std|skew] Euclidean = 0.699 (terrible), but [mean|max|std] Euclidean = 0.789 (excellent). The max-pool component benefits from Euclidean, while std/skew do not.
+
 ### Negative Results Summary
 
 | Technique | Expected | Got | Why It Failed |
