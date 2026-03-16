@@ -440,6 +440,73 @@ Combine the winning techniques from Parts A–H to find the best stacked pipelin
 
 6. **Euclidean metric wins for multi-stat vectors**: [mean|std|skew] Euclidean = 0.699 (terrible), but [mean|max|std] Euclidean = 0.789 (excellent). The max-pool component benefits from Euclidean, while std/skew do not.
 
+### Top 5 Methods: Head-to-Head Comparison
+
+The definitive comparison of the five best training-free methods from all 29 experiments. All numbers on ProtT5-XL, SCOPe 5K (n=850 test queries). Raw embedding size: 704 KB/protein (mean L=172, D=1024, fp32).
+
+#### Retrieval Quality
+
+| # | Method | Family Ret@1 | MRR | SF Ret@1 | Fold Ret@1 | Metric |
+|:-:|--------|:-----:|:---:|:--------:|:----------:|:------:|
+| 1 | **ABTT k=3 + [mean\|max] Euclidean** | **0.791** | 0.852 | 0.940 | 0.945 | Euclidean |
+| 2 | **[mean\|max\|std] Euclidean** | **0.789** | 0.851 | 0.933 | 0.938 | Euclidean |
+| 3 | **center + ABTT k=3 + rp512 + dct_K4** | **0.786** | **0.857** | **0.953** | **0.957** | Cosine |
+| 4 | **ABTT k=3 + rp512 + dct_K4** | **0.786** | **0.857** | **0.953** | **0.957** | Cosine |
+| 5 | **ABTT k=3 + rp512 + int4 + dct_K4** | **0.784** | 0.855 | 0.952 | 0.955 | Cosine |
+| -- | *Raw mean pool (ground zero)* | *0.734* | *0.814* | *0.900* | *0.909* | *Cosine* |
+| -- | *Previous best (rp512+dct_K4, no ABTT)* | *0.780* | *0.853* | *0.952* | *0.954* | *Cosine* |
+
+Methods 3-5 substantially outperform methods 1-2 on **remote homology** (superfamily/fold), even though 1-2 win on family retrieval. The DCT frequency pooling concentrates structural signal that [mean|max] misses.
+
+#### Per-Residue Quality (SS3 Secondary Structure)
+
+| # | Method | SS3 Q3 | % of Raw (0.845) | Has Per-Residue? |
+|:-:|--------|:------:|:----------------:|:----------------:|
+| 1 | ABTT k=3 + [mean\|max] Euc | -- | -- | No |
+| 2 | [mean\|max\|std] Euc | -- | -- | No |
+| 3 | center + ABTT k=3 + rp512 + dct_K4 | **0.811** | **96.0%** | Yes (L, 512) |
+| 4 | ABTT k=3 + rp512 + dct_K4 | **0.811** | **96.0%** | Yes (L, 512) |
+| 5 | ABTT k=3 + rp512 + int4 + dct_K4 | **0.809** | **95.7%** | Yes (L, 512) |
+| -- | *Raw (ground zero)* | *0.845* | *100%* | *Yes (L, 1024)* |
+
+Methods 1-2 are **retrieval-only** -- they produce a single protein vector and destroy all per-residue information. Methods 3-5 serve **both tasks** from a single encoded representation.
+
+#### Storage and Speed
+
+| # | Method | Vec Dim | Per-Residue | Size (fp16) | Size (int4) | Compression | Encode ms |
+|:-:|--------|:-------:|:-----------:|:-----------:|:-----------:|:-----------:|:---------:|
+| 1 | ABTT k=3 + [mean\|max] Euc | 2048 | -- | **4 KB** | -- | **172x** | **0.12** |
+| 2 | [mean\|max\|std] Euc | 3072 | -- | **6 KB** | -- | **115x** | **0.11** |
+| 3 | center + ABTT k=3 + rp512 + dct | 2048 | (L, 512) | 176 KB | 47 KB | 3.9x / 15x | 29 |
+| 4 | ABTT k=3 + rp512 + dct | 2048 | (L, 512) | 176 KB | 47 KB | 3.9x / 15x | 29 |
+| 5 | ABTT k=3 + rp512 + int4 + dct | 2048 | (L, 512) | 176 KB | **47 KB** | 3.9x / **15x** | 28 |
+| -- | *Raw* | *1024* | *(L, 1024)* | *704 KB* | -- | *1x* | *--* |
+
+Methods 1-2 are **250x faster** to encode (0.1 ms vs 29 ms) because they don't need the random projection matrix multiplication. Methods 3-5 are identical in speed (the RP dominates). int4 quantization (method 5) enables 15x compression while retaining both tasks.
+
+#### What Each Method Needs
+
+| # | Method | Needs Stored | Needs Training Data? | PLM-Agnostic? |
+|:-:|--------|:------------:|:--------------------:|:-------------:|
+| 1 | ABTT k=3 + [mean\|max] Euc | 3 PC vectors (12 KB) | Yes (for PCs) | Per-PLM PCs |
+| 2 | [mean\|max\|std] Euc | Nothing | No | Yes |
+| 3 | center + ABTT k=3 + rp512 + dct | mean_vec + 3 PCs + RP seed | Yes (for stats) | Per-PLM stats |
+| 4 | ABTT k=3 + rp512 + dct | 3 PC vectors + RP seed | Yes (for PCs) | Per-PLM PCs |
+| 5 | ABTT k=3 + rp512 + int4 + dct | 3 PC vectors + RP seed | Yes (for PCs) | Per-PLM PCs |
+| -- | *[mean\|max\|std] Euc (method 2)* | *Nothing at all* | *No* | *Fully universal* |
+
+Method 2 is the only **truly universal, zero-dependency** method -- no random seed, no PCA, no training data, no stored parameters. Just numpy operations on the raw embedding matrix.
+
+#### When to Use Which
+
+| Use Case | Best Method | Why |
+|----------|-------------|-----|
+| **Quick retrieval, no per-residue needed** | #1 ABTT k=3 + [mean\|max] Euc | Best Ret@1 (0.791), 4 KB, 0.12 ms |
+| **Retrieval with zero setup** | #2 [mean\|max\|std] Euc | No dependencies, 0.789 Ret@1, any PLM |
+| **Both tasks (retrieval + SS3/disorder)** | #3 or #4 center + ABTT k=3 + rp512 | Best remote homology, 96% SS3, 176 KB |
+| **Both tasks, storage-constrained** | #5 ABTT k=3 + rp512 + int4 | 47 KB, 95.7% SS3, 15x compression |
+| **Maximum SS3 quality** | PCA512 + dct_K4 (from Part H) | SS3=0.832 (98.5% retention) but Ret@1=0.768 |
+
 ### Negative Results Summary
 
 | Technique | Expected | Got | Why It Failed |
