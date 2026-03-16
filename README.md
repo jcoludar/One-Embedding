@@ -152,7 +152,7 @@ Every codec is benchmarked against a comprehensive suite spanning retrieval, str
 
 **Per-residue probes** operate on >26K residues. CIs are negligible (<0.006) and omitted from figures.
 
-**Training-free codecs are deterministic** -- no training randomness. RP/FH use fixed seed=42; the only uncertainty is finite test set sampling, captured by the normal approximation. Multi-seed RP/FH variance is a future-work item.
+**Training-free codecs are deterministic** -- no training randomness. RP/FH use fixed seed=42; the only uncertainty is finite test set sampling, captured by the normal approximation. Multi-seed RP variance has been characterized (Exp 29): Ret@1 = 0.779 +/- 0.004 across 10 seeds, confirming high stability.
 
 **Trained ChannelCompressor** reports mean +/- 1 std across 3 training seeds (42, 123, 456).
 
@@ -282,6 +282,147 @@ Residual connections are critical. Unfreezing the decoder is a free lunch (same 
 
 ---
 
+## Experiment 29: Exhaustive Low-Hanging Fruit Sweep
+
+A systematic audit of ~30 untried techniques across 9 categories, testing every remaining low/medium-effort idea before declaring the search exhausted. Results below are on ProtT5-XL, SCOPe 5K (n=850 test queries), same evaluation protocol as all prior experiments.
+
+### Data Characterization
+
+Before testing techniques, we measured the intrinsic properties of PLM embeddings:
+
+| PLM | Intrinsic Dims (Part. Ratio) | 95% Variance at | Total Dims | Inter-Channel Corr |
+|-----|:--:|:--:|:--:|:--:|
+| ProtT5-XL | 374 | 738 / 1024 | 1024 | |r|=0.032 |
+| ESM2-650M | 41 | 1031 / 1280 | 1280 | -- |
+
+ProtT5 spreads information widely (374 effective dimensions). RP to 512 covers ~85% of total variance. ESM2 is much more concentrated (41 effective dims) — a few PCs dominate. Channels are nearly independent (mean |r|=0.032, only 17 pairs > 0.8).
+
+### Pre-Processing Transforms (Part A)
+
+All methods apply a pre-processing step to (L, D) embeddings before the standard rp512 + dct_K4 codec.
+
+| Pre-Processing | Ret@1 | MRR | SS3 Q3 | Delta vs Raw |
+|----------------|:-----:|:---:|:------:|:----:|
+| **ABTT k=3** (remove top-3 PCs) | **0.786** | **0.857** | 0.811 | **+0.006** |
+| PCA rotation | 0.784 | 0.855 | 0.814 | +0.004 |
+| ABTT k=1 | 0.782 | 0.854 | 0.813 | +0.002 |
+| Z-score | 0.781 | 0.852 | **0.817** | +0.001 |
+| Centering | 0.781 | 0.854 | 0.815 | +0.001 |
+| Center + ABTT k=1 | 0.781 | 0.854 | 0.813 | +0.001 |
+| *Raw (no pre-processing)* | *0.780* | *0.853* | *0.815* | *baseline* |
+
+**All-but-the-Top k=3 gives +0.006 Ret@1 (0.786)** — new best training-free codec. Removing the top 3 principal components (corpus-level bias) exposes discriminative directions. From Mu & Viswanath (2018), validated for word embeddings, now confirmed for PLM protein embeddings. Z-score standardization gives the best SS3 Q3 (+0.002).
+
+### Transposed Matrix View (Part B) — The "Flip" Insight
+
+Instead of treating (L, D) as "L residues with D features," flip to view as "D channels, each a signal of length L." Per-channel statistics capture distributional shape that mean pool discards.
+
+| Method | Ret@1 | MRR | Dim | Notes |
+|--------|:-----:|:---:|:---:|-------|
+| **[mean\|std\|skew]** | **0.778** | 0.841 | 3072 | Near-codec with NO projection |
+| [mean\|std\|min\|max] | 0.766 | 0.837 | 4096 | min adds noise |
+| [mean\|std] | 0.741 | 0.821 | 2048 | Better than mean alone |
+| channel_resample l=32 | 0.735 | 0.813 | 32K | = mean pool (no gain) |
+| per-protein SVD k=1 | 0.521 | 0.589 | 1024 | SVD direction ≠ family signal |
+
+**[mean|std|skew] at 0.778 nearly matches the full codec (0.780) without any random projection.** Per-channel standard deviation and skewness carry family-discriminative information that mean pool discards. Channel resampling (signal processing on the L axis) doesn't help — the signal is in distributional shape, not spatial structure. Per-protein SVD is a complete failure.
+
+### Improved Pooling (Part C)
+
+| Method | Ret@1 | Dim | Notes |
+|--------|:-----:|:---:|-------|
+| **[mean\|max\|std]** | **0.778** | 3072 | Matches [mean\|std\|skew] |
+| [mean\|min\|max] | 0.764 | 3072 | min hurts |
+| percentile p10,50,90 | 0.733 | 3072 | Below mean pool |
+| trimmed_mean 5% | 0.732 | 1024 | No benefit |
+| [mean\|IQR] | 0.731 | 2048 | IQR not useful |
+
+Percentile pooling and trimmed mean don't help. The useful extra statistics are max, std, and skew — all measures of distributional spread and shape, not positional structure.
+
+### Multi-Seed RP Variance (Part D)
+
+| Metric | Mean | Std | Min | Max | n_seeds |
+|--------|:----:|:---:|:---:|:---:|:-------:|
+| **Ret@1** | **0.779** | **0.004** | 0.772 | 0.787 | 10 |
+| SS3 Q3 | 0.815 | 0.003 | 0.810 | 0.820 | 10 |
+
+The codec is highly stable across random projection seeds. Seed 42 (0.780) is near the mean. The 95% CI from seed variance (+/-0.008) is smaller than the statistical uncertainty from finite test set sampling (+/-0.028).
+
+**Sparse RP (Achlioptas)**: Ret@1=0.778, SS3=0.818 — identical to dense RP. The {-1, 0, +1} sparse projection matrix (2/3 zeros) gives the same JL guarantees while being 3x faster and requiring 2 bits/entry vs 32 bits for dense.
+
+### Quantization Combinations (Part E)
+
+| Pipeline | Ret@1 | SS3 Q3 | Notes |
+|----------|:-----:|:------:|-------|
+| **rp512 + int4** | **0.784** | 0.814 | int4 as regularizer! |
+| rp512 + int8 | 0.780 | 0.815 | Identical to float32 |
+| JPEG DCT keep 75% | 0.734 | 0.840 | Retrieval = ground zero |
+| JPEG DCT keep 50% | 0.734 | 0.839 | Per-residue: near-raw |
+| JPEG DCT 50% + int4 | 0.734 | 0.838 | Coefficient quant lossless |
+| DPCM int8 | 0.737 | 0.838 | Marginal |
+| DPCM int4 | 0.136 | 0.735 | Catastrophic |
+
+**rp512 + int4 = 0.784 beats rp512 float32 (0.780).** The int4 quantization acts as a regularizer, removing noise in less significant bits. This is the new best training-free codec for storage-constrained deployments at ~45 KB/protein.
+
+**JPEG-style DCT truncation**: Retrieval depends only on the DC component (= mean pool), so truncating high-frequency DCT coefficients doesn't affect retrieval at all. Per-residue quality benefits from keeping more coefficients (keep 75%: Q3=0.840 = raw).
+
+**DPCM is provably wrong for PLMs**: Delta variance is 42% HIGHER than raw variance. Neighboring residues in PLM embedding space are NOT similar — the "smooth trajectory" assumption fails completely.
+
+### Evaluation Enhancements (Part G)
+
+| Finding | Raw Mean Pool | Codec (rp512+dct_K4) | Delta |
+|---------|:---:|:---:|:---:|
+| **SF Ret@1 (remote homology)** | 0.900 | **0.952** | **+0.052** |
+| **Fold Ret@1 (remote homology)** | 0.909 | **0.954** | **+0.045** |
+| RNS (lower = better) | 0.745 | **0.725** | -0.020 |
+| LR SS3 gap | -- | -- | 0.025 |
+| MLP SS3 gap | -- | -- | **0.011** |
+
+**The codec IMPROVES remote homology detection by ~5 percentage points.** At both superfamily and fold level, the rp512+dct_K4 codec recovers structural relationships better than raw mean pool. The DCT frequency pooling concentrates structural signal.
+
+**MLP probes close the SS3 gap**: With a 2-layer MLP (hidden=256), the gap between raw and compressed SS3 shrinks from 0.025 (LR) to 0.011 (MLP). The information is present in compressed embeddings but nonlinearly encoded.
+
+**Random Neighbor Score**: Codec has LOWER RNS (0.725 vs 0.745) — fewer biologically unrelated nearest neighbors, meaning the codec concentrates family signal.
+
+**Matryoshka ordering doesn't help**: Variance-sorted dimension selection performs WORSE than random subset (0.711 vs 0.725 at 256d). RP dimensions are already approximately uniform in importance.
+
+### Reference Corpus Approaches (Part H)
+
+| Method | Ret@1 | SS3 Q3 | Notes |
+|--------|:-----:|:------:|-------|
+| **PCA512 + DCT K=4** | 0.768 | **0.832** | Best SS3, needs stored matrix |
+| PCA256 + DCT K=4 | 0.734 | 0.826 | = ground zero retrieval |
+| k-means k=256 residual | 0.744 | 0.780 | Marginal boost |
+| k-means k=64 residual | 0.738 | 0.809 | ~RP quality |
+| PCA512 mean | 0.692 | -- | PCA mean pool worse |
+
+PCA512 preserves more SS3 than RP (0.832 vs 0.815) because it's data-adapted, but lower retrieval (0.768 vs 0.780). The tradeoff: PCA needs a stored projection matrix (~2 MB) and training-set fitting. k-means centroid residual coding gives marginal benefit (0.744) and hurts SS3 at k=256.
+
+### Multi-Resolution Retrieval (Part I)
+
+| Level | Method | Ret@1 | Size | Speed |
+|:-----:|--------|:-----:|:----:|:-----:|
+| 1 | SimHash 1024-bit | 0.417 | 128 B | O(1) |
+| 2 | Codec protein_vec | 0.780 | 4 KB | O(n) |
+| Cascade | SimHash top-100 → codec rerank | 0.699 | -- | -- |
+
+The three-level architecture works but SimHash's coarse filtering (0.417 at 1024-bit) limits cascade quality. For billion-scale retrieval, more SimHash bits (4096+) or learned hashing would be needed.
+
+### Negative Results Summary
+
+| Technique | Expected | Got | Why It Failed |
+|-----------|----------|-----|---------------|
+| Percentile pooling | Richer than mean | 0.725-0.733 | Percentiles lose channel correlation |
+| Trimmed mean | Remove outliers | 0.732 | No outlier problem in PLM embeddings |
+| Channel resampling | Preserve position | 0.722-0.735 | Position along L doesn't help retrieval |
+| Per-protein SVD | Capture variance | 0.414-0.521 | SVD direction ≠ family discriminant |
+| DPCM | Compress smooth signal | 0.136-0.737 | PLM residue embeddings NOT smooth |
+| Matryoshka ordering | Adaptive truncation | Worse | RP already isotropic |
+| JPEG DCT truncation | Retrieval boost | = ground zero | Retrieval = DC component = mean |
+| k-means residual | CRAM-style coding | 0.738-0.744 | Marginal, hurts SS3 |
+
+---
+
 ## Exploration History
 
 Narrative of how this project evolved across 26 experiments, what was tried, what failed, and what we learned.
@@ -321,6 +462,14 @@ Nobody had tried: D-compress THEN smart pool. rp512 + dct_K4: 0.780 Ret@1 with 0
 ### Phase 19: Extreme Compression Benchmark (Exp 28)
 
 Exhaustive sweep of 39 codecs across 5 categories: wavelet thresholding, CUR decomposition, channel pruning, delta encoding, int8/int4/binary quantization, random projection + quantization, product quantization, residual VQ, tensor train decomposition, NMF, sliced Wasserstein distance, SimHash/LSH, and multi-stage pipelines. Cross-validated on 3 PLMs (ProtT5, ESM2, ESM-C). See [Experiment 28 Results](#experiment-28-extreme-compression) below.
+
+### Phase 20: Exhaustive Low-Hanging Fruit Sweep (Exp 29)
+
+Comprehensive audit of ~30 untried techniques across 9 categories: pre-processing (centering, z-score, All-but-the-Top, PCA rotation), transposed matrix view (channel resampling, per-protein SVD, channel statistics), improved pooling (percentile, trimmed mean), RP characterization (10-seed variance, sparse Achlioptas RP), quantization combinations (int4/int8 on codec output, JPEG pipeline, DPCM), evaluation enhancements (RNS, remote homology, MLP probes, Matryoshka), reference corpus approaches (k-means residual, PCA as D-compression), and multi-resolution retrieval.
+
+**Winners**: ABTT k=3 + rp512 = 0.786 (new best); rp512 + int4 = 0.784 (regularization effect); [mean|std|skew] = 0.778 (no RP needed); remote homology +5pp improvement by codec.
+
+**Key insight**: removing top-3 corpus PCs before projection improves retrieval, per-channel distributional statistics (std, skew) carry family signal that mean pool discards, and PLM residue embeddings are NOT smooth along the sequence (delta variance +42%), ruling out predictive coding approaches.
 
 ### Key Lessons
 

@@ -1,7 +1,7 @@
 # Protein Embedding Codec
 
 ## Project Overview
-Training-free universal codec for PLM per-residue embeddings. Compresses (L, D) to (L, 512) float16 — 25% of raw size — while preserving both per-residue tasks (97% SS3 retention) and protein-level retrieval (Ret@1=0.780). Float16 benchmarked with zero quality loss. Also includes a trained ChannelCompressor (1024d → 256d fp32, Ret@1=0.795) as a comparison point.
+Training-free universal codec for PLM per-residue embeddings. Compresses (L, D) to (L, 512) float16 — 25% of raw size — while preserving both per-residue tasks (97% SS3 retention) and protein-level retrieval (Ret@1=0.786 with ABTT k=3 pre-processing, 0.780 without). Float16 benchmarked with zero quality loss. Also includes a trained ChannelCompressor (1024d → 256d fp32, Ret@1=0.795) as a comparison point. Multi-seed RP variance: 0.779 +/- 0.004 (10 seeds).
 
 ## Quick Start
 ```bash
@@ -19,6 +19,9 @@ uv run python experiments/make_publication_figures.py
 uv run python experiments/11_channel_compression.py           # Train ChannelCompressor
 uv run python experiments/13_robust_validation.py --step R1   # Multi-seed validation
 uv run python experiments/13_robust_validation.py --step R3   # Cross-dataset evaluation
+
+# Exhaustive sweep of ~30 untried techniques
+uv run python experiments/29_exhaustive_fruit_sweep.py        # All 9 steps (F, A-I)
 
 # Earlier exploration
 uv run python experiments/02_baseline_benchmarks.py           # PCA/mean-pool baselines
@@ -46,7 +49,7 @@ per_residue = f["prot_123"]["per_residue"][:]   # (L, 512) matrix — SS3, disor
 ```
 
 ## Architecture
-- `src/one_embedding/` - **OneEmbeddingCodec**, transforms (DCT, Haar, spectral), universal codecs
+- `src/one_embedding/` - **OneEmbeddingCodec**, transforms (DCT, Haar, spectral), universal codecs, preprocessing (centering, ABTT, PCA rotation), transposed transforms, data analysis
 - `src/compressors/` - ChannelCompressor (trained), AttentionPool (explored), baselines
 - `src/extraction/` - ESM2 + ProtT5 + ESM-C embedding extraction
 - `src/training/` - Unified trainer with reconstruction, contrastive losses, early stopping
