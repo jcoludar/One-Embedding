@@ -1205,14 +1205,273 @@ def step_I(results):
 
 
 # ══════════════════════════════════════════════════════════════════
+# STEP J: Smart Combinations of Winners
+# ══════════════════════════════════════════════════════════════════
+
+def step_J(results):
+    """Part J: Combine winning techniques from Parts A-H."""
+    print("\n" + "=" * 60)
+    print("STEP J: Smart Combinations of Winners")
+    print("=" * 60)
+
+    from src.one_embedding.preprocessing import (
+        compute_corpus_stats,
+        center_embeddings,
+        zscore_embeddings,
+        all_but_the_top,
+        pca_rotate,
+    )
+    from src.one_embedding.universal_transforms import sparse_random_project
+    from src.one_embedding.quantization import quantize_int4, dequantize_int4
+
+    metadata = load_metadata()
+    split = load_split()
+    test_ids = split["test"]
+    train_ids = split["train"]
+    embeddings = cap_length(load_plm_embeddings("prot_t5_xl"))
+    cb513_data = load_cb513_data()
+
+    if not embeddings:
+        print("  ERROR: no embeddings")
+        return
+
+    # Compute corpus stats
+    train_embs = {pid: embeddings[pid] for pid in train_ids if pid in embeddings}
+    print(f"  Computing corpus stats from {len(train_embs)} training proteins...")
+    stats = compute_corpus_stats(train_embs, n_sample=50_000, n_pcs=5)
+
+    combos = results.setdefault("part_J", {})
+
+    # ── J1: ABTT k=3 + int4 (best pre-proc + best quant) ──
+    print("\n  J1: ABTT k=3 + rp512 + int4 + dct_K4...")
+    def _j1_vec(m):
+        ma = all_but_the_top(m, stats["top_pcs"][:3])
+        compressed = random_orthogonal_project(ma, d_out=512)
+        deq = dequantize_int4(quantize_int4(compressed))
+        return dct_summary(deq, K=4)
+
+    def _j1_pr(m):
+        ma = all_but_the_top(m, stats["top_pcs"][:3])
+        compressed = random_orthogonal_project(ma, d_out=512)
+        return dequantize_int4(quantize_int4(compressed))
+
+    r = benchmark_protein_vec("abtt3_rp512_int4_dct_K4", _j1_vec, embeddings,
+                               test_ids, metadata, cb513_data, _j1_pr)
+    combos["abtt3_rp512_int4_dct_K4"] = r
+    print(f"    Ret@1={r.get('family_ret1', 'ERR')}, SS3={r.get('ss3_q3', 'N/A')}")
+
+    # ── J2: Z-score + ABTT k=3 (stacked pre-processing) ──
+    print("\n  J2: zscore + ABTT k=3 + rp512 + dct_K4...")
+    def _j2_vec(m):
+        mz = zscore_embeddings(m, stats["mean_vec"], stats["std_vec"])
+        ma = all_but_the_top(mz, stats["top_pcs"][:3])
+        return dct_summary(random_orthogonal_project(ma, d_out=512), K=4)
+
+    def _j2_pr(m):
+        mz = zscore_embeddings(m, stats["mean_vec"], stats["std_vec"])
+        ma = all_but_the_top(mz, stats["top_pcs"][:3])
+        return random_orthogonal_project(ma, d_out=512)
+
+    r = benchmark_protein_vec("zscore_abtt3_rp512_dct_K4", _j2_vec, embeddings,
+                               test_ids, metadata, cb513_data, _j2_pr)
+    combos["zscore_abtt3_rp512_dct_K4"] = r
+    print(f"    Ret@1={r.get('family_ret1', 'ERR')}, SS3={r.get('ss3_q3', 'N/A')}")
+
+    # ── J3: Center + ABTT k=3 ──
+    print("\n  J3: center + ABTT k=3 + rp512 + dct_K4...")
+    def _j3_vec(m):
+        mc = center_embeddings(m, stats["mean_vec"])
+        ma = all_but_the_top(mc, stats["top_pcs"][:3])
+        return dct_summary(random_orthogonal_project(ma, d_out=512), K=4)
+
+    def _j3_pr(m):
+        mc = center_embeddings(m, stats["mean_vec"])
+        ma = all_but_the_top(mc, stats["top_pcs"][:3])
+        return random_orthogonal_project(ma, d_out=512)
+
+    r = benchmark_protein_vec("center_abtt3_rp512_dct_K4", _j3_vec, embeddings,
+                               test_ids, metadata, cb513_data, _j3_pr)
+    combos["center_abtt3_rp512_dct_K4"] = r
+    print(f"    Ret@1={r.get('family_ret1', 'ERR')}, SS3={r.get('ss3_q3', 'N/A')}")
+
+    # ── J4: ABTT k=3 + sparse RP (deployment-friendly) ──
+    print("\n  J4: ABTT k=3 + sparse_rp512 + dct_K4...")
+    def _j4_vec(m):
+        ma = all_but_the_top(m, stats["top_pcs"][:3])
+        return dct_summary(sparse_random_project(ma, d_out=512), K=4)
+
+    def _j4_pr(m):
+        ma = all_but_the_top(m, stats["top_pcs"][:3])
+        return sparse_random_project(ma, d_out=512)
+
+    r = benchmark_protein_vec("abtt3_sparse_rp512_dct_K4", _j4_vec, embeddings,
+                               test_ids, metadata, cb513_data, _j4_pr)
+    combos["abtt3_sparse_rp512_dct_K4"] = r
+    print(f"    Ret@1={r.get('family_ret1', 'ERR')}, SS3={r.get('ss3_q3', 'N/A')}")
+
+    # ── J5: ABTT k=3 + [mean|std|skew] protein vec + rp512 per-residue ──
+    print("\n  J5: ABTT k=3 + [mean|std|skew] vec + rp512 per-residue...")
+    from src.one_embedding.transposed_transforms import channel_statistics
+
+    def _j5_vec(m):
+        ma = all_but_the_top(m, stats["top_pcs"][:3])
+        return channel_statistics(ma, stats=["mean", "std", "skew"])
+
+    def _j5_pr(m):
+        ma = all_but_the_top(m, stats["top_pcs"][:3])
+        return random_orthogonal_project(ma, d_out=512)
+
+    r = benchmark_protein_vec("abtt3_mean_std_skew_rp512pr", _j5_vec, embeddings,
+                               test_ids, metadata, cb513_data, _j5_pr)
+    combos["abtt3_mean_std_skew_rp512pr"] = r
+    print(f"    Ret@1={r.get('family_ret1', 'ERR')}, SS3={r.get('ss3_q3', 'N/A')}")
+
+    # ── J6: PCA rotation + ABTT k=3 ──
+    print("\n  J6: PCA rotation + ABTT k=3 + rp512 + dct_K4...")
+    def _j6_vec(m):
+        mr = pca_rotate(m, stats["rotation_matrix"])
+        ma = all_but_the_top(mr, stats["top_pcs"][:3])
+        return dct_summary(random_orthogonal_project(ma, d_out=512), K=4)
+
+    def _j6_pr(m):
+        mr = pca_rotate(m, stats["rotation_matrix"])
+        ma = all_but_the_top(mr, stats["top_pcs"][:3])
+        return random_orthogonal_project(ma, d_out=512)
+
+    r = benchmark_protein_vec("pca_rot_abtt3_rp512_dct_K4", _j6_vec, embeddings,
+                               test_ids, metadata, cb513_data, _j6_pr)
+    combos["pca_rot_abtt3_rp512_dct_K4"] = r
+    print(f"    Ret@1={r.get('family_ret1', 'ERR')}, SS3={r.get('ss3_q3', 'N/A')}")
+
+    # ── J7: Full kitchen sink: center + ABTT k=3 + rp512 + int4 ──
+    print("\n  J7: center + ABTT k=3 + rp512 + int4 + dct_K4 (full pipeline)...")
+    def _j7_vec(m):
+        mc = center_embeddings(m, stats["mean_vec"])
+        ma = all_but_the_top(mc, stats["top_pcs"][:3])
+        compressed = random_orthogonal_project(ma, d_out=512)
+        deq = dequantize_int4(quantize_int4(compressed))
+        return dct_summary(deq, K=4)
+
+    def _j7_pr(m):
+        mc = center_embeddings(m, stats["mean_vec"])
+        ma = all_but_the_top(mc, stats["top_pcs"][:3])
+        compressed = random_orthogonal_project(ma, d_out=512)
+        return dequantize_int4(quantize_int4(compressed))
+
+    r = benchmark_protein_vec("center_abtt3_rp512_int4_dct_K4", _j7_vec, embeddings,
+                               test_ids, metadata, cb513_data, _j7_pr)
+    combos["center_abtt3_rp512_int4_dct_K4"] = r
+    print(f"    Ret@1={r.get('family_ret1', 'ERR')}, SS3={r.get('ss3_q3', 'N/A')}")
+
+    # ── J8: ABTT k=5 sweep (is k=3 really optimal?) ──
+    for k in [2, 4, 5]:
+        def _abtt_sweep(m, _k=k):
+            ma = all_but_the_top(m, stats["top_pcs"][:_k])
+            return dct_summary(random_orthogonal_project(ma, d_out=512), K=4)
+
+        def _abtt_sweep_pr(m, _k=k):
+            ma = all_but_the_top(m, stats["top_pcs"][:_k])
+            return random_orthogonal_project(ma, d_out=512)
+
+        name = f"abtt_k{k}_rp512_dct_K4"
+        print(f"\n  J8: ABTT k={k}...")
+        r = benchmark_protein_vec(name, _abtt_sweep, embeddings,
+                                   test_ids, metadata, cb513_data, _abtt_sweep_pr)
+        combos[name] = r
+        print(f"    Ret@1={r.get('family_ret1', 'ERR')}, SS3={r.get('ss3_q3', 'N/A')}")
+
+    # ── J9: [mean|std|skew] on raw (no RP, no ABTT) — Euclidean metric ──
+    print("\n  J9: [mean|std|skew] Euclidean metric...")
+    def _j9_vec(m):
+        return channel_statistics(m, stats=["mean", "std", "skew"])
+
+    r = benchmark_protein_vec("mean_std_skew_euclidean", _j9_vec, embeddings,
+                               test_ids, metadata, metric="euclidean")
+    combos["mean_std_skew_euclidean"] = r
+    print(f"    Ret@1={r.get('family_ret1', 'ERR')}")
+
+    # ── J10: [mean|max|std] Euclidean ──
+    print("\n  J10: [mean|max|std] Euclidean metric...")
+    def _j10_vec(m):
+        return np.concatenate([m.mean(axis=0), m.max(axis=0), m.std(axis=0)]).astype(np.float32)
+
+    r = benchmark_protein_vec("mean_max_std_euclidean", _j10_vec, embeddings,
+                               test_ids, metadata, metric="euclidean")
+    combos["mean_max_std_euclidean"] = r
+    print(f"    Ret@1={r.get('family_ret1', 'ERR')}")
+
+    # ── J11: ABTT k=3 + [mean|max] (best pre-proc + best retrieval-only) ──
+    print("\n  J11: ABTT k=3 + [mean|max]...")
+    def _j11_vec(m):
+        ma = all_but_the_top(m, stats["top_pcs"][:3])
+        return np.concatenate([ma.mean(axis=0), ma.max(axis=0)]).astype(np.float32)
+
+    r = benchmark_protein_vec("abtt3_mean_max", _j11_vec, embeddings,
+                               test_ids, metadata)
+    combos["abtt3_mean_max"] = r
+    print(f"    Ret@1={r.get('family_ret1', 'ERR')}")
+
+    # ── J11b: ABTT k=3 + [mean|max] Euclidean ──
+    print("\n  J11b: ABTT k=3 + [mean|max] Euclidean...")
+    r = benchmark_protein_vec("abtt3_mean_max_euclidean", _j11_vec, embeddings,
+                               test_ids, metadata, metric="euclidean")
+    combos["abtt3_mean_max_euclidean"] = r
+    print(f"    Ret@1={r.get('family_ret1', 'ERR')}")
+
+    # ── J12: Best ESM2 combo: ABTT k=3 + rp512 + dct_K4 on ESM2 ──
+    print("\n  J12: ABTT k=3 on ESM2-650M...")
+    esm_embs = cap_length(load_plm_embeddings("esm2_650m"))
+    if esm_embs:
+        esm_train = {pid: esm_embs[pid] for pid in train_ids if pid in esm_embs}
+        if esm_train:
+            esm_stats = compute_corpus_stats(esm_train, n_sample=50_000, n_pcs=5)
+
+            def _j12_vec(m):
+                ma = all_but_the_top(m, esm_stats["top_pcs"][:3])
+                return dct_summary(random_orthogonal_project(ma, d_out=512), K=4)
+
+            r = benchmark_protein_vec("esm2_abtt3_rp512_dct_K4", _j12_vec, esm_embs,
+                                       test_ids, metadata)
+            combos["esm2_abtt3_rp512_dct_K4"] = r
+            print(f"    Ret@1={r.get('family_ret1', 'ERR')}")
+
+            # ESM2 raw baseline
+            def _esm_raw(m):
+                return dct_summary(random_orthogonal_project(m, d_out=512), K=4)
+
+            r_base = benchmark_protein_vec("esm2_raw_rp512_dct_K4", _esm_raw, esm_embs,
+                                            test_ids, metadata)
+            combos["esm2_raw_rp512_dct_K4"] = r_base
+            print(f"    ESM2 raw baseline: Ret@1={r_base.get('family_ret1', 'ERR')}")
+
+    # ── Summary table ──
+    print("\n" + "=" * 60)
+    print("  COMBINATION RESULTS SUMMARY")
+    print("=" * 60)
+    print(f"  {'Combo':<45} {'Ret@1':>7} {'SS3':>7}")
+    print(f"  {'-'*45} {'-'*7} {'-'*7}")
+    for name, r in sorted(combos.items(), key=lambda x: x[1].get("family_ret1", 0), reverse=True):
+        ret1 = r.get("family_ret1", 0)
+        ss3 = r.get("ss3_q3", "")
+        ss3_str = f"{ss3:.4f}" if isinstance(ss3, float) else "N/A"
+        print(f"  {name:<45} {ret1:>7.4f} {ss3_str:>7}")
+
+    mark_done(results, "J")
+    save_results(results)
+    print("\n  Step J DONE")
+    monitor()
+
+
+# ══════════════════════════════════════════════════════════════════
 # MAIN
 # ══════════════════════════════════════════════════════════════════
 
 ALL_STEPS = {
     "F": step_F, "A": step_A, "B": step_B, "C": step_C,
     "D": step_D, "E": step_E, "G": step_G, "H": step_H, "I": step_I,
+    "J": step_J,
 }
-STEP_ORDER = ["F", "A", "B", "C", "D", "E", "G", "H", "I"]
+STEP_ORDER = ["F", "A", "B", "C", "D", "E", "G", "H", "I", "J"]
 
 
 def main():

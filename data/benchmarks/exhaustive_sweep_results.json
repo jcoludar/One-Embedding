@@ -8,7 +8,8 @@
     "E",
     "G",
     "H",
-    "I"
+    "I",
+    "J"
   ],
   "results": {},
   "data_analysis": {
@@ -692,6 +693,146 @@
       "level1_simhash_ret1": 0.4164705882352941,
       "level2_codec_ret1": 0.78,
       "cascade_sh100_codec_ret1": 0.6988235294117647
+    }
+  },
+  "part_J": {
+    "abtt3_rp512_int4_dct_K4": {
+      "codec": "abtt3_rp512_int4_dct_K4",
+      "family_ret1": 0.7835294117647059,
+      "mrr": 0.8553526871362628,
+      "vec_dim": 2048,
+      "ss3_q3": 0.8092564491654021,
+      "vec_bytes": 8192,
+      "encode_ms": 29.56598374992609
+    },
+    "zscore_abtt3_rp512_dct_K4": {
+      "codec": "zscore_abtt3_rp512_dct_K4",
+      "family_ret1": 0.7835294117647059,
+      "mrr": 0.8540749754731732,
+      "vec_dim": 2048,
+      "ss3_q3": 0.8137708649468892,
+      "vec_bytes": 8192,
+      "encode_ms": 28.32946625072509
+    },
+    "center_abtt3_rp512_dct_K4": {
+      "codec": "center_abtt3_rp512_dct_K4",
+      "family_ret1": 0.7858823529411765,
+      "mrr": 0.8571485059076919,
+      "vec_dim": 2048,
+      "ss3_q3": 0.8105083459787557,
+      "vec_bytes": 8192,
+      "encode_ms": 29.965443330584094
+    },
+    "abtt3_sparse_rp512_dct_K4": {
+      "codec": "abtt3_sparse_rp512_dct_K4",
+      "family_ret1": 0.7811764705882352,
+      "mrr": 0.8548797283265638,
+      "vec_dim": 2048,
+      "ss3_q3": 0.8132397572078908,
+      "vec_bytes": 8192,
+      "encode_ms": 4.896049579838291
+    },
+    "abtt3_mean_std_skew_rp512pr": {
+      "codec": "abtt3_mean_std_skew_rp512pr",
+      "family_ret1": 0.78,
+      "mrr": 0.8428602845536536,
+      "vec_dim": 3072,
+      "ss3_q3": 0.810546282245827,
+      "vec_bytes": 12288,
+      "encode_ms": 0.6262824998702854
+    },
+    "pca_rot_abtt3_rp512_dct_K4": {
+      "codec": "pca_rot_abtt3_rp512_dct_K4",
+      "family_ret1": 0.7847058823529411,
+      "mrr": 0.8557467572906408,
+      "vec_dim": 2048,
+      "ss3_q3": 0.8140364188163884,
+      "vec_bytes": 8192,
+      "encode_ms": 29.64349166955799
+    },
+    "center_abtt3_rp512_int4_dct_K4": {
+      "codec": "center_abtt3_rp512_int4_dct_K4",
+      "family_ret1": 0.7858823529411765,
+      "mrr": 0.8570004002274619,
+      "vec_dim": 2048,
+      "ss3_q3": 0.8083459787556905,
+      "vec_bytes": 8192,
+      "encode_ms": 30.617442920338362
+    },
+    "abtt_k2_rp512_dct_K4": {
+      "codec": "abtt_k2_rp512_dct_K4",
+      "family_ret1": 0.7835294117647059,
+      "mrr": 0.8551902378329562,
+      "vec_dim": 2048,
+      "ss3_q3": 0.8125948406676783,
+      "vec_bytes": 8192,
+      "encode_ms": 100.28214499936439
+    },
+    "abtt_k4_rp512_dct_K4": {
+      "codec": "abtt_k4_rp512_dct_K4",
+      "family_ret1": 0.7847058823529411,
+      "mrr": 0.8563897259275601,
+      "vec_dim": 2048,
+      "ss3_q3": 0.8105842185128983,
+      "vec_bytes": 8192,
+      "encode_ms": 39.30749041028321
+    },
+    "abtt_k5_rp512_dct_K4": {
+      "codec": "abtt_k5_rp512_dct_K4",
+      "family_ret1": 0.7847058823529411,
+      "mrr": 0.8566690916398069,
+      "vec_dim": 2048,
+      "ss3_q3": 0.8081942336874052,
+      "vec_bytes": 8192,
+      "encode_ms": 28.913690419867635
+    },
+    "mean_std_skew_euclidean": {
+      "codec": "mean_std_skew_euclidean",
+      "family_ret1": 0.6988235294117647,
+      "mrr": 0.753487310714195,
+      "vec_dim": 3072,
+      "vec_bytes": 12288,
+      "encode_ms": 0.4994379100389779
+    },
+    "mean_max_std_euclidean": {
+      "codec": "mean_max_std_euclidean",
+      "family_ret1": 0.7894117647058824,
+      "mrr": 0.8514455433007238,
+      "vec_dim": 3072,
+      "vec_bytes": 12288,
+      "encode_ms": 0.10829332983121276
+    },
+    "abtt3_mean_max": {
+      "codec": "abtt3_mean_max",
+      "family_ret1": 0.7729411764705882,
+      "mrr": 0.837710247627111,
+      "vec_dim": 2048,
+      "vec_bytes": 8192,
+      "encode_ms": 0.11424500029534101
+    },
+    "abtt3_mean_max_euclidean": {
+      "codec": "abtt3_mean_max_euclidean",
+      "family_ret1": 0.7905882352941176,
+      "mrr": 0.8523415380260878,
+      "vec_dim": 2048,
+      "vec_bytes": 8192,
+      "encode_ms": 0.1111179101280868
+    },
+    "esm2_abtt3_rp512_dct_K4": {
+      "codec": "esm2_abtt3_rp512_dct_K4",
+      "family_ret1": 0.7552941176470588,
+      "mrr": 0.8306628128236496,
+      "vec_dim": 2048,
+      "vec_bytes": 8192,
+      "encode_ms": 37.235346250236034
+    },
+    "esm2_raw_rp512_dct_K4": {
+      "codec": "esm2_raw_rp512_dct_K4",
+      "family_ret1": 0.6835294117647058,
+      "mrr": 0.7634439647667032,
+      "vec_dim": 2048,
+      "vec_bytes": 8192,
+      "encode_ms": 37.09544457960874
     }
   }
 }
