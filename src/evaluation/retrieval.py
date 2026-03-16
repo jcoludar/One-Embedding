@@ -294,3 +294,68 @@ def evaluate_retrieval_from_vectors(
     results["n_database"] = len(db_ids)
 
     return results
+
+
+def compute_rns(
+    vectors: dict[str, np.ndarray],
+    metadata: list[dict],
+    k: int = 10,
+    label_key: str = "family",
+    metric: str = "cosine",
+) -> dict:
+    """Compute Random Neighbor Score (RNS) for each protein.
+
+    RNS measures the fraction of a protein's k-nearest neighbors that
+    belong to a DIFFERENT family. Low RNS means the protein sits in a
+    tight same-family cluster; high RNS means it is embedded far from
+    its family members.
+
+    Args:
+        vectors: Mapping from protein ID to embedding vector.
+        metadata: List of dicts with at least 'id' and label_key fields.
+        k: Number of nearest neighbors to consider.
+        label_key: Metadata field used as the family label.
+        metric: Distance metric -- "cosine" or "euclidean".
+
+    Returns:
+        Dict with:
+            mean_rns: Mean RNS across all proteins (lower = better clustering).
+            std_rns: Standard deviation of per-protein RNS.
+            n_high_rns: Number of proteins with RNS > 0.5 (poorly clustered).
+            per_protein_rns: Dict mapping protein ID to its RNS value.
+    """
+    if metric not in ("cosine", "euclidean"):
+        raise ValueError(f"metric must be 'cosine' or 'euclidean', got '{metric}'")
+
+    id_to_label = {m["id"]: m[label_key] for m in metadata if label_key in m}
+    pids = [pid for pid in vectors if pid in id_to_label]
+
+    if len(pids) < k + 1:
+        raise ValueError(
+            f"Need at least k+1={k + 1} proteins with labels, got {len(pids)}"
+        )
+
+    mat = np.array([vectors[pid] for pid in pids])
+    labels = [id_to_label[pid] for pid in pids]
+
+    if metric == "cosine":
+        dists = cdist(mat, mat, metric="cosine")
+    else:
+        dists = cdist(mat, mat, metric="euclidean")
+
+    per_protein_rns = {}
+    for i, pid in enumerate(pids):
+        row = dists[i].copy()
+        row[i] = np.inf  # exclude self
+        nn_idx = np.argsort(row)[:k]
+        n_different = sum(1 for j in nn_idx if labels[j] != labels[i])
+        per_protein_rns[pid] = n_different / k
+
+    rns_values = np.array(list(per_protein_rns.values()))
+
+    return {
+        "mean_rns": float(rns_values.mean()),
+        "std_rns": float(rns_values.std()),
+        "n_high_rns": int(np.sum(rns_values > 0.5)),
+        "per_protein_rns": per_protein_rns,
+    }

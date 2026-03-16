@@ -4,9 +4,10 @@ All functions take (L, D) per-residue embeddings and return fixed-size vectors.
 No learned parameters. PLM-agnostic.
 """
 
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
+from scipy.stats import trim_mean
 
 
 def power_mean_pool(matrix: np.ndarray, p: float = 3.0) -> np.ndarray:
@@ -178,3 +179,92 @@ def svd_spectrum(matrix: np.ndarray, k: int = 16) -> np.ndarray:
     if len(S) < k:
         S = np.pad(S, (0, k - len(S)))
     return S[:k].astype(np.float32)
+
+
+def sparse_random_project(
+    matrix: np.ndarray,
+    d_out: int = 512,
+    seed: int = 42,
+    density: float = 1 / 3,
+) -> np.ndarray:
+    """Achlioptas sparse random projection D -> d_out.
+
+    Projection matrix entries drawn from {-1, 0, +1} with probabilities
+    {density/2, 1-density, density/2}. Scaled by sqrt(D / (d_out * density))
+    for norm preservation.
+
+    Sparse RP is faster than dense Gaussian RP and still satisfies the
+    Johnson-Lindenstrauss lemma. With density=1/3, the matrix is ~67% zeros.
+
+    Reference: Achlioptas (2003). Database-friendly random projections:
+    Johnson-Lindenstrauss with binary coins.
+
+    Args:
+        matrix: (L, D) per-residue embeddings.
+        d_out: Output dimensionality.
+        seed: Fixed seed for projection matrix.
+        density: Fraction of nonzero entries (default 1/3).
+
+    Returns:
+        (L, d_out) sparse-projected per-residue embeddings.
+    """
+    L, D = matrix.shape
+    rng = np.random.RandomState(seed)
+
+    # Draw from {-1, 0, +1} with probabilities {density/2, 1-density, density/2}
+    u = rng.rand(D, d_out).astype(np.float32)
+    R = np.zeros((D, d_out), dtype=np.float32)
+    R[u < density / 2] = -1.0
+    R[u > 1.0 - density / 2] = 1.0
+
+    # Scale for norm preservation
+    scale = np.sqrt(D / (d_out * density))
+    R *= scale
+
+    return (matrix @ R).astype(np.float32)
+
+
+def percentile_pool(
+    matrix: np.ndarray,
+    percentiles: Optional[Sequence[float]] = None,
+) -> np.ndarray:
+    """Per-channel percentile pooling across residues.
+
+    Computes multiple percentiles of each embedding channel across the
+    sequence length dimension. Captures the distribution shape (spread,
+    skewness) beyond what mean pooling provides.
+
+    Args:
+        matrix: (L, D) per-residue embeddings.
+        percentiles: Percentiles to compute (default [10, 25, 50, 75, 90]).
+
+    Returns:
+        (D * len(percentiles),) concatenated percentile vectors.
+    """
+    if percentiles is None:
+        percentiles = [10, 25, 50, 75, 90]
+
+    # np.percentile with axis=0 gives (len(percentiles), D)
+    pcts = np.percentile(matrix, percentiles, axis=0)  # (P, D)
+    return pcts.ravel().astype(np.float32)
+
+
+def trimmed_mean_pool(
+    matrix: np.ndarray,
+    proportion: float = 0.1,
+) -> np.ndarray:
+    """Trimmed mean pooling -- robust to outlier residues.
+
+    Trims `proportion` fraction from both tails of the per-channel
+    distribution before computing the mean. More robust than plain
+    mean pool when a few residues have extreme values.
+
+    Args:
+        matrix: (L, D) per-residue embeddings.
+        proportion: Fraction to trim from each tail (default 0.1 = 10%).
+
+    Returns:
+        (D,) trimmed mean vector.
+    """
+    result = trim_mean(matrix, proportiontocut=proportion, axis=0)
+    return np.asarray(result, dtype=np.float32)
