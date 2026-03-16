@@ -30,23 +30,27 @@ uv run python experiments/16_hpo_contrastive.py               # Optuna HPO
 uv run python experiments/17_scaling_and_ablations.py         # Scaling, ablations
 ```
 
-## OneEmbeddingCodec API
-```python
-from src.one_embedding.codec import OneEmbeddingCodec
+## One Embedding Format
+The output is a single fixed **(512, 512) matrix** per protein (~50 KB int4+gzip).
 
-# Encode: raw PLM output → compressed float16 file (~26% of raw size)
-codec = OneEmbeddingCodec(d_out=512, dct_k=4)          # float16 default
+```python
+# Encode: raw PLM → One Embedding
+from src.one_embedding.codec import OneEmbeddingCodec
+codec = OneEmbeddingCodec(d_out=512, dct_k=4)
 codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.h5")
 
-# For full precision (51% of raw): dtype="float32"
-codec32 = OneEmbeddingCodec(d_out=512, dct_k=4, dtype="float32")
-
-# Decode (receiver side — just h5py, no codec code needed):
+# Use (receiver side — just h5py + numpy):
 import h5py
 f = h5py.File("compressed.h5", "r")
-protein_vec = f["prot_123"]["protein_vec"][:]   # (2048,) header — UMAP, retrieval
-per_residue = f["prot_123"]["per_residue"][:]   # (L, 512) matrix — SS3, disorder
+matrix = f["prot_123"]["one_embedding"][:]     # (512, 512) fixed
+L = f["prot_123"].attrs["seq_len"]
+
+# Retrieval: dct_summary(matrix[:, :L].T, K=4) → (2048,)
+# Per-residue: matrix[:, :L].T → (L, 512)
 ```
+
+Pipeline: ABTT k=3 (remove top-3 PCs) → RP to 512d → int4 quantize → transpose + zero-pad.
+Best codec Ret@1=0.784 (Fam), 0.952 (SF), SS3 Q3=0.809 (96% of raw).
 
 ## Architecture
 - `src/one_embedding/` - **OneEmbeddingCodec**, transforms (DCT, Haar, spectral), universal codecs, preprocessing (centering, ABTT, PCA rotation), transposed transforms, data analysis

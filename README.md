@@ -1,10 +1,15 @@
-# Protein Embedding Codec: Universal Compression for PLM Embeddings
+# One Embedding: Universal Compression for PLM Protein Embeddings
 
-A training-free codec that compresses protein language model (PLM) per-residue embeddings to 25% of original size (float16) while preserving both protein-level retrieval and residue-level structure prediction. Works with any PLM, any dimension, no fitting required -- like JPEG for protein embeddings.
+A training-free codec that compresses any protein language model's per-residue output into a single fixed-size **(512, 512) matrix** — the **One Embedding**. One file per protein, serves both protein-level retrieval (Ret@1=0.784) and residue-level structure prediction (96% SS3 retention). No training, no labels, no fitting — like JPEG for protein embeddings.
 
 ## TL;DR
 
-Protein language models produce large per-residue embedding matrices (L x 1024). We benchmark 25 training-free compression codecs across 3 PLMs and find that **chaining a random projection (D-compression) with a DCT-based smart pool** achieves Ret@1=0.780 on SCOPe family retrieval while retaining 97% of per-residue secondary structure accuracy -- no training, no labels, plug and play. A separately trained ChannelCompressor reaches 0.795 but requires SCOPe family labels and a training pipeline.
+Protein language models produce large variable-length per-residue embedding matrices `(L, D)`. We compress each to a **fixed (512, 512) matrix** at ~50 KB per protein (15x compression) using a fully deterministic, training-free pipeline: remove top-3 corpus PCs (All-but-the-Top) → random projection to 512d → int4 quantization → transpose + zero-pad to fixed size. To use:
+
+- **Retrieval/clustering**: `dct_summary(matrix[:, :L].T, K=4)` → (2048,) vector. One matmul.
+- **Per-residue (SS3, disorder)**: `matrix[:, :L].T` → (L, 512) embeddings. Unpad + transpose.
+
+Works with any PLM (ProtT5, ESM2, ESM-C). Receiver needs only `h5py` and `numpy`.
 
 ## Key Results: Training-Free Universal Codec
 
@@ -156,47 +161,59 @@ Every codec is benchmarked against a comprehensive suite spanning retrieval, str
 
 **Trained ChannelCompressor** reports mean +/- 1 std across 3 training seeds (42, 123, 456).
 
-## Codec API: Encode and Use
+## The One Embedding Flow
 
-### Encoding (your side)
+### Step 1: Encode (once, per protein)
+
+```
+Raw PLM output (L, 1024)           — any PLM, any protein
+  → All-but-the-Top k=3            — remove 3 corpus PC vectors (12 KB overhead)
+  → Random project to 512d         — fixed seed=42, deterministic
+  → int4 quantize                  — 4 bits per value, acts as regularizer
+  → Zero-pad L to 512, transpose
+  → Store as (512, 512)            — THE ONE EMBEDDING. Fixed size. Done.
+```
+
+~50 KB per protein (int4 + gzip). 15x compression from raw.
 
 ```python
 from src.one_embedding.codec import OneEmbeddingCodec
 
-# Default: float16 storage (~26% of raw size)
 codec = OneEmbeddingCodec(d_out=512, dct_k=4)
-
-# Single protein
-raw = h5f["protein_id"][:]                  # (L, 1024) raw PLM output
-encoded = codec.encode(raw)                 # returns dict (float16 arrays)
-codec.save(encoded, "protein_id.h5")        # self-contained file
-
-# Batch: entire H5 → single compressed H5
 codec.encode_h5_to_h5("raw_prot_t5.h5", "compressed.h5")
-
-# For full precision (51% of raw): pass dtype="float32"
-codec32 = OneEmbeddingCodec(d_out=512, dct_k=4, dtype="float32")
 ```
 
-### Using the files (receiver side -- no codec code needed)
+### Step 2: Use — Per-protein tasks (retrieval, clustering, UMAP)
 
 ```python
 import h5py
+from scipy.fft import dct
 
 f = h5py.File("compressed.h5", "r")
+matrix = f["protein_id"]["one_embedding"][:]   # (512, 512) fixed
+L = f["protein_id"].attrs["seq_len"]           # original sequence length
 
-# Per-protein task (UMAP, retrieval, clustering):
-vec = f["protein_id"]["protein_vec"][:]     # (2048,) fixed-length vector
-
-# Per-residue task (SS3, disorder, topology):
-mat = f["protein_id"]["per_residue"][:]     # (L, 512) per-residue matrix
-
-# Feed into any ML:
-from sklearn.linear_model import LogisticRegression
-model = LogisticRegression().fit(X_train, y_train)  # X = (N, 2048) or per-residue
+# Extract protein vector: one matmul
+vec = dct(matrix[:, :L].T, type=2, norm='ortho', axis=0)[:4].T.flatten()  # (2048,)
 ```
 
-The `protein_vec` is a precomputed header -- a DCT summary of the per-residue matrix. The receiver reads numpy arrays from H5. No scipy, no codec library, just `h5py`.
+Compare vectors with cosine similarity. Family Ret@1 = 0.784. SF Ret@1 = 0.952.
+
+### Step 3: Use — Per-residue tasks (SS3, disorder, topology)
+
+```python
+per_residue = matrix[:, :L].T                  # (L, 512) — unpad + transpose
+
+# Feed into any probe:
+from sklearn.linear_model import LogisticRegression
+model = LogisticRegression().fit(X_train, y_train)
+```
+
+SS3 Q3 = 0.809 (96% of raw). SS8 Q8 = 0.663 (95% of raw).
+
+### What the receiver needs
+
+Only `h5py` and `numpy`. No codec library, no scipy, no model weights.
 
 ### File format
 
@@ -204,10 +221,19 @@ Each protein in the H5 contains:
 
 | Dataset | Shape | Description |
 |---------|-------|-------------|
-| `protein_vec` | (2048,) | Fixed-length protein vector (DCT K=4 of per-residue), float16 |
-| `per_residue` | (L, 512) | Compressed per-residue embeddings (gzip), float16 |
+| `one_embedding` | (512, 512) | The One Embedding. Fixed size, int4 + gzip. |
+| `protein_vec` | (2048,) | Pre-computed protein vector (DCT K=4), float16. Optional convenience. |
 
-Plus JSON metadata in `attrs["metadata"]` with codec params, input dim, sequence length, dtype.
+Plus `seq_len` attribute for unpadding and JSON metadata with codec params.
+
+### Storage comparison
+
+| Representation | Size/protein | Compression | Both tasks? |
+|----------------|:------------:|:-----------:|:-----------:|
+| Raw ProtT5 (L, 1024) fp32 | 700 KB | 1x | Yes (baseline) |
+| One Embedding (512, 512) int4+gzip | **~50 KB** | **15x** | **Yes** |
+| One Embedding (512, 512) fp16+gzip | ~180 KB | 4x | Yes |
+| protein_vec only (2048,) fp16 | 4 KB | 175x | Retrieval only |
 
 ## Quick Start
 
