@@ -76,9 +76,16 @@ from src.one_embedding.universal_transforms import (
     feature_hash,
     kernel_mean_embedding,
     norm_weighted_mean,
+    percentile_pool,
     power_mean_pool,
     random_orthogonal_project,
+    sparse_random_project,
     svd_spectrum,
+    trimmed_mean_pool,
+)
+from src.one_embedding.data_analysis import (
+    channel_distributions,
+    intrinsic_dimensionality,
 )
 
 __all__ = [
@@ -86,6 +93,7 @@ __all__ = [
     "OneEmbedding",
     "OneEmbeddingCodec",
     "autocovariance_pool",
+    "channel_distributions",
     "curvature_enriched",
     "dct_pool",
     "dct_summary",
@@ -109,6 +117,7 @@ __all__ = [
     "hrr_per_protein",
     "hrr_per_residue",
     "hrr_unbind",
+    "intrinsic_dimensionality",
     "inverse_dct",
     "inverse_displacement_dct",
     "inverse_haar",
@@ -119,10 +128,13 @@ __all__ = [
     "path_signature_depth2",
     "path_signature_depth3",
     "path_statistics",
+    "percentile_pool",
     "power_mean_pool",
     "random_orthogonal_project",
     "shape_descriptors",
+    "sparse_random_project",
     "spectral_fingerprint",
     "spectral_moments",
     "svd_spectrum",
+    "trimmed_mean_pool",
 ]
