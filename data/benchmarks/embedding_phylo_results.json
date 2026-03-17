@@ -1,0 +1,15 @@
+{
+  "n_taxa": 40,
+  "n_dims": 512,
+  "n_generations": 200000,
+  "n_runs": 2,
+  "n_chains": 4,
+  "mcmc_time_s": 257.6114001274109,
+  "asdsf": 0.01475,
+  "converged": true,
+  "rf_consensus_vs_iqtree": 41,
+  "rf_nj_vs_iqtree": 75,
+  "max_rf": 74,
+  "normalized_rf": 0.5540540540540541,
+  "clade_recovery": 0.0
+}
