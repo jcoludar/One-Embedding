@@ -1,15 +1,15 @@
 {
   "n_taxa": 40,
   "n_dims": 512,
-  "n_generations": 200000,
+  "n_generations": 1000000,
   "n_runs": 2,
   "n_chains": 4,
-  "mcmc_time_s": 257.6114001274109,
-  "asdsf": 0.01475,
+  "mcmc_time_s": 1244.9453587532043,
+  "asdsf": 0.009852121212121211,
   "converged": true,
-  "rf_consensus_vs_iqtree": 41,
-  "rf_nj_vs_iqtree": 75,
+  "rf_consensus_vs_iqtree": 57,
+  "rf_nj_vs_iqtree": 61,
   "max_rf": 74,
-  "normalized_rf": 0.5540540540540541,
-  "clade_recovery": 0.0
+  "normalized_rf": 0.7702702702702703,
+  "clade_recovery": 0.21052631578947367
 }
