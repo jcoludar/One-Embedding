@@ -29,7 +29,7 @@ class TestDisorder:
             r = predict(path)
             assert "prot_0" in r
             assert len(r["prot_0"]) == 80
-            assert 0 <= r["prot_0"].min() and r["prot_0"].max() <= 1
+            assert np.isfinite(r["prot_0"]).all()  # CNN outputs Z-scores (unbounded)
 
 
 class TestClassify:
