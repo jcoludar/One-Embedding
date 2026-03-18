@@ -39,6 +39,9 @@ clamp_branch_length = _exp35.clamp_branch_length
 NodeSlider = _exp35.NodeSlider
 load_msa = _exp35.load_msa
 extract_aligned_embeddings = _exp35.extract_aligned_embeddings
+evaluate_monophyly = _exp35.evaluate_monophyly
+clade_purity_score = _exp35.clade_purity_score
+family_separation_score = _exp35.family_separation_score
 
 
 # ---------------------------------------------------------------------------
@@ -872,3 +875,63 @@ class TestPerResidueMode:
         bm = BMLikelihood()
         logL = bm.log_likelihood(tree, data, sigma2=1.0)
         assert np.isfinite(logL)
+
+
+# ---------------------------------------------------------------------------
+# TestLabelBasedEvaluation
+# ---------------------------------------------------------------------------
+
+class TestLabelBasedEvaluation:
+    """Tests for label-based tree evaluation metrics."""
+
+    def _make_perfect_tree(self):
+        """Tree where families are monophyletic: ((A1,A2),(B1,B2))."""
+        return parse_newick("((A1:0.1,A2:0.1):0.5,(B1:0.1,B2:0.1):0.5);")
+
+    def _make_mixed_tree(self):
+        """Tree where families are NOT monophyletic: ((A1,B1),(A2,B2))."""
+        return parse_newick("((A1:0.1,B1:0.1):0.5,(A2:0.1,B2:0.1):0.5);")
+
+    def test_monophyly_perfect(self):
+        """Perfect tree should have all families monophyletic."""
+        tree = self._make_perfect_tree()
+        labels = {"A1": "famA", "A2": "famA", "B1": "famB", "B2": "famB"}
+        result = evaluate_monophyly(tree, labels)
+        assert result["famA"]["monophyletic"] is True
+        assert result["famB"]["monophyletic"] is True
+
+    def test_monophyly_mixed(self):
+        """Mixed tree should NOT have monophyletic families."""
+        tree = self._make_mixed_tree()
+        labels = {"A1": "famA", "A2": "famA", "B1": "famB", "B2": "famB"}
+        result = evaluate_monophyly(tree, labels)
+        assert result["famA"]["monophyletic"] is False
+        assert result["famB"]["monophyletic"] is False
+
+    def test_clade_purity_perfect(self):
+        """Perfect tree should have high clade purity."""
+        tree = self._make_perfect_tree()
+        labels = {"A1": "famA", "A2": "famA", "B1": "famB", "B2": "famB"}
+        purity = clade_purity_score(tree, labels)
+        assert purity > 0.9
+
+    def test_clade_purity_mixed(self):
+        """Mixed tree should have lower clade purity."""
+        tree = self._make_mixed_tree()
+        labels = {"A1": "famA", "A2": "famA", "B1": "famB", "B2": "famB"}
+        purity = clade_purity_score(tree, labels)
+        assert purity < 0.8  # each internal node has 50% purity
+
+    def test_family_separation(self):
+        """Well-separated data should have high separation ratio."""
+        rng = np.random.default_rng(42)
+        data = {
+            "A1": rng.standard_normal(10) + 10,
+            "A2": rng.standard_normal(10) + 10,
+            "B1": rng.standard_normal(10) - 10,
+            "B2": rng.standard_normal(10) - 10,
+        }
+        labels = {"A1": "famA", "A2": "famA", "B1": "famB", "B2": "famB"}
+        sep = family_separation_score(data, labels)
+        assert sep["separation_ratio"] > 2.0
+        assert sep["silhouette_approx"] > 0.5

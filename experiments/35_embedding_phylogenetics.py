@@ -1529,6 +1529,133 @@ def robinson_foulds(tree1: Tree, tree2: Tree) -> int:
     return len(splits1.symmetric_difference(splits2))
 
 
+# ── Label-Based Tree Evaluation ──────────────────────────────────────────
+
+def evaluate_monophyly(tree: Tree, labels: Dict[str, str]) -> Dict[str, dict]:
+    """Evaluate whether each family forms a monophyletic clade.
+
+    For each family, check if there exists an internal node whose
+    descendant leaves are exactly (or a superset of) that family.
+
+    Returns {family: {"monophyletic": bool, "n_members": int,
+                      "best_purity": float, "best_node_size": int}}
+    """
+    families: Dict[str, set] = {}
+    for name, fam in labels.items():
+        families.setdefault(fam, set()).add(name)
+
+    # For each internal node, compute the set of descendant leaves
+    node_descendants: Dict[int, set] = {}
+    for node in tree.postorder():
+        if node.is_leaf():
+            node_descendants[node.id] = {node.name}
+        else:
+            desc = set()
+            for child in node.children:
+                desc |= node_descendants[child.id]
+            node_descendants[node.id] = desc
+
+    result = {}
+    for fam, members in families.items():
+        if len(members) < 2:
+            continue
+        best_purity = 0.0
+        best_node_size = 0
+        is_mono = False
+        for node in tree.nodes:
+            if node.is_leaf():
+                continue
+            desc = node_descendants[node.id]
+            # Check if this node's descendants contain all members
+            if members <= desc:
+                purity = len(members) / len(desc)
+                if purity > best_purity:
+                    best_purity = purity
+                    best_node_size = len(desc)
+                if desc == members:
+                    is_mono = True
+        result[fam] = {
+            "monophyletic": is_mono,
+            "n_members": len(members),
+            "best_purity": best_purity,
+            "best_node_size": best_node_size,
+        }
+    return result
+
+
+def clade_purity_score(tree: Tree, labels: Dict[str, str]) -> float:
+    """Average purity of internal nodes weighted by size.
+
+    For each internal node, purity = (count of most common family) / (total leaves).
+    Returns the weighted average across all internal nodes.
+    """
+    node_descendants: Dict[int, List[str]] = {}
+    for node in tree.postorder():
+        if node.is_leaf():
+            node_descendants[node.id] = [node.name]
+        else:
+            desc = []
+            for child in node.children:
+                desc.extend(node_descendants[child.id])
+            node_descendants[node.id] = desc
+
+    total_weight = 0.0
+    weighted_purity = 0.0
+    for node in tree.nodes:
+        if node.is_leaf() or node.is_root():
+            continue
+        desc_names = node_descendants[node.id]
+        if len(desc_names) < 2:
+            continue
+        fam_counts: Dict[str, int] = {}
+        for name in desc_names:
+            fam = labels.get(name, "unknown")
+            fam_counts[fam] = fam_counts.get(fam, 0) + 1
+        purity = max(fam_counts.values()) / len(desc_names)
+        weight = len(desc_names)
+        weighted_purity += purity * weight
+        total_weight += weight
+    return weighted_purity / total_weight if total_weight > 0 else 0.0
+
+
+def family_separation_score(
+    data: Dict[str, np.ndarray], labels: Dict[str, str]
+) -> Dict[str, float]:
+    """Compute within-family vs between-family distance separation.
+
+    Returns {"within_mean", "between_mean", "separation_ratio",
+             "silhouette_approx"}.
+    """
+    names = sorted(data.keys())
+    vecs = np.array([data[n] for n in names])
+    fams = [labels[n] for n in names]
+
+    # Pairwise Euclidean distances (upper triangle)
+    n = len(names)
+    within_dists = []
+    between_dists = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            d = np.linalg.norm(vecs[i] - vecs[j])
+            if fams[i] == fams[j]:
+                within_dists.append(d)
+            else:
+                between_dists.append(d)
+
+    within_mean = float(np.mean(within_dists)) if within_dists else 0.0
+    between_mean = float(np.mean(between_dists)) if between_dists else 0.0
+    ratio = between_mean / within_mean if within_mean > 0 else 0.0
+    silhouette = (between_mean - within_mean) / max(within_mean, between_mean) \
+        if max(within_mean, between_mean) > 0 else 0.0
+
+    return {
+        "within_mean": within_mean,
+        "between_mean": between_mean,
+        "separation_ratio": ratio,
+        "silhouette_approx": silhouette,
+    }
+
+
 def normalize_leaf_names(tree: Tree) -> Tree:
     """Strip |orgXXX suffixes from leaf names (IQ-TREE convention)."""
     for leaf in tree.leaves:
