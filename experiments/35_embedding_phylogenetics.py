@@ -999,17 +999,18 @@ class MCMCChain:
     def __init__(self, data: Dict[str, np.ndarray],
                  start_tree: Tree, sigma2_init: float = 1.0,
                  n_generations: int = 100_000, sample_freq: int = 500,
-                 beta: float = 1.0, seed: int = 42):
+                 beta: float = 1.0, seed: int = 42, bl_prior_rate: float = 1.0):
         self.data = data
         self.tree = start_tree
         self.sigma2 = sigma2_init
         self.n_generations = n_generations
         self.sample_freq = sample_freq
         self.beta = beta  # 1.0 = cold chain
+        self.bl_prior_rate = bl_prior_rate
 
         self.bm = BMLikelihood()
         self.logL = self.bm.log_likelihood(self.tree, self.data, self.sigma2)
-        self.log_prior = self._compute_log_prior(self.tree, self.sigma2)
+        self.log_prior = self._compute_log_prior(self.tree, self.sigma2, self.bl_prior_rate)
 
         # Proposals
         self.nni = StochasticNNI(seed=seed)
@@ -1035,10 +1036,10 @@ class MCMCChain:
         self.sampled_tree_length: List[float] = []
 
     @staticmethod
-    def _compute_log_prior(tree: Tree, sigma2: float) -> float:
-        """Exp(10) on branch lengths, LogNormal(0,1) on sigma2."""
+    def _compute_log_prior(tree: Tree, sigma2: float, bl_prior_rate: float = 1.0) -> float:
+        """Exp(bl_prior_rate) on branch lengths, LogNormal(0,1) on sigma2."""
         log_p = 0.0
-        rate = 10.0
+        rate = bl_prior_rate
         for node in tree.nodes:
             if not node.is_root():
                 log_p += math.log(rate) - rate * node.branch_length
@@ -1071,7 +1072,7 @@ class MCMCChain:
 
         new_logL = self.bm.log_likelihood(new_tree, self.data, new_sigma2)
         old_log_prior = self.log_prior
-        new_log_prior = self._compute_log_prior(new_tree, new_sigma2)
+        new_log_prior = self._compute_log_prior(new_tree, new_sigma2, self.bl_prior_rate)
 
         log_alpha = self.beta * (new_logL - self.logL) + (new_log_prior - old_log_prior) + log_hr
 
@@ -1115,7 +1116,7 @@ class MC3Runner:
                  n_chains: int = 4, n_generations: int = 100_000,
                  sample_freq: int = 500, swap_freq: int = 100,
                  delta: float = 0.1, start_tree: Optional[Tree] = None,
-                 seed: int = 42):
+                 seed: int = 42, bl_prior_rate: float = 1.0):
         self.n_chains = n_chains
         self.n_generations = n_generations
         self.swap_freq = swap_freq
@@ -1134,7 +1135,7 @@ class MC3Runner:
                 data=data, start_tree=start_tree.copy(),
                 sigma2_init=sigma2_init, n_generations=0,
                 sample_freq=sample_freq, beta=betas[i],
-                seed=seed + i * 10,
+                seed=seed + i * 10, bl_prior_rate=bl_prior_rate,
             )
             self.chains.append(chain)
 
@@ -1194,6 +1195,7 @@ def _run_single_mc3(args: dict) -> dict:
         delta=args["delta"],
         start_tree=args["start_tree"],
         seed=args["seed"],
+        bl_prior_rate=args.get("bl_prior_rate", 1.0),
     )
     runner.run()
     return {
@@ -1214,7 +1216,8 @@ class MultiRunOrchestrator:
                  n_runs: int = 2, n_chains: int = 4,
                  n_generations: int = 100_000, sample_freq: int = 500,
                  swap_freq: int = 100, delta: float = 0.1,
-                 seed: int = 42, max_workers: Optional[int] = None):
+                 seed: int = 42, max_workers: Optional[int] = None,
+                 bl_prior_rate: float = 1.0):
         self.data = data
         self.n_runs = n_runs
         self.n_chains = n_chains
@@ -1224,6 +1227,7 @@ class MultiRunOrchestrator:
         self.delta = delta
         self.seed = seed
         self.max_workers = max_workers or n_runs
+        self.bl_prior_rate = bl_prior_rate
 
         names = sorted(data.keys())
         self.start_trees: List[Tree] = [NJBuilder.from_embeddings(data)]
@@ -1239,6 +1243,7 @@ class MultiRunOrchestrator:
             "delta": self.delta,
             "start_tree": self.start_trees[i],
             "seed": self.seed + i * 100,
+            "bl_prior_rate": self.bl_prior_rate,
         } for i in range(self.n_runs)]
 
         if self.n_runs == 1:
@@ -1543,6 +1548,8 @@ if __name__ == "__main__":
     parser.add_argument("--n-chains", type=int, default=4, help="Chains per run (MC3)")
     parser.add_argument("--sample-freq", type=int, default=200, help="Sample every N generations")
     parser.add_argument("--swap-freq", type=int, default=50, help="MC3 swap attempt frequency")
+    parser.add_argument("--bl-prior-rate", type=float, default=1.0,
+                        help="Exponential prior rate on branch lengths (default: 1.0)")
     args = parser.parse_args()
 
     import matplotlib
@@ -1629,6 +1636,7 @@ if __name__ == "__main__":
         data=data, n_runs=args.n_runs, n_chains=args.n_chains,
         n_generations=args.n_gen, sample_freq=args.sample_freq,
         swap_freq=args.swap_freq, seed=42,
+        bl_prior_rate=args.bl_prior_rate,
     )
     run_results = orch.run()
     t_mcmc = time.time() - t0

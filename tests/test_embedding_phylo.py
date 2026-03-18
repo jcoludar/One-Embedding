@@ -780,3 +780,30 @@ class TestNodeSlider:
             for n in new_tree.nodes:
                 if not n.is_root():
                     assert n.branch_length >= BL_MIN
+
+
+# ---------------------------------------------------------------------------
+# TestConfigurablePrior
+# ---------------------------------------------------------------------------
+
+class TestConfigurablePrior:
+    def test_exp1_different_from_exp10(self):
+        """Exp(1) and Exp(10) priors should give different log-prior values."""
+        tree = parse_newick("((A:0.5,B:0.5):0.3,C:0.8);")
+        lp_1 = MCMCChain._compute_log_prior(tree, 1.0, bl_prior_rate=1.0)
+        lp_10 = MCMCChain._compute_log_prior(tree, 1.0, bl_prior_rate=10.0)
+        assert lp_1 != lp_10
+        # Exp(1) should be less penalizing for longer branches
+        assert lp_1 > lp_10
+
+    def test_chain_accepts_bl_prior_rate(self):
+        """MCMCChain should accept bl_prior_rate parameter."""
+        tree = parse_newick("((A:0.5,B:0.5):0.3,C:0.8);")
+        data = simulate_bm(tree, 1.0, 16, seed=42)
+        chain = MCMCChain(
+            data=data, start_tree=tree.copy(),
+            sigma2_init=1.0, n_generations=100, sample_freq=50,
+            seed=42, bl_prior_rate=1.0,
+        )
+        chain.run()
+        assert len(chain.sampled_trees) > 0
