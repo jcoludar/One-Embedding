@@ -137,4 +137,68 @@ __all__ = [
     "spectral_moments",
     "svd_spectrum",
     "trimmed_mean_pool",
+    "Codec",
+    "encode",
+    "decode",
+    "embed",
+    "__version__",
 ]
+
+# ── Production API ──────────────────────────────────────────────────
+__version__ = "0.1.0"
+
+from src.one_embedding.core import Codec
+
+
+def encode(input_path, output_path, d_out=512, dct_k=4, seed=42):
+    """Compress per-residue embeddings H5 to .oemb format."""
+    import h5py
+    from src.one_embedding.io import write_oemb_batch
+
+    codec = Codec(d_out=d_out, dct_k=dct_k, seed=seed)
+
+    # Fit ABTT from corpus (sample residues without loading all into memory)
+    import numpy as np
+    residues = []
+    with h5py.File(input_path, "r") as f:
+        keys = list(f.keys())
+        for key in keys:
+            emb = f[key][:]
+            # Sample up to 200 residues per protein for fitting
+            if emb.shape[0] > 200:
+                idx = np.random.RandomState(seed).choice(emb.shape[0], 200, replace=False)
+                residues.append(emb[idx])
+            else:
+                residues.append(emb)
+            if sum(r.shape[0] for r in residues) > 50000:
+                break
+    stacked = np.concatenate(residues, axis=0).astype(np.float32)
+    from src.one_embedding.core.preprocessing import fit_abtt
+    codec._abtt_params = fit_abtt(stacked, k=3, seed=seed)
+
+    # Encode proteins one at a time (streaming)
+    proteins = {}
+    with h5py.File(input_path, "r") as f:
+        for key in f.keys():
+            proteins[key] = codec.encode(f[key][:])
+
+    write_oemb_batch(output_path, proteins)
+
+
+def decode(path, protein_id=None):
+    """Read .oemb file into arrays."""
+    import h5py
+    from src.one_embedding.io import read_oemb, read_oemb_batch
+    with h5py.File(path, "r") as f:
+        if "per_residue" in f:
+            return read_oemb(path)
+        elif protein_id:
+            return read_oemb_batch(path, [protein_id]).get(protein_id)
+        else:
+            return read_oemb_batch(path)
+
+
+def embed(input_path, output_path, model="prot_t5"):
+    """Extract per-residue embeddings from FASTA sequences."""
+    from src.one_embedding.extract import extract_embeddings
+    extract_embeddings(input_path, output_path, model=model)
