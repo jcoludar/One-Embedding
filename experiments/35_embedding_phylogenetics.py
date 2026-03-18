@@ -1248,6 +1248,29 @@ class Diagnostics:
         return splits
 
     @staticmethod
+    def _get_splits_with_lengths(tree: Tree) -> Dict[frozenset, float]:
+        """Get bipartition set with branch lengths for an unrooted tree."""
+        all_leaves = frozenset(tree.leaf_names())
+        splits = {}
+        for node in tree.postorder():
+            if node.is_leaf() or node.is_root():
+                continue
+            below = set()
+            stack = [node]
+            while stack:
+                n = stack.pop()
+                if n.is_leaf():
+                    below.add(n.name)
+                else:
+                    stack.extend(n.children)
+            below = frozenset(below)
+            complement = all_leaves - below
+            split = min(below, complement, key=len)
+            if 0 < len(split) < len(all_leaves):
+                splits[split] = node.branch_length
+        return splits
+
+    @staticmethod
     def asdsf(tree_sets: List[List[str]], burnin_frac: float = 0.25,
               min_freq: float = 0.05) -> float:
         """Average Standard Deviation of Split Frequencies across runs."""
@@ -1305,6 +1328,8 @@ class ConsensusBuilder:
             return parse_newick(trees_nwk[-1])
 
         split_counts: Dict[frozenset, int] = {}
+        split_branch_lengths: Dict[frozenset, List[float]] = {}
+        leaf_branch_lengths: Dict[str, List[float]] = {}
         leaf_names_set: Optional[set] = None
         for nwk in post_trees:
             tree = parse_newick(nwk)
@@ -1312,6 +1337,15 @@ class ConsensusBuilder:
                 leaf_names_set = set(tree.leaf_names())
             for split in Diagnostics._get_splits(tree):
                 split_counts[split] = split_counts.get(split, 0) + 1
+            splits_bl = Diagnostics._get_splits_with_lengths(tree)
+            for split, bl in splits_bl.items():
+                if split not in split_branch_lengths:
+                    split_branch_lengths[split] = []
+                split_branch_lengths[split].append(bl)
+            for leaf in tree.leaves:
+                if leaf.name not in leaf_branch_lengths:
+                    leaf_branch_lengths[leaf.name] = []
+                leaf_branch_lengths[leaf.name].append(leaf.branch_length)
 
         # Filter to majority splits, sort by SIZE ASCENDING (build bottom-up)
         majority_splits = [
@@ -1329,8 +1363,9 @@ class ConsensusBuilder:
         # Start: each leaf is its own cluster
         clusters: Dict[frozenset, TreeNode] = {}
         for name in sorted(leaf_names_set):
+            bl = float(np.median(leaf_branch_lengths.get(name, [0.01])))
             clusters[frozenset({name})] = TreeNode(
-                id=_next_id(), name=name, branch_length=0.01,
+                id=_next_id(), name=name, branch_length=bl,
             )
 
         for split, freq in majority_splits:
@@ -1344,7 +1379,8 @@ class ConsensusBuilder:
                     remaining[cluster_set] = cluster_node
 
             if len(children_items) >= 2:
-                new_node = TreeNode(id=_next_id(), branch_length=0.01)
+                bl = float(np.median(split_branch_lengths.get(split, [0.01])))
+                new_node = TreeNode(id=_next_id(), branch_length=bl)
                 merged_set = frozenset()
                 for cs, cn in children_items:
                     cn.parent = new_node
@@ -1388,7 +1424,8 @@ class ConsensusBuilder:
                 else:
                     remaining[cluster_set] = cluster_node
             if len(children_items) >= 2:
-                new_node = TreeNode(id=_next_id(), branch_length=0.01)
+                bl = float(np.median(split_branch_lengths.get(split, [0.01])))
+                new_node = TreeNode(id=_next_id(), branch_length=bl)
                 merged_set = frozenset()
                 for cs, cn in children_items:
                     cn.parent = new_node

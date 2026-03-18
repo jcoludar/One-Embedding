@@ -664,3 +664,28 @@ class TestAutoTuning:
         old_lambda = prop.lambda_
         prop.tune(0.80, batch=0)  # very high acceptance
         assert prop.lambda_ > old_lambda
+
+
+# ---------------------------------------------------------------------------
+# TestConsensusBranchLengths
+# ---------------------------------------------------------------------------
+
+class TestConsensusBranchLengths:
+    def test_median_branch_lengths(self):
+        """Consensus should use median branch lengths from posterior, not hardcoded."""
+        trees = ["((A:0.5,B:0.3):0.2,C:0.7);"] * 50
+        consensus = ConsensusBuilder.majority_rule(trees, burnin_frac=0.0)
+        leaf_a = [n for n in consensus.leaves if n.name == "A"][0]
+        assert abs(leaf_a.branch_length - 0.5) < 0.1, (
+            f"Expected ~0.5, got {leaf_a.branch_length}"
+        )
+
+    def test_varied_branch_lengths_uses_median(self):
+        """When branch lengths vary across trees, consensus should use median."""
+        trees_short = ["((A:0.1,B:0.3):0.2,C:0.7);"] * 80
+        trees_long = ["((A:10.0,B:0.3):0.2,C:0.7);"] * 20
+        consensus = ConsensusBuilder.majority_rule(
+            trees_short + trees_long, burnin_frac=0.0
+        )
+        leaf_a = [n for n in consensus.leaves if n.name == "A"][0]
+        assert abs(leaf_a.branch_length - 0.1) < 0.05
