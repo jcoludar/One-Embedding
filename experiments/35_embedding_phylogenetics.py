@@ -1538,6 +1538,64 @@ def normalize_leaf_names(tree: Tree) -> Tree:
     return tree
 
 
+def load_msa(fasta_path: str) -> Dict[str, str]:
+    """Load aligned FASTA into {name: aligned_sequence} dict."""
+    msa = {}
+    current_name = None
+    current_seq: List[str] = []
+    with open(fasta_path) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith(">"):
+                if current_name is not None:
+                    msa[current_name] = "".join(current_seq)
+                current_name = line[1:].split()[0]
+                if "|" in current_name:
+                    current_name = current_name.split("|")[0]
+                current_seq = []
+            else:
+                current_seq.append(line)
+    if current_name is not None:
+        msa[current_name] = "".join(current_seq)
+    return msa
+
+
+def extract_aligned_embeddings(
+    msa: Dict[str, str],
+    embeddings: Dict[str, np.ndarray],
+    fill_value: float = 0.0,
+) -> Dict[str, np.ndarray]:
+    """Map per-residue embeddings to MSA-aligned positions.
+
+    For each protein, walk the aligned sequence. Non-gap positions map to
+    successive residue embeddings. Gap positions get fill_value.
+
+    Args:
+        msa: {name: aligned_sequence} with gaps as '-'
+        embeddings: {name: (L, D) array} of per-residue embeddings
+        fill_value: value for gap positions
+
+    Returns:
+        {name: (aligned_length, D) array}
+    """
+    aligned_len = len(next(iter(msa.values())))
+    D = next(iter(embeddings.values())).shape[1]
+    result = {}
+    for name, aligned_seq in msa.items():
+        if name not in embeddings:
+            continue
+        emb = embeddings[name]
+        out = np.full((aligned_len, D), fill_value, dtype=np.float32)
+        residue_idx = 0
+        for col_idx, char in enumerate(aligned_seq):
+            if char != "-":
+                if residue_idx < emb.shape[0]:
+                    out[col_idx] = emb[residue_idx]
+                residue_idx += 1
+        result[name] = out
+    return result
+
+
 # ── Experiment Main ───────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -1550,6 +1608,10 @@ if __name__ == "__main__":
     parser.add_argument("--swap-freq", type=int, default=50, help="MC3 swap attempt frequency")
     parser.add_argument("--bl-prior-rate", type=float, default=1.0,
                         help="Exponential prior rate on branch lengths (default: 1.0)")
+    parser.add_argument("--per-residue", action="store_true",
+                        help="Use per-residue embeddings aligned by MSA")
+    parser.add_argument("--msa", type=str, default=None,
+                        help="Path to aligned FASTA (default: auto-detect)")
     args = parser.parse_args()
 
     import matplotlib
@@ -1604,15 +1666,44 @@ if __name__ == "__main__":
         )
     top3 = stats["top_pcs"][:3]
 
-    data = {}
-    for pid, vec in embeddings_raw.items():
-        vec_abtt = all_but_the_top(vec.reshape(1, -1), top3).flatten()
-        vec_rp = random_orthogonal_project(vec_abtt.reshape(1, -1), d_out=512, seed=42).flatten()
-        data[pid] = vec_rp.astype(np.float64)
+    if args.per_residue:
+        # Load per-residue embeddings
+        embeddings_per_res = {}
+        with h5py.File(EMB_PATH, "r") as f:
+            for key in f.keys():
+                embeddings_per_res[key] = np.array(f[key], dtype=np.float32)
 
-    print(f"  Preprocessed: ABTT3+RP512 → {next(iter(data.values())).shape[0]}d")
+        # Load MSA
+        msa_path = args.msa or str(SPECIES_ROOT / "data" / "conotoxin_aligned.fasta")
+        print(f"  Loading MSA from {msa_path}")
+        msa = load_msa(msa_path)
+        print(f"  MSA: {len(msa)} sequences, {len(next(iter(msa.values())))} columns")
+
+        # Align embeddings to MSA positions
+        aligned_embs = extract_aligned_embeddings(msa, embeddings_per_res)
+
+        # Apply ABTT3 + RP per residue position, then flatten
+        data = {}
+        for pid, emb_matrix in aligned_embs.items():
+            emb_abtt = all_but_the_top(emb_matrix, top3)
+            emb_rp = random_orthogonal_project(emb_abtt, d_out=512, seed=42)
+            data[pid] = emb_rp.flatten().astype(np.float64)
+
+        n_cols = len(next(iter(msa.values())))
+        dim = next(iter(data.values())).shape[0]
+        print(f"  Per-residue mode: {dim}d ({n_cols} cols x 512)")
+    else:
+        data = {}
+        for pid, vec in embeddings_raw.items():
+            vec_abtt = all_but_the_top(vec.reshape(1, -1), top3).flatten()
+            vec_rp = random_orthogonal_project(vec_abtt.reshape(1, -1), d_out=512, seed=42).flatten()
+            data[pid] = vec_rp.astype(np.float64)
+
+        print(f"  Preprocessed: ABTT3+RP512 → {next(iter(data.values())).shape[0]}d")
+
     results["n_taxa"] = len(data)
     results["n_dims"] = next(iter(data.values())).shape[0]
+    results["mode"] = "per_residue" if args.per_residue else "per_protein"
 
     # ── Step 2: NJ starting tree ──────────────────────────────────────
     print("\n" + "=" * 60)

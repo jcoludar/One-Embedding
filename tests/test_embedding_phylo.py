@@ -37,6 +37,8 @@ BL_MIN = _exp35.BL_MIN
 BL_MAX = _exp35.BL_MAX
 clamp_branch_length = _exp35.clamp_branch_length
 NodeSlider = _exp35.NodeSlider
+load_msa = _exp35.load_msa
+extract_aligned_embeddings = _exp35.extract_aligned_embeddings
 
 
 # ---------------------------------------------------------------------------
@@ -807,3 +809,66 @@ class TestConfigurablePrior:
         )
         chain.run()
         assert len(chain.sampled_trees) > 0
+
+
+# ---------------------------------------------------------------------------
+# TestPerResidueMode
+# ---------------------------------------------------------------------------
+
+class TestPerResidueMode:
+    def test_load_msa(self):
+        """load_msa should parse aligned FASTA into {name: sequence} dict."""
+        import tempfile, os
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.fasta', delete=False) as f:
+            f.write(">A\nACDE-FG\n>B\nAC-EEFG\n>C\nACDEEFG\n")
+            tmp_path = f.name
+        try:
+            msa = load_msa(tmp_path)
+            assert len(msa) == 3
+            assert len(msa["A"]) == 7
+            assert msa["A"][4] == "-"
+        finally:
+            os.unlink(tmp_path)
+
+    def test_load_msa_strips_pipe_suffix(self):
+        """load_msa should strip |orgXXX suffixes from names."""
+        import tempfile, os
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.fasta', delete=False) as f:
+            f.write(">P12345|org999\nACDEFG\n>Q67890|org123\nACDEFG\n")
+            tmp_path = f.name
+        try:
+            msa = load_msa(tmp_path)
+            assert "P12345" in msa
+            assert "Q67890" in msa
+        finally:
+            os.unlink(tmp_path)
+
+    def test_extract_aligned_embeddings(self):
+        """extract_aligned_embeddings should map embeddings to aligned positions."""
+        msa = {"A": "ACDE-FG", "B": "AC-EEFG"}
+        rng = np.random.RandomState(42)
+        embeddings = {
+            "A": rng.randn(6, 4).astype(np.float32),
+            "B": rng.randn(6, 4).astype(np.float32),
+        }
+        aligned = extract_aligned_embeddings(msa, embeddings, fill_value=0.0)
+        assert aligned["A"].shape == (7, 4)
+        assert aligned["B"].shape == (7, 4)
+        # Gap positions should be fill_value
+        assert np.all(aligned["A"][4] == 0.0)
+        assert np.all(aligned["B"][2] == 0.0)
+        # Non-gap positions should have actual values (not zero)
+        assert not np.all(aligned["A"][0] == 0.0)
+
+    def test_bm_with_higher_dim_data(self):
+        """BM likelihood should work with higher-dimensional per-residue data."""
+        tree = parse_newick("((A:0.5,B:0.5):0.3,C:0.8);")
+        rng = np.random.default_rng(42)
+        data = {
+            "A": rng.standard_normal(20),
+            "B": rng.standard_normal(20),
+            "C": rng.standard_normal(20),
+        }
+        bm = BMLikelihood()
+        logL = bm.log_likelihood(tree, data, sigma2=1.0)
+        assert np.isfinite(logL)
