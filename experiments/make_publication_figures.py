@@ -25,7 +25,7 @@ import numpy as np
 # ---------------------------------------------------------------------------
 # Output & style
 # ---------------------------------------------------------------------------
-FIG_DIR = Path("docs/figures")
+FIG_DIR = Path(__file__).resolve().parent.parent / "docs" / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 plt.rcParams.update({
@@ -84,6 +84,47 @@ def normal_ci(p, n, z=1.96):
 def load_json(path):
     with open(path) as f:
         return json.load(f)
+
+
+def _get_trained_cc_ret1(data):
+    """Extract trained CC Ret@1 values from data (all seeds)."""
+    seed_ret1 = []
+    # Seed 42 from channel_compression_results
+    for r in data["channel_comp"]:
+        if (r.get("name") == "channel_prot_t5_contrastive_d256_s42"
+                and "retrieval_family" in r):
+            seed_ret1.append(r["retrieval_family"]["precision@1"])
+            break
+    # Seeds 123, 456 from robust_validation_results
+    for r in data["robust_val"]:
+        if (r.get("method") == "channel_contrastive"
+                and r.get("latent_dim") == 256
+                and "retrieval_family" in r):
+            seed_ret1.append(r["retrieval_family"]["precision@1"])
+    return seed_ret1
+
+
+def _get_trained_cc_per_residue(data):
+    """Extract trained CC per-residue metrics from data (seed 42)."""
+    for r in data["channel_comp"]:
+        if r.get("name") == "channel_prot_t5_contrastive_d256_s42":
+            return {
+                "ss3_q3": r.get("per_residue", {}).get("q3", 0.834),
+                "ss8_q8": r.get("per_residue", {}).get("q8", 0.692),
+                "disorder_rho": r.get("per_residue", {}).get("spearman_rho", 0.518),
+                "tm_f1": r.get("per_residue", {}).get("macro_f1", 0.657),
+            }
+    # Fallback to robust_validation
+    for r in data["robust_val"]:
+        if (r.get("method") == "channel_contrastive"
+                and r.get("latent_dim") == 256):
+            return {
+                "ss3_q3": r.get("per_residue", {}).get("q3", 0.834),
+                "ss8_q8": r.get("per_residue", {}).get("q8", 0.692),
+                "disorder_rho": r.get("per_residue", {}).get("spearman_rho", 0.518),
+                "tm_f1": r.get("per_residue", {}).get("macro_f1", 0.657),
+            }
+    return {"ss3_q3": 0.834, "ss8_q8": 0.692, "disorder_rho": 0.518, "tm_f1": 0.657}
 
 
 # ---------------------------------------------------------------------------
@@ -178,8 +219,8 @@ def fig_codec_retrieval(data):
     ax.text(len(labels) - 0.5, gz + 0.003, f"ground zero ({gz:.3f})",
             fontsize=8, color=CODEC_COLORS["ground_zero"], ha="right")
 
-    # Trained CC reference (3-seed mean)
-    trained_vals = [0.808, 0.785, 0.793]
+    # Trained CC reference (3-seed mean, loaded from data)
+    trained_vals = _get_trained_cc_ret1(data)
     trained_mean = np.mean(trained_vals)
     ax.axhline(y=trained_mean, color=CODEC_COLORS["trained_cc"], linestyle=":",
                linewidth=1.5, alpha=0.8)
@@ -188,8 +229,8 @@ def fig_codec_retrieval(data):
             color=CODEC_COLORS["trained_cc"], ha="right", fontstyle="italic")
 
     # Value labels
-    for bar, v in zip(bars, vals):
-        ax.text(bar.get_x() + bar.get_width() / 2, v + errs[list(vals).index(v)] + 0.005,
+    for i, (bar, v) in enumerate(zip(bars, vals)):
+        ax.text(bar.get_x() + bar.get_width() / 2, v + errs[i] + 0.005,
                 f"{v:.3f}", ha="center", va="bottom", fontsize=7.5, color="#374151")
 
     ax.set_ylabel("Family Retrieval Ret@1")
@@ -251,7 +292,8 @@ def fig_per_residue_retention(data):
 
     # Trained CC d256 (from robust validation, CB513 s42 contrastive)
     # Note: different dataset (CB513) vs SCOPe test set for codecs
-    trained_cc = [0.834, 0.692, 0.518, 0.657]
+    cc_pr = _get_trained_cc_per_residue(data)
+    trained_cc = [cc_pr["ss3_q3"], cc_pr["ss8_q8"], cc_pr["disorder_rho"], cc_pr["tm_f1"]]
 
     methods = ["Raw (1024d)", "rp512", "fh512", "Trained CC*"]
     all_vals = [raw, rp512, fh512, trained_cc]
@@ -344,8 +386,10 @@ def fig_tradeoff_scatter(data):
     points.extend(chained_pts)
 
     # Trained CC (on CB513, different dataset — note in caption)
+    cc_ret1_vals = _get_trained_cc_ret1(data)
+    cc_pr = _get_trained_cc_per_residue(data)
     points.append(("trained CC*", "Trained",
-                   0.795, 0.834))
+                   np.mean(cc_ret1_vals), cc_pr["ss3_q3"]))
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -452,10 +496,15 @@ def fig_cross_plm(data):
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 
-    # Bracket annotations for PLM gaps
+    # Bracket annotations for PLM gaps (compute from data)
+    plm0_mean = np.mean([data["uc_retrieval"][f"{plm_prefixes[0]}_{cd[1]}"]["family_ret1"]
+                         for cd in codec_defs])
+    plm1_mean = np.mean([data["uc_retrieval"][f"{plm_prefixes[1]}_{cd[1]}"]["family_ret1"]
+                         for cd in codec_defs])
+    plm_gap = plm0_mean - plm1_mean
     ax.annotate("", xy=(group_centers[0], 0.80), xytext=(group_centers[1], 0.80),
                 arrowprops=dict(arrowstyle="<->", color="#DC2626", lw=1.5))
-    ax.text((group_centers[0] + group_centers[1]) / 2, 0.81, "+0.12",
+    ax.text((group_centers[0] + group_centers[1]) / 2, 0.81, f"+{plm_gap:.2f}",
             ha="center", fontsize=9, color="#DC2626", fontweight="bold")
 
     # Legend for codecs

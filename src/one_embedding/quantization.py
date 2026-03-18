@@ -7,6 +7,7 @@ preserving downstream task quality.
 Methods:
 - Int8: per-channel 8-bit uniform quantization (4x compression)
 - Int4: per-channel 4-bit quantization, packed 2 values/byte (8x compression)
+- Int2: per-channel 2-bit quantization, packed 4 values/byte (16x compression)
 - Binary: per-channel 1-bit sign quantization (32x compression)
 - PQ: Product Quantization — learned sub-vector codebooks
 - RVQ: Residual Vector Quantization — hierarchical codebooks
@@ -164,6 +165,95 @@ def dequantize_int4(compressed: dict) -> np.ndarray:
     q = np.stack([high, low], axis=2).reshape(L, D_pad).astype(np.float32)
 
     # Trim padding
+    q = q[:, :D]
+
+    return ((q - zero_points[np.newaxis, :]) * scales[np.newaxis, :]).astype(
+        np.float32
+    )
+
+
+# ---------------------------------------------------------------------------
+# Int2 quantization
+# ---------------------------------------------------------------------------
+
+def quantize_int2(matrix: np.ndarray) -> dict:
+    """Per-channel 2-bit uniform quantization, packed 4 values per byte.
+
+    Maps each channel's float32 range to [0, 3] (4 levels).
+    Four columns packed per byte: col 0 in bits 7-6, col 1 in bits 5-4,
+    col 2 in bits 3-2, col 3 in bits 1-0.
+    If D is not divisible by 4, the matrix is padded before packing.
+
+    Args:
+        matrix: (L, D) float32 per-residue embeddings.
+
+    Returns:
+        dict with:
+            data: (L, ceil(D/4)) uint8 packed values
+            scales: (D,) float32 per-channel scale factors
+            zero_points: (D,) int32 per-channel zero points
+            original_shape: tuple (L, D)
+            dtype: "int2"
+    """
+    matrix = np.asarray(matrix, dtype=np.float32)
+    L, D = matrix.shape
+
+    ch_min = matrix.min(axis=0)
+    ch_max = matrix.max(axis=0)
+    ch_range = ch_max - ch_min
+    ch_range = np.where(ch_range == 0.0, 1.0, ch_range)
+
+    scales = ch_range / 3.0  # 2 bits → 4 levels [0..3]
+    zero_points = np.round(-ch_min / scales).astype(np.int32)
+
+    q = np.round(matrix / scales[np.newaxis, :] + zero_points[np.newaxis, :])
+    q = np.clip(q, 0, 3).astype(np.uint8)
+
+    # Pad D to multiple of 4 for packing
+    D_pad = D + (-D % 4)
+    if D_pad > D:
+        q = np.pad(q, ((0, 0), (0, D_pad - D)))
+
+    # Pack 4 values per byte: positions 0,1,2,3 in bits 7-6,5-4,3-2,1-0
+    q_reshaped = q.reshape(L, D_pad // 4, 4)
+    packed = (
+        (q_reshaped[:, :, 0] << 6)
+        | (q_reshaped[:, :, 1] << 4)
+        | (q_reshaped[:, :, 2] << 2)
+        | q_reshaped[:, :, 3]
+    )
+
+    return {
+        "data": packed.astype(np.uint8),
+        "scales": scales,
+        "zero_points": zero_points,
+        "original_shape": (L, D),
+        "dtype": "int2",
+    }
+
+
+def dequantize_int2(compressed: dict) -> np.ndarray:
+    """Reconstruct float32 embeddings from int2 packed dict.
+
+    Args:
+        compressed: dict returned by quantize_int2.
+
+    Returns:
+        (L, D) float32 reconstructed embeddings.
+    """
+    data = compressed["data"]  # (L, D_pad//4) uint8
+    scales = compressed["scales"]
+    zero_points = compressed["zero_points"].astype(np.float32)
+    L, D = compressed["original_shape"]
+
+    # Unpack 4 values per byte
+    v0 = (data >> 6) & 0x03
+    v1 = (data >> 4) & 0x03
+    v2 = (data >> 2) & 0x03
+    v3 = data & 0x03
+
+    D_pad = data.shape[1] * 4
+    q = np.stack([v0, v1, v2, v3], axis=2).reshape(L, D_pad).astype(np.float32)
     q = q[:, :D]
 
     return ((q - zero_points[np.newaxis, :]) * scales[np.newaxis, :]).astype(
@@ -524,6 +614,9 @@ def compressed_size_bytes(compressed: dict) -> int:
         return compressed["data"].nbytes
 
     elif dtype == "int4":
+        return compressed["data"].nbytes
+
+    elif dtype == "int2":
         return compressed["data"].nbytes
 
     elif dtype == "binary":

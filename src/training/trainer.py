@@ -215,8 +215,8 @@ def train_compressor(
             if contrastive_loss_fn:
                 aug_states, aug_mask = gaussian_noise(states, mask, std=0.1)
                 aug_output = model(aug_states, aug_mask)
-                z1 = model.get_pooled(latent)
-                z2 = model.get_pooled(aug_output["latent"])
+                z1 = model.get_pooled(latent, mask=mask)
+                z2 = model.get_pooled(aug_output["latent"], mask=aug_mask)
                 cl = contrastive_loss_fn(z1, z2)
                 total_loss = total_loss + contrastive_weight * cl
                 epoch_metrics.setdefault("contrastive_loss", []).append(cl.item())
@@ -246,6 +246,12 @@ def train_compressor(
                 epoch_metrics.setdefault("token_ortho", []).append(to["mean_cos"].item())
 
             total_loss.backward()
+            # Sanitize NaN/inf gradients before clipping to avoid
+            # 0 * inf = NaN from clip_grad_norm_ (known issue with
+            # contrastive losses that can produce inf logits).
+            for p in model.parameters():
+                if p.grad is not None:
+                    p.grad.nan_to_num_(nan=0.0, posinf=1.0, neginf=-1.0)
             nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
 

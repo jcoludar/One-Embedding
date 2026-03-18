@@ -45,8 +45,15 @@ class SequenceCompressor(nn.Module, ABC):
         reconstructed = self.decode(latent, target_length)
         return {"latent": latent, "reconstructed": reconstructed}
 
-    def get_pooled(self, latent: Tensor, strategy: str = "mean") -> Tensor:
+    def get_pooled(
+        self, latent: Tensor, strategy: str = "mean", mask: Tensor | None = None,
+    ) -> Tensor:
         """Pool latent tokens to a single vector for retrieval/classification.
+
+        Args:
+            latent: (B, K, D') latent tokens.
+            strategy: "mean", "first", "mean_std", or "concat".
+            mask: Optional (B, K) mask for variable-length sequences.
 
         Strategies:
             mean: Mean over K tokens -> (B, D')
@@ -54,6 +61,17 @@ class SequenceCompressor(nn.Module, ABC):
             mean_std: Concatenate mean and std -> (B, 2*D')
             concat: Flatten all K tokens -> (B, K*D')
         """
+        if mask is not None:
+            mask_f = mask.unsqueeze(-1).float()  # (B, K, 1)
+            lengths = mask_f.sum(dim=1).clamp(min=1)  # (B, 1)
+            if strategy == "mean":
+                return (latent * mask_f).sum(dim=1) / lengths
+            elif strategy == "mean_std":
+                mean = (latent * mask_f).sum(dim=1) / lengths
+                diff_sq = ((latent - mean.unsqueeze(1)) * mask_f).pow(2)
+                std = (diff_sq.sum(dim=1) / lengths.clamp(min=2)).sqrt()
+                return torch.cat([mean, std], dim=-1)
+
         if strategy == "mean":
             return latent.mean(dim=1)
         elif strategy == "first":

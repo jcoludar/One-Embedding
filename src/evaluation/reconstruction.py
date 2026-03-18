@@ -16,7 +16,7 @@ def evaluate_reconstruction(
 ) -> dict[str, float]:
     """Evaluate reconstruction quality across all proteins.
 
-    Returns dict with: mse, cosine_sim, per_position_mse (list).
+    Returns dict with: mse, cosine_sim, mse_std, cosine_sim_std, n_proteins.
     """
     if device is None:
         device = get_device()
@@ -26,14 +26,13 @@ def evaluate_reconstruction(
 
     all_mse = []
     all_cosine = []
-    per_position_mse = []
 
     with torch.no_grad():
         for pid, emb in embeddings.items():
             L = min(emb.shape[0], max_len)
-            emb = emb[:L]
+            emb_trunc = emb[:L]
 
-            states = torch.from_numpy(emb).unsqueeze(0).to(device)  # (1, L, D)
+            states = torch.from_numpy(emb_trunc).unsqueeze(0).to(device)  # (1, L, D)
             mask = torch.ones(1, L, device=device)
 
             output = model(states, mask)
@@ -42,7 +41,6 @@ def evaluate_reconstruction(
             # MSE per residue
             diff = (recon[0, :L] - states[0, :L]).pow(2).mean(dim=-1)  # (L,)
             all_mse.append(diff.mean().item())
-            per_position_mse.append(diff.cpu().numpy())
 
             # Cosine similarity per residue
             cos = torch.nn.functional.cosine_similarity(recon[0, :L], states[0, :L], dim=-1)

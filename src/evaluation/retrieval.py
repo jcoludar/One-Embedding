@@ -124,7 +124,7 @@ def evaluate_retrieval(
             row = sims[qi].copy()
             # Exclude self if query is in the database
             if qid in db_id_to_idx:
-                row[db_id_to_idx[qid]] = -1
+                row[db_id_to_idx[qid]] = -np.inf
             top_k_idx = np.argsort(row)[-k:]
             top_k_labels = [db_labels[j] for j in top_k_idx]
             correct = sum(1 for lbl in top_k_labels if lbl == q_labels[qi])
@@ -140,7 +140,7 @@ def evaluate_retrieval(
     for qi, qid in enumerate(q_ids):
         row = sims[qi].copy()
         if qid in db_id_to_idx:
-            row[db_id_to_idx[qid]] = -1
+            row[db_id_to_idx[qid]] = -np.inf
         sorted_idx = np.argsort(row)[::-1]
         for rank, idx in enumerate(sorted_idx, 1):
             if db_labels[idx] == q_labels[qi]:
@@ -157,7 +157,7 @@ def evaluate_retrieval(
     for qi, qid in enumerate(q_ids):
         row = sims[qi].copy()
         if qid in db_id_to_idx:
-            row[db_id_to_idx[qid]] = -1
+            row[db_id_to_idx[qid]] = -np.inf
         sorted_idx = np.argsort(row)[::-1]
         n_relevant = 0
         sum_precision = 0.0

@@ -332,8 +332,6 @@ def shape_descriptors(matrix: np.ndarray) -> np.ndarray:
     if len(lam) < 3:
         lam = np.pad(lam, (0, 3 - len(lam)))
 
-    lam_mean = lam.mean()
-
     # Asphericity: deviation from spherical symmetry
     asphericity = lam[0] - 0.5 * (lam[1] + lam[2])
 
