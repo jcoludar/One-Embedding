@@ -1,0 +1,56 @@
+################################################################################
+# RevBayes: BM phylogenetics on protein embeddings (cross-validation)
+# 14 taxa x 10 dims from ABTT3+RP512 protein vectors
+################################################################################
+
+data <- readContinuousCharacterData("revbayes_subset.nex")
+numTaxa = data.ntaxa()
+numChars = data.nchar()
+taxa = data.taxa()
+numBranches = 2 * numTaxa - 3
+
+print("Taxa: " + numTaxa)
+print("Characters: " + numChars)
+print("Branches: " + numBranches)
+
+moves = VectorMoves()
+monitors = VectorMonitors()
+
+# ── Tree: uniform topology + exponential branch lengths ───────────────
+topology ~ dnUniformTopology(taxa)
+moves.append( mvNNI(topology, weight=numBranches/2.0) )
+moves.append( mvSPR(topology, weight=numBranches/5.0) )
+
+for (i in 1:numBranches) {
+    br_lens[i] ~ dnExponential(1.0)
+    moves.append( mvScale(br_lens[i], lambda=0.2, weight=1.0) )
+}
+
+TL := sum(br_lens)
+psi := treeAssembly(topology, br_lens)
+
+# ── BM rate (shared across dimensions, like our Python code) ─────────
+sigma2 ~ dnLoguniform(1e-3, 1e3)
+moves.append( mvScale(sigma2, lambda=1.0, weight=5.0) )
+
+# ── BM likelihood (all characters, independent under scalar rate) ────
+X ~ dnPhyloBrownianREML(psi, branchRates=sqrt(sigma2))
+X.clamp(data)
+
+# ── MCMC ──────────────────────────────────────────────────────────────
+mymodel = model(psi)
+
+monitors.append( mnScreen(printgen=5000, sigma2, TL) )
+monitors.append( mnFile(psi, filename="output/revbayes_trees.trees", printgen=100) )
+monitors.append( mnModel(filename="output/revbayes_params.log", printgen=100) )
+
+mymcmc = mcmc(mymodel, monitors, moves, nruns=2)
+mymcmc.burnin(generations=10000, tuningInterval=500)
+mymcmc.run(generations=50000)
+
+# ── Consensus tree ────────────────────────────────────────────────────
+treetrace = readTreeTrace("output/revbayes_trees.trees", treetype="non-clock")
+mccTree(treetrace, file="output/revbayes_consensus.nwk")
+
+print("RevBayes BM analysis complete!")
+q()

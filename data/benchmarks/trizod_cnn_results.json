@@ -1,0 +1,13 @@
+{
+  "raw_1024d": {
+    "global_spearman": 0.4838731827333351,
+    "per_protein_spearman": 0.3901117688066762,
+    "n_test": 348
+  },
+  "compressed_512d": {
+    "global_spearman": 0.4405625481188849,
+    "per_protein_spearman": 0.3697444033678495,
+    "n_test": 348
+  },
+  "retention": 0.9104917648674097
+}

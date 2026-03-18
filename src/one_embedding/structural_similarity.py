@@ -199,3 +199,180 @@ class StructuralSearchIndex:
         obj.tm_a = float(data["tm_a"][0])
         obj.tm_b = float(data["tm_b"][0])
         return obj
+
+
+class FAISSSearchIndex:
+    """FAISS-backed search index for million-scale protein similarity search.
+
+    Uses FAISS inner product search on L2-normalized vectors (= cosine similarity).
+    Supports flat (exact) and IVF (approximate) index types.
+
+    Usage:
+        index = FAISSSearchIndex()
+        index.build(vectors)                     # <100K: flat, ≥100K: IVF
+        results = index.search(query_vec, k=10)  # [{name, similarity, ...}]
+        index.save("proteins.faiss")
+        index = FAISSSearchIndex.load("proteins.faiss")
+    """
+
+    def __init__(self, index_type: str = "auto", nprobe: int = 16):
+        """
+        Args:
+            index_type: "flat" (exact), "ivf" (approximate), or "auto"
+            nprobe: number of IVF cells to search (higher = more accurate, slower)
+        """
+        self.index_type = index_type
+        self.nprobe = nprobe
+        self._index = None
+        self._names: List[str] = []
+        self._metadata: Dict[str, dict] = {}
+        self.tm_a = 1.0
+        self.tm_b = 0.0
+
+    def build(
+        self,
+        vectors: Dict[str, np.ndarray],
+        metadata: Optional[Dict[str, dict]] = None,
+    ):
+        """Build the FAISS index.
+
+        Args:
+            vectors: {protein_id: (D,) embedding vector}
+            metadata: optional annotations per protein
+        """
+        import faiss
+
+        self._names = sorted(vectors.keys())
+        V = np.array([vectors[n] for n in self._names], dtype=np.float32)
+
+        # L2-normalize for cosine similarity via inner product
+        faiss.normalize_L2(V)
+
+        N, D = V.shape
+        self._dim = D
+
+        # Choose index type
+        if self.index_type == "auto":
+            use_ivf = N >= 100_000
+        else:
+            use_ivf = self.index_type == "ivf"
+
+        if use_ivf:
+            nlist = min(int(np.sqrt(N)), N // 10)
+            nlist = max(nlist, 1)
+            quantizer = faiss.IndexFlatIP(D)
+            self._index = faiss.IndexIVFFlat(quantizer, D, nlist, faiss.METRIC_INNER_PRODUCT)
+            self._index.train(V)
+            self._index.nprobe = self.nprobe
+        else:
+            self._index = faiss.IndexFlatIP(D)
+
+        self._index.add(V)
+        self._metadata = metadata or {}
+
+    def search(
+        self,
+        query: np.ndarray,
+        k: int = 10,
+        min_score: Optional[float] = None,
+    ) -> List[dict]:
+        """Find k nearest neighbors.
+
+        Args:
+            query: (D,) embedding vector
+            k: number of neighbors
+            min_score: minimum cosine similarity threshold
+
+        Returns:
+            list of dicts: name, similarity, tm_score_approx, metadata
+        """
+        import faiss
+
+        if self._index is None:
+            raise ValueError("Index not built. Call build() first.")
+
+        q = query.astype(np.float32).reshape(1, -1).copy()
+        faiss.normalize_L2(q)
+
+        k = min(k, self._index.ntotal)
+        scores, indices = self._index.search(q, k)
+
+        results = []
+        for sim, idx in zip(scores[0], indices[0]):
+            if idx < 0:
+                continue
+            sim = float(sim)
+            if min_score is not None and sim < min_score:
+                continue
+            tm = float(np.clip(self.tm_a * sim + self.tm_b, 0.0, 1.0))
+            results.append({
+                "name": self._names[idx],
+                "similarity": sim,
+                "tm_score_approx": tm,
+                "metadata": self._metadata.get(self._names[idx], {}),
+            })
+
+        return results
+
+    def search_batch(
+        self,
+        queries: Dict[str, np.ndarray],
+        k: int = 10,
+    ) -> Dict[str, List[dict]]:
+        """Batch search — uses FAISS batch search for efficiency."""
+        import faiss
+
+        if self._index is None:
+            raise ValueError("Index not built.")
+
+        names = sorted(queries.keys())
+        Q = np.array([queries[n] for n in names], dtype=np.float32)
+        faiss.normalize_L2(Q)
+
+        k = min(k, self._index.ntotal)
+        scores, indices = self._index.search(Q, k)
+
+        results = {}
+        for i, name in enumerate(names):
+            hits = []
+            for sim, idx in zip(scores[i], indices[i]):
+                if idx < 0:
+                    continue
+                tm = float(np.clip(self.tm_a * float(sim) + self.tm_b, 0.0, 1.0))
+                hits.append({
+                    "name": self._names[idx],
+                    "similarity": float(sim),
+                    "tm_score_approx": tm,
+                    "metadata": self._metadata.get(self._names[idx], {}),
+                })
+            results[name] = hits
+
+        return results
+
+    @property
+    def ntotal(self) -> int:
+        return self._index.ntotal if self._index else 0
+
+    def save(self, path: str):
+        """Save index + metadata."""
+        import faiss
+        faiss.write_index(self._index, path)
+        np.savez(
+            path + ".meta",
+            names=np.array(self._names),
+            tm_a=np.array([self.tm_a]),
+            tm_b=np.array([self.tm_b]),
+        )
+
+    @classmethod
+    def load(cls, path: str) -> "FAISSSearchIndex":
+        """Load saved index."""
+        import faiss
+        obj = cls()
+        obj._index = faiss.read_index(path)
+        meta = np.load(path + ".meta.npz", allow_pickle=True)
+        obj._names = list(meta["names"])
+        obj.tm_a = float(meta["tm_a"][0])
+        obj.tm_b = float(meta["tm_b"][0])
+        obj._dim = obj._index.d
+        return obj

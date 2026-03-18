@@ -1,0 +1,15 @@
+{
+  "raw_1024d": {
+    "cnn_global_spearman": 0.7127024749474119,
+    "cnn_per_protein_spearman": 0.47844144584914017,
+    "n_test_proteins": 117,
+    "train_time_s": 87.15709805488586
+  },
+  "compressed_512d": {
+    "cnn_global_spearman": 0.7052778494496503,
+    "cnn_per_protein_spearman": 0.4680332511567649,
+    "n_test_proteins": 117,
+    "train_time_s": 59.07659697532654
+  },
+  "retention": 0.9895824334013862
+}

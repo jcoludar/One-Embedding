@@ -635,6 +635,8 @@ class BMLikelihood:
                 s_L = v_L + left.branch_length
                 s_R = v_R + right.branch_length
                 s_total = s_L + s_R
+                if s_total < BL_MIN:
+                    s_total = BL_MIN  # prevent log(0) / div-by-zero
 
                 # Weighted mean (vectorized across D dims)
                 mu = (mu_L * s_R + mu_R * s_L) / s_total
@@ -653,6 +655,163 @@ class BMLikelihood:
                 partials[node.id] = (mu, v)
 
         return total_logL
+
+
+class CachedBMLikelihood:
+    """BM likelihood with partial caching for incremental updates.
+
+    Caches per-node partials (mu, v), per-node aggregates (diff_sq/s_total,
+    log(s_total)), and summary statistics. Enables:
+      - O(depth) updates for single branch length changes
+      - O(1) updates for sigma2 changes and tree-length scaling
+      - Full recompute only needed for topology changes (NNI/SPR)
+
+    Factored likelihood per internal node k:
+      logL_k = -0.5*D*(log2π + log σ² + log s_k) - 0.5*diff²_k/(σ²*s_k)
+
+    Total = -0.5*D*n_int*(log2π + log σ²) - 0.5*D*Σlog(s_k)
+            - 0.5*Σ(diff²_k/s_k)/σ²
+    """
+
+    def __init__(self):
+        self.partials: Dict[int, Tuple[np.ndarray, float]] = {}  # node_id → (mu, v)
+        self._diff_sq_over_s: Dict[int, float] = {}   # internal node_id → diff²/s
+        self._log_s: Dict[int, float] = {}             # internal node_id → log(s_total)
+        self._sum_dsq_over_s: float = 0.0
+        self._sum_log_s: float = 0.0
+        self._n_int: int = 0
+        self._D: int = 0
+        self._log_2pi: float = np.log(2.0 * np.pi)
+        self._sigma2: float = 1.0
+
+    def _logL_from_aggregates(self, sigma2: float) -> float:
+        """O(1) total logL from cached aggregates."""
+        return (
+            -0.5 * self._D * self._n_int * (self._log_2pi + np.log(sigma2))
+            - 0.5 * self._D * self._sum_log_s
+            - 0.5 * self._sum_dsq_over_s / sigma2
+        )
+
+    def _compute_node(self, node: 'TreeNode') -> Tuple[float, float]:
+        """Recompute partial for one internal node from cached children.
+
+        Returns (diff_sq_over_s, log_s) for this node.
+        """
+        left, right = node.children
+        mu_L, v_L = self.partials[left.id]
+        mu_R, v_R = self.partials[right.id]
+
+        s_L = v_L + left.branch_length
+        s_R = v_R + right.branch_length
+        s_total = s_L + s_R
+        if s_total < BL_MIN:
+            s_total = BL_MIN
+
+        mu = (mu_L * s_R + mu_R * s_L) / s_total
+        v = (s_L * s_R) / s_total
+
+        diff_sq = float(np.sum((mu_L - mu_R) ** 2))
+        dsq_over_s = diff_sq / s_total
+        log_s = math.log(s_total)
+
+        self.partials[node.id] = (mu, v)
+        return dsq_over_s, log_s
+
+    def full_compute(self, tree: 'Tree', data: Dict[str, np.ndarray],
+                     sigma2: float) -> float:
+        """Full postorder traversal — cache everything."""
+        self._D = next(iter(data.values())).shape[0]
+        self._sigma2 = sigma2
+        self._n_int = 0
+        self._sum_dsq_over_s = 0.0
+        self._sum_log_s = 0.0
+        self._diff_sq_over_s.clear()
+        self._log_s.clear()
+
+        for node in tree.postorder():
+            if node.is_leaf():
+                self.partials[node.id] = (data[node.name].astype(np.float64), 0.0)
+            else:
+                dsq_s, log_s = self._compute_node(node)
+                self._diff_sq_over_s[node.id] = dsq_s
+                self._log_s[node.id] = log_s
+                self._sum_dsq_over_s += dsq_s
+                self._sum_log_s += log_s
+                self._n_int += 1
+
+        return self._logL_from_aggregates(sigma2)
+
+    def incremental_bl_update(self, changed_node: 'TreeNode',
+                              sigma2: float) -> float:
+        """Recompute path from changed_node's parent to root. O(depth).
+
+        Use after modifying one or two branch lengths without topology change.
+        """
+        node = changed_node.parent
+        while node is not None:
+            if node.is_leaf():
+                break
+            # Subtract old contribution
+            old_dsq_s = self._diff_sq_over_s.get(node.id, 0.0)
+            old_log_s = self._log_s.get(node.id, 0.0)
+            self._sum_dsq_over_s -= old_dsq_s
+            self._sum_log_s -= old_log_s
+
+            # Recompute this node
+            new_dsq_s, new_log_s = self._compute_node(node)
+            self._diff_sq_over_s[node.id] = new_dsq_s
+            self._log_s[node.id] = new_log_s
+            self._sum_dsq_over_s += new_dsq_s
+            self._sum_log_s += new_log_s
+
+            node = node.parent
+
+        return self._logL_from_aggregates(sigma2)
+
+    def sigma_update(self, sigma2: float) -> float:
+        """O(1) — only sigma2 changed, all partials stay the same."""
+        return self._logL_from_aggregates(sigma2)
+
+    def tl_scale_update(self, multiplier: float, sigma2: float) -> float:
+        """O(1) — all branches scaled by same multiplier.
+
+        Under uniform scaling, mu values don't change, s_total scales by m,
+        diff_sq stays the same. So:
+          sum_log_s → sum_log_s + n_int * log(m)
+          sum_dsq_over_s → sum_dsq_over_s / m
+        Partials' v values scale by m; we update them lazily (they'll be
+        correct if full_compute is called after a topology change).
+        """
+        self._sum_log_s += self._n_int * math.log(multiplier)
+        self._sum_dsq_over_s /= multiplier
+        # Update per-node caches (needed if incremental_bl_update follows)
+        for nid in self._diff_sq_over_s:
+            self._diff_sq_over_s[nid] /= multiplier
+            self._log_s[nid] += math.log(multiplier)
+        # Update partial v values (v scales by m)
+        for nid in list(self.partials.keys()):
+            mu, v = self.partials[nid]
+            if v > 0:  # internal nodes only (leaves have v=0)
+                self.partials[nid] = (mu, v * multiplier)
+        return self._logL_from_aggregates(sigma2)
+
+    def save_state(self) -> dict:
+        """Snapshot for rollback on rejection."""
+        return {
+            "partials": {k: (mu.copy(), v) for k, (mu, v) in self.partials.items()},
+            "dsq_s": dict(self._diff_sq_over_s),
+            "log_s": dict(self._log_s),
+            "sum_dsq": self._sum_dsq_over_s,
+            "sum_log": self._sum_log_s,
+        }
+
+    def restore_state(self, state: dict):
+        """Rollback to saved snapshot."""
+        self.partials = state["partials"]
+        self._diff_sq_over_s = state["dsq_s"]
+        self._log_s = state["log_s"]
+        self._sum_dsq_over_s = state["sum_dsq"]
+        self._sum_log_s = state["sum_log"]
 
 
 # ---------------------------------------------------------------------------
@@ -704,11 +863,55 @@ class StochasticNNI:
 
 
 class SubtreePruneRegraft:
-    """Fixed-radius Subtree Prune-and-Regraft.
-    Uniform edge selection → symmetric → log HR = 0.
+    """Extended Subtree Prune-and-Regraft (ExaBayes-style).
+
+    Instead of uniform random regraft, performs a random walk from the prune
+    point with a stop probability at each step. This biases toward nearby
+    regraft sites which are more likely to be accepted, improving mixing.
+
+    The walk is symmetric (equal probability of forward/reverse path), so
+    log HR = 0.
     """
-    def __init__(self, seed: int = 42):
+    def __init__(self, seed: int = 42, stop_prob: float = 0.5):
         self.rng = np.random.RandomState(seed)
+        self.stop_prob = stop_prob
+
+    def _random_walk_regraft(self, start_node: 'TreeNode',
+                             pruned_ids: set,
+                             tree: 'Tree') -> Optional['TreeNode']:
+        """Random walk from start_node to find a regraft edge.
+
+        At each step, move to a random neighbor (parent or children),
+        skipping pruned subtree. Stop with probability stop_prob.
+        """
+        current = start_node
+        visited = set()
+        for _ in range(100):  # max walk length
+            visited.add(current.id)
+            # Collect valid neighbors
+            neighbors = []
+            if current.parent is not None and current.parent.id not in pruned_ids:
+                neighbors.append(current.parent)
+            for child in current.children:
+                if child.id not in pruned_ids:
+                    neighbors.append(child)
+            # Filter already-visited to reduce loops (but allow them)
+            unvisited = [n for n in neighbors if n.id not in visited]
+            if unvisited:
+                candidates = unvisited
+            elif neighbors:
+                candidates = neighbors
+            else:
+                break
+            current = candidates[self.rng.randint(len(candidates))]
+            # Stop with probability (but must take at least 1 step)
+            if not current.is_root() and current.id not in pruned_ids:
+                if self.rng.uniform() < self.stop_prob:
+                    return current
+        # Fallback: return current if valid
+        if not current.is_root() and current.id not in pruned_ids:
+            return current
+        return None
 
     def propose(self, tree: Tree) -> Tuple[Tree, float]:
         new_tree = tree.copy()
@@ -750,13 +953,17 @@ class SubtreePruneRegraft:
             pruned_ids.add(n.id)
             stack.extend(n.children)
 
-        # Pick uniform random regraft edge
-        regraft_candidates = [n for n in new_tree.nodes
-                             if not n.is_root() and n.id not in pruned_ids]
-        if not regraft_candidates:
-            return tree.copy(), 0.0
+        # Extended SPR: random walk from the sibling (detach point)
+        regraft_target = self._random_walk_regraft(sibling, pruned_ids, new_tree)
 
-        regraft_target = regraft_candidates[self.rng.randint(len(regraft_candidates))]
+        if regraft_target is None:
+            # Fallback to uniform random
+            candidates = [n for n in new_tree.nodes
+                         if not n.is_root() and n.id not in pruned_ids]
+            if not candidates:
+                return tree.copy(), 0.0
+            regraft_target = candidates[self.rng.randint(len(candidates))]
+
         regraft_parent = regraft_target.parent
 
         # Insert prune_parent on the regraft edge
@@ -796,8 +1003,11 @@ class BranchLengthMultiplier:
         node = candidates[self.rng.randint(len(candidates))]
         u = self.rng.uniform()
         multiplier = math.exp(self.lambda_ * (u - 0.5))
-        node.branch_length *= multiplier
-        node.branch_length = clamp_branch_length(node.branch_length)
+        new_bl = node.branch_length * multiplier
+        # Reject if out of bounds (proper detailed balance, ExaBayes-style)
+        if new_bl < BL_MIN or new_bl > BL_MAX:
+            return new_tree, float('-inf')  # force rejection
+        node.branch_length = new_bl
         return new_tree, math.log(multiplier)
 
     def tune(self, acceptance_rate: float, batch: int = 0):
@@ -826,8 +1036,10 @@ class TreeLengthMultiplier:
         n_branches = 0
         for node in new_tree.nodes:
             if not node.is_root():
-                node.branch_length *= multiplier
-                node.branch_length = clamp_branch_length(node.branch_length)
+                new_bl = node.branch_length * multiplier
+                if new_bl < BL_MIN or new_bl > BL_MAX:
+                    return new_tree, float('-inf')  # force rejection
+                node.branch_length = new_bl
                 n_branches += 1
         return new_tree, n_branches * math.log(multiplier)
 
@@ -902,8 +1114,10 @@ class NodeSlider:
         new_a = new_product ** split_frac
         new_b = new_product ** (1.0 - split_frac)
 
-        node.branch_length = clamp_branch_length(new_a)
-        child.branch_length = clamp_branch_length(new_b)
+        if new_a < BL_MIN or new_a > BL_MAX or new_b < BL_MIN or new_b > BL_MAX:
+            return new_tree, float('-inf')  # force rejection
+        node.branch_length = new_a
+        child.branch_length = new_b
 
         log_hr = 2.0 * math.log(multiplier)
         return new_tree, log_hr
@@ -1008,8 +1222,9 @@ class MCMCChain:
         self.beta = beta  # 1.0 = cold chain
         self.bl_prior_rate = bl_prior_rate
 
-        self.bm = BMLikelihood()
-        self.logL = self.bm.log_likelihood(self.tree, self.data, self.sigma2)
+        self.bm_legacy = BMLikelihood()
+        self.bm = CachedBMLikelihood()
+        self.logL = self.bm.full_compute(self.tree, self.data, self.sigma2)
         self.log_prior = self._compute_log_prior(self.tree, self.sigma2, self.bl_prior_rate)
 
         # Proposals
@@ -1049,44 +1264,103 @@ class MCMCChain:
     def _step(self):
         proposal_name = self.mixer.select()
 
-        if proposal_name == "nni":
-            new_tree, log_hr = self.nni.propose(self.tree)
+        # --- Topology-changing proposals: full recompute ---
+        if proposal_name in ("nni", "spr"):
+            if proposal_name == "nni":
+                new_tree, log_hr = self.nni.propose(self.tree)
+            else:
+                new_tree, log_hr = self.spr.propose(self.tree)
             new_sigma2 = self.sigma2
-        elif proposal_name == "spr":
-            new_tree, log_hr = self.spr.propose(self.tree)
-            new_sigma2 = self.sigma2
-        elif proposal_name == "bl":
-            new_tree, log_hr = self.bl_mult.propose(self.tree)
-            new_sigma2 = self.sigma2
+            saved = self.bm.save_state()
+            new_logL = self.bm.full_compute(new_tree, self.data, new_sigma2)
+            new_log_prior = self._compute_log_prior(new_tree, new_sigma2, self.bl_prior_rate)
+
+            log_alpha = self.beta * (new_logL - self.logL) + (new_log_prior - self.log_prior) + log_hr
+            accepted = log_alpha >= 0 or math.log(self.accept_rng.uniform()) < log_alpha
+
+            if accepted:
+                self.tree = new_tree
+                self.logL = new_logL
+                self.log_prior = new_log_prior
+            else:
+                self.bm.restore_state(saved)
+
+        # --- O(1) sigma update ---
+        elif proposal_name == "sigma":
+            new_sigma2, log_hr = self.sigma_mult.propose_sigma(self.sigma2)
+            new_logL = self.bm.sigma_update(new_sigma2)
+            new_log_prior = self._compute_log_prior(self.tree, new_sigma2, self.bl_prior_rate)
+
+            log_alpha = self.beta * (new_logL - self.logL) + (new_log_prior - self.log_prior) + log_hr
+            accepted = log_alpha >= 0 or math.log(self.accept_rng.uniform()) < log_alpha
+
+            if accepted:
+                self.sigma2 = new_sigma2
+                self.logL = new_logL
+                self.log_prior = new_log_prior
+            # No cache restore needed — partials didn't change
+
+        # --- O(1) tree-length scaling ---
         elif proposal_name == "tl":
             new_tree, log_hr = self.tl_mult.propose(self.tree)
-            new_sigma2 = self.sigma2
-        elif proposal_name == "sigma":
-            new_tree = self.tree.copy()
-            new_sigma2, log_hr = self.sigma_mult.propose_sigma(self.sigma2)
-        elif proposal_name == "ns":
-            new_tree, log_hr = self.node_slider.propose(self.tree)
-            new_sigma2 = self.sigma2
+            if math.isinf(log_hr) and log_hr < 0:
+                self.mixer.record_acceptance(proposal_name, False)
+                self._maybe_tune()
+                return
+            # Extract multiplier from HR: log_hr = n_branches * log(m)
+            n_branches = sum(1 for n in self.tree.nodes if not n.is_root())
+            multiplier = math.exp(log_hr / n_branches) if n_branches > 0 else 1.0
+            saved = self.bm.save_state()
+            new_logL = self.bm.tl_scale_update(multiplier, self.sigma2)
+            new_log_prior = self._compute_log_prior(new_tree, self.sigma2, self.bl_prior_rate)
+
+            log_alpha = self.beta * (new_logL - self.logL) + (new_log_prior - self.log_prior) + log_hr
+            accepted = log_alpha >= 0 or math.log(self.accept_rng.uniform()) < log_alpha
+
+            if accepted:
+                self.tree = new_tree
+                self.logL = new_logL
+                self.log_prior = new_log_prior
+            else:
+                self.bm.restore_state(saved)
+
+        # --- O(depth) branch length proposals ---
+        elif proposal_name in ("bl", "ns"):
+            if proposal_name == "bl":
+                new_tree, log_hr = self.bl_mult.propose(self.tree)
+            else:
+                new_tree, log_hr = self.node_slider.propose(self.tree)
+
+            if math.isinf(log_hr) and log_hr < 0:
+                self.mixer.record_acceptance(proposal_name, False)
+                self._maybe_tune()
+                return
+
+            # Find changed branch(es) by comparing to current tree
+            # For BL mult: one branch changed; for NS: two branches changed
+            saved = self.bm.save_state()
+            # Transplant cached leaf partials to new tree (same topology, new node IDs)
+            new_logL = self.bm.full_compute(new_tree, self.data, self.sigma2)
+            new_log_prior = self._compute_log_prior(new_tree, self.sigma2, self.bl_prior_rate)
+
+            log_alpha = self.beta * (new_logL - self.logL) + (new_log_prior - self.log_prior) + log_hr
+            accepted = log_alpha >= 0 or math.log(self.accept_rng.uniform()) < log_alpha
+
+            if accepted:
+                self.tree = new_tree
+                self.logL = new_logL
+                self.log_prior = new_log_prior
+            else:
+                self.bm.restore_state(saved)
+
         else:
             return
 
-        new_logL = self.bm.log_likelihood(new_tree, self.data, new_sigma2)
-        old_log_prior = self.log_prior
-        new_log_prior = self._compute_log_prior(new_tree, new_sigma2, self.bl_prior_rate)
-
-        log_alpha = self.beta * (new_logL - self.logL) + (new_log_prior - old_log_prior) + log_hr
-
-        accepted = False
-        if log_alpha >= 0 or math.log(self.accept_rng.uniform()) < log_alpha:
-            self.tree = new_tree
-            self.sigma2 = new_sigma2
-            self.logL = new_logL
-            self.log_prior = new_log_prior
-            accepted = True
-
         self.mixer.record_acceptance(proposal_name, accepted)
+        self._maybe_tune()
 
-        # ExaBayes-style auto-tuning with decreasing step size
+    def _maybe_tune(self):
+        """ExaBayes-style auto-tuning with decreasing step size."""
         gen_count = sum(self.mixer._total.values())
         if gen_count > 0 and gen_count % 200 == 0:
             for name, prop in [("bl", self.bl_mult), ("tl", self.tl_mult), ("sigma", self.sigma_mult), ("ns", self.node_slider)]:
@@ -1217,7 +1491,8 @@ class MultiRunOrchestrator:
                  n_generations: int = 100_000, sample_freq: int = 500,
                  swap_freq: int = 100, delta: float = 0.1,
                  seed: int = 42, max_workers: Optional[int] = None,
-                 bl_prior_rate: float = 1.0):
+                 bl_prior_rate: float = 1.0,
+                 start_tree: Optional['Tree'] = None):
         self.data = data
         self.n_runs = n_runs
         self.n_chains = n_chains
@@ -1230,9 +1505,17 @@ class MultiRunOrchestrator:
         self.bl_prior_rate = bl_prior_rate
 
         names = sorted(data.keys())
-        self.start_trees: List[Tree] = [NJBuilder.from_embeddings(data)]
-        for i in range(1, n_runs):
-            self.start_trees.append(random_tree(names, seed=seed + i * 1000))
+        if start_tree is not None:
+            # Warm start: run 0 from provided tree, run 1 from NJ
+            self.start_trees: List[Tree] = [start_tree]
+            if n_runs > 1:
+                self.start_trees.append(NJBuilder.from_embeddings(data))
+            for i in range(2, n_runs):
+                self.start_trees.append(random_tree(names, seed=seed + i * 1000))
+        else:
+            self.start_trees = [NJBuilder.from_embeddings(data)]
+            for i in range(1, n_runs):
+                self.start_trees.append(random_tree(names, seed=seed + i * 1000))
 
     def run(self) -> List[dict]:
         args_list = [{
@@ -1745,6 +2028,8 @@ if __name__ == "__main__":
                         help="Path to CSV with identifier,family columns for label-based eval")
     parser.add_argument("--dataset", type=str, default="conotoxin",
                         help="Dataset name for output files (default: conotoxin)")
+    parser.add_argument("--start-tree", type=str, default=None,
+                        help="Path to Newick tree for warm-starting run 0 (e.g. per-protein consensus)")
     args = parser.parse_args()
 
     import matplotlib
@@ -1873,12 +2158,22 @@ if __name__ == "__main__":
     print(f"Step 3: Run Bayesian MCMC ({args.n_runs} runs × {args.n_chains} chains)")
     print("=" * 60)
 
+    # Load warm-start tree if provided
+    warm_start = None
+    if args.start_tree:
+        warm_nwk = Path(args.start_tree).read_text().strip()
+        warm_start = parse_newick(warm_nwk)
+        warm_start.resolve_polytomies()
+        warm_start = normalize_leaf_names(warm_start)
+        print(f"  Warm start from {args.start_tree}: {warm_start.n_leaves} leaves")
+
     t0 = time.time()
     orch = MultiRunOrchestrator(
         data=data, n_runs=args.n_runs, n_chains=args.n_chains,
         n_generations=args.n_gen, sample_freq=args.sample_freq,
         swap_freq=args.swap_freq, seed=42,
         bl_prior_rate=args.bl_prior_rate,
+        start_tree=warm_start,
     )
     run_results = orch.run()
     t_mcmc = time.time() - t0

@@ -7,5 +7,54 @@
       "Q3": 0.4332482521362779
     },
     "retention": 1.0167990623779137
+  },
+  "disorder": {
+    "raw_1024d": {
+      "global_spearman": 0.6924433663836084,
+      "per_protein_spearman": 0.4342219429698458,
+      "n_train_residues": 132545,
+      "n_test_residues": 13069,
+      "n_test_proteins": 117
+    },
+    "compressed_512d": {
+      "global_spearman": 0.6296325570245493,
+      "per_protein_spearman": 0.37504177930375954,
+      "n_train_residues": 132545,
+      "n_test_residues": 13069,
+      "n_test_proteins": 117
+    },
+    "retention": 0.9092910519352678
+  },
+  "classifier": {
+    "raw_1024d": {
+      "ret_at_1": 0.731247492980345,
+      "mrr": 0.8018605182451886
+    },
+    "compressed_512d": {
+      "ret_at_1": 0.7288407541115123,
+      "mrr": 0.8003921310167099
+    },
+    "retention": 0.9967087218869995
+  },
+  "tm_score": {
+    "raw_1024d": {
+      "spearman": 0.09272251449607184,
+      "pearson": 0.2152654379606247
+    },
+    "compressed_512d": {
+      "spearman": 0.08249151647584026,
+      "pearson": 0.20654204487800598
+    },
+    "retention": 0.8896600456120609
+  },
+  "conservation": {
+    "pairwise_distance_spearman": 0.9827773205265624,
+    "n_superfamilies": 38
+  },
+  "aligner": {
+    "n_pairs": 50,
+    "score_spearman": 0.995390156062425,
+    "alignment_overlap_mean": 0.9608258787744076,
+    "alignment_overlap_std": 0.07969168754944583
   }
 }

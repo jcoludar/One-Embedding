@@ -353,29 +353,308 @@ def benchmark_ss3():
     return results
 
 
+# ── C. Family Classification (Ret@1) ─────────────────────────────────────
+
+def benchmark_classifier():
+    """Evaluate family retrieval on SCOPe 5K: raw vs compressed protein vectors."""
+    import csv as csv_mod
+    from src.evaluation.retrieval import evaluate_retrieval_from_vectors
+
+    print("\n" + "=" * 60)
+    print("C. Family Classification (SCOPe 5K Ret@1)")
+    print("=" * 60)
+
+    EMB_PATH = PROJ_ROOT / "data" / "residue_embeddings" / "prot_t5_xl_medium5k.h5"
+    META_PATH = PROJ_ROOT / "data" / "proteins" / "metadata_5k.csv"
+
+    if not EMB_PATH.exists() or not META_PATH.exists():
+        print("  Missing embeddings or metadata, skipping")
+        return None
+
+    # Load metadata
+    metadata = []
+    with open(META_PATH) as f:
+        for row in csv_mod.DictReader(f):
+            metadata.append(row)
+    print(f"  Metadata: {len(metadata)} proteins")
+
+    # Load and compress
+    raw_embs, comp_embs = load_embeddings_and_compress(EMB_PATH)
+
+    # Pool to protein vectors (mean pool)
+    raw_vecs = {pid: emb.mean(axis=0) for pid, emb in raw_embs.items()}
+    comp_vecs = {pid: emb.mean(axis=0) for pid, emb in comp_embs.items()}
+
+    results = {}
+    for label, vecs in [("raw_1024d", raw_vecs), ("compressed_512d", comp_vecs)]:
+        r = evaluate_retrieval_from_vectors(vecs, metadata, label_key="family")
+        ret1 = r.get("precision@1", 0.0)
+        mrr = r.get("mrr", 0.0)
+        print(f"  {label}: Ret@1={ret1:.4f}, MRR={mrr:.4f}")
+        results[label] = {"ret_at_1": float(ret1), "mrr": float(mrr)}
+
+    if "raw_1024d" in results and "compressed_512d" in results:
+        retention = results["compressed_512d"]["ret_at_1"] / results["raw_1024d"]["ret_at_1"]
+        print(f"  Ret@1 Retention: {retention:.1%}")
+        results["retention"] = float(retention)
+
+    return results
+
+
+# ── D. TM-score Correlation ───────────────────────────────────────────────
+
+def benchmark_tm_score():
+    """Evaluate embedding distance vs structural TM-score correlation."""
+    from scipy.stats import spearmanr, pearsonr
+
+    print("\n" + "=" * 60)
+    print("D. TM-score Correlation (200 proteins)")
+    print("=" * 60)
+
+    TM_PATH = PROJ_ROOT / "data" / "structures" / "tm_scores_200.npz"
+    EMB_PATH = PROJ_ROOT / "data" / "residue_embeddings" / "prot_t5_xl_medium5k.h5"
+
+    if not TM_PATH.exists() or not EMB_PATH.exists():
+        print("  Missing TM-score data or embeddings, skipping")
+        return None
+
+    # Load TM-scores
+    tm_data = np.load(TM_PATH, allow_pickle=True)
+    tm_scores = tm_data["tm_scores"]  # (200, 200)
+    tm_ids = list(tm_data["protein_ids"])
+    print(f"  TM-scores: {len(tm_ids)} proteins")
+
+    # Load and compress embeddings for these proteins
+    raw_embs, comp_embs = load_embeddings_and_compress(EMB_PATH, set(tm_ids))
+
+    # Mean pool to protein vectors
+    raw_vecs = {pid: emb.mean(axis=0) for pid, emb in raw_embs.items() if pid in tm_ids}
+    comp_vecs = {pid: emb.mean(axis=0) for pid, emb in comp_embs.items() if pid in tm_ids}
+
+    # Filter to proteins we have both embeddings and TM-scores for
+    common_ids = [pid for pid in tm_ids if pid in raw_vecs]
+    idx_map = {pid: i for i, pid in enumerate(tm_ids)}
+    print(f"  Matched: {len(common_ids)} proteins")
+
+    if len(common_ids) < 20:
+        print("  Too few matched proteins, skipping")
+        return None
+
+    results = {}
+    for label, vecs in [("raw_1024d", raw_vecs), ("compressed_512d", comp_vecs)]:
+        # Build cosine similarity matrix
+        ids = [pid for pid in common_ids if pid in vecs]
+        V = np.array([vecs[pid] for pid in ids])
+        norms = np.linalg.norm(V, axis=1, keepdims=True)
+        V_norm = V / (norms + 1e-10)
+        cos_sim = V_norm @ V_norm.T
+
+        # Extract corresponding TM-scores
+        tm_sub = np.array([[tm_scores[idx_map[a], idx_map[b]] for b in ids] for a in ids])
+
+        # Upper triangle (exclude diagonal)
+        mask = np.triu(np.ones_like(cos_sim, dtype=bool), k=1)
+        rho = spearmanr(tm_sub[mask], cos_sim[mask]).correlation
+        r = pearsonr(tm_sub[mask], cos_sim[mask])[0]
+
+        print(f"  {label}: Spearman ρ={rho:.4f}, Pearson r={r:.4f}")
+        results[label] = {"spearman": float(rho), "pearson": float(r)}
+
+    if "raw_1024d" in results and "compressed_512d" in results:
+        retention = results["compressed_512d"]["spearman"] / results["raw_1024d"]["spearman"]
+        print(f"  Spearman Retention: {retention:.1%}")
+        results["retention"] = float(retention)
+
+    return results
+
+
+# ── E. Conservation Scoring ───────────────────────────────────────────────
+
+def benchmark_conservation():
+    """Evaluate embedding-derived conservation vs variance-based proxy."""
+
+    print("\n" + "=" * 60)
+    print("E. Conservation Scoring (variance proxy)")
+    print("=" * 60)
+
+    EMB_PATH = PROJ_ROOT / "data" / "residue_embeddings" / "prot_t5_xl_medium5k.h5"
+    META_PATH = PROJ_ROOT / "data" / "proteins" / "metadata_5k.csv"
+
+    if not EMB_PATH.exists():
+        print("  Missing embeddings, skipping")
+        return None
+
+    import csv as csv_mod
+    # Group proteins by superfamily for conservation estimation
+    meta = {}
+    with open(META_PATH) as f:
+        for row in csv_mod.DictReader(f):
+            meta[row["id"]] = row
+
+    raw_embs, comp_embs = load_embeddings_and_compress(EMB_PATH)
+
+    # Group by superfamily (need ≥3 members)
+    from collections import defaultdict
+    sf_groups = defaultdict(list)
+    for pid in raw_embs:
+        if pid in meta:
+            sf_groups[meta[pid]["superfamily"]].append(pid)
+
+    valid_sfs = {sf: pids for sf, pids in sf_groups.items() if len(pids) >= 3}
+    print(f"  Superfamilies with ≥3 members: {len(valid_sfs)}")
+
+    # For each superfamily: compute per-residue embedding variance (conservation proxy)
+    # across family members (mean-pooled). Higher variance = less conserved.
+    # Compare raw vs compressed variance patterns.
+    from scipy.stats import spearmanr
+
+    rhos = []
+    for sf, pids in list(valid_sfs.items())[:50]:  # cap at 50 superfamilies
+        # Pool to protein vectors
+        raw_vecs = np.array([raw_embs[pid].mean(axis=0) for pid in pids])
+        comp_vecs = np.array([comp_embs[pid].mean(axis=0) for pid in pids])
+
+        # Per-dimension variance across family members
+        var_raw = np.var(raw_vecs, axis=0)  # (1024,) or (512,)
+        var_comp = np.var(comp_vecs, axis=0)
+
+        # We can't directly compare dimensions (different spaces).
+        # Instead: compute pairwise distance matrix and compare.
+        from scipy.spatial.distance import pdist
+        d_raw = pdist(raw_vecs, metric="cosine")
+        d_comp = pdist(comp_vecs, metric="cosine")
+
+        if len(d_raw) > 3:
+            rho = spearmanr(d_raw, d_comp).correlation
+            if np.isfinite(rho):
+                rhos.append(rho)
+
+    if not rhos:
+        print("  No valid superfamilies, skipping")
+        return None
+
+    mean_rho = np.mean(rhos)
+    print(f"  Pairwise distance correlation (raw vs compressed): ρ={mean_rho:.4f} ± {np.std(rhos):.4f}")
+    print(f"  n={len(rhos)} superfamilies")
+
+    results = {
+        "pairwise_distance_spearman": float(mean_rho),
+        "n_superfamilies": len(rhos),
+    }
+    return results
+
+
+# ── F. Alignment Quality ─────────────────────────────────────────────────
+
+def benchmark_aligner():
+    """Evaluate embedding-based alignment consistency: raw vs compressed."""
+    from src.one_embedding.aligner import align_embeddings
+
+    print("\n" + "=" * 60)
+    print("F. Alignment Consistency (raw vs compressed)")
+    print("=" * 60)
+
+    EMB_PATH = PROJ_ROOT / "data" / "residue_embeddings" / "prot_t5_xl_medium5k.h5"
+    META_PATH = PROJ_ROOT / "data" / "proteins" / "metadata_5k.csv"
+
+    if not EMB_PATH.exists():
+        print("  Missing embeddings, skipping")
+        return None
+
+    import csv as csv_mod
+    meta = {}
+    with open(META_PATH) as f:
+        for row in csv_mod.DictReader(f):
+            meta[row["id"]] = row
+
+    raw_embs, comp_embs = load_embeddings_and_compress(EMB_PATH)
+
+    # Pick pairs within same family for alignment
+    from collections import defaultdict
+    fam_groups = defaultdict(list)
+    for pid in raw_embs:
+        if pid in meta:
+            fam_groups[meta[pid]["family"]].append(pid)
+
+    # Select 50 within-family pairs + 50 between-family pairs
+    pairs = []
+    for fam, pids in fam_groups.items():
+        if len(pids) >= 2:
+            pairs.append((pids[0], pids[1], "within"))
+            if len(pairs) >= 50:
+                break
+
+    # For each pair: align with raw and compressed, compare alignment score & overlap
+    scores_raw, scores_comp = [], []
+    alignment_overlaps = []
+
+    for pid_a, pid_b, rel in pairs:
+        r_raw = align_embeddings(raw_embs[pid_a], raw_embs[pid_b], mode="global")
+        r_comp = align_embeddings(comp_embs[pid_a], comp_embs[pid_b], mode="global")
+
+        scores_raw.append(r_raw["score"])
+        scores_comp.append(r_comp["score"])
+
+        # Alignment overlap: fraction of positions that agree
+        a_raw = set(zip(r_raw["align_a"], r_raw["align_b"]))
+        a_comp = set(zip(r_comp["align_a"], r_comp["align_b"]))
+        overlap = len(a_raw & a_comp) / max(len(a_raw), 1)
+        alignment_overlaps.append(overlap)
+
+    if not scores_raw:
+        print("  No valid pairs, skipping")
+        return None
+
+    from scipy.stats import spearmanr
+    score_rho = spearmanr(scores_raw, scores_comp).correlation
+
+    print(f"  {len(pairs)} within-family pairs aligned")
+    print(f"  Score correlation (raw vs compressed): ρ={score_rho:.4f}")
+    print(f"  Alignment overlap: {np.mean(alignment_overlaps):.1%} ± {np.std(alignment_overlaps):.1%}")
+
+    results = {
+        "n_pairs": len(pairs),
+        "score_spearman": float(score_rho),
+        "alignment_overlap_mean": float(np.mean(alignment_overlaps)),
+        "alignment_overlap_std": float(np.std(alignment_overlaps)),
+    }
+    return results
+
+
 # ── Main ─────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Exp 36: Toolkit benchmarks")
     parser.add_argument("--task", type=str, default="all",
-                        choices=["disorder", "ss3", "all"],
+                        choices=["disorder", "ss3", "classifier", "tm_score",
+                                 "conservation", "aligner", "all"],
                         help="Which benchmark to run")
     args = parser.parse_args()
 
     RESULTS_PATH = PROJ_ROOT / "data" / "benchmarks" / "toolkit_benchmark_results.json"
     RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+    # Load existing results to accumulate
     all_results = {}
+    if RESULTS_PATH.exists():
+        with open(RESULTS_PATH) as f:
+            all_results = json.load(f)
 
-    if args.task in ("disorder", "all"):
-        r = benchmark_disorder()
-        if r:
-            all_results["disorder"] = r
+    tasks = {
+        "disorder": benchmark_disorder,
+        "ss3": benchmark_ss3,
+        "classifier": benchmark_classifier,
+        "tm_score": benchmark_tm_score,
+        "conservation": benchmark_conservation,
+        "aligner": benchmark_aligner,
+    }
 
-    if args.task in ("ss3", "all"):
-        r = benchmark_ss3()
+    to_run = list(tasks.keys()) if args.task == "all" else [args.task]
+
+    for task_name in to_run:
+        r = tasks[task_name]()
         if r:
-            all_results["ss3"] = r
+            all_results[task_name] = r
 
     with open(RESULTS_PATH, "w") as f:
         json.dump(all_results, f, indent=2, default=float)
