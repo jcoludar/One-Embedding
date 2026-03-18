@@ -1,0 +1,1070 @@
+outputhat23=16
+treein = 0
+compacttree = 0
+stacksize: 8176 kb
+rescale = 1
+All-to-all alignment.
+    0 / 84    1 / 84    2 / 84    3 / 84    4 / 84    5 / 84    6 / 84    7 / 84    8 / 84    9 / 84   10 / 84   11 / 84   12 / 84   13 / 84   14 / 84   15 / 84   16 / 84   17 / 84   18 / 84   19 / 84   20 / 84   21 / 84   22 / 84   23 / 84   24 / 84   25 / 84   26 / 84   27 / 84   28 / 84   29 / 84   30 / 84   31 / 84   32 / 84   33 / 84   34 / 84   35 / 84   36 / 84   37 / 84   38 / 84   39 / 84   40 / 84   41 / 84   42 / 84   43 / 84   44 / 84   45 / 84   46 / 84   47 / 84   48 / 84   49 / 84   50 / 84   51 / 84   52 / 84   53 / 84   54 / 84   55 / 84   56 / 84   57 / 84   58 / 84   59 / 84   60 / 84   61 / 84   62 / 84   63 / 84   64 / 84   65 / 84   66 / 84   67 / 84   68 / 84   69 / 84   70 / 84   71 / 84   72 / 84   73 / 84   74 / 84   75 / 84   76 / 84   77 / 84   78 / 84   79 / 84   80 / 84   81 / 84   82 / 84tbfast-pair (aa) Version 7.526
+alg=L, model=BLOSUM62, 2.00, -0.10, +0.10, noshift, amax=0.0
+0 thread(s)
+
+outputhat23=16
+Loading 'hat3.seed' ... 
+done.
+Writing hat3 for iterative refinement
+rescale = 1
+Gap Penalty = -1.53, +0.00, +0.00
+tbutree = 1, compacttree = 0
+Constructing a UPGMA tree ... 
+    0 / 84   10 / 84   20 / 84   30 / 84   40 / 84   50 / 84   60 / 84   70 / 84   80 / 84
+done.
+
+Progressive alignment ... 
+STEP     1 /83 STEP     2 /83 STEP     3 /83 STEP     4 /83 STEP     5 /83 STEP     6 /83 STEP     7 /83 STEP     8 /83 STEP     9 /83 STEP    10 /83 STEP    11 /83 STEP    12 /83 STEP    13 /83 STEP    14 /83 STEP    15 /83 STEP    16 /83 STEP    17 /83 STEP    18 /83 STEP    19 /83 STEP    20 /83 STEP    21 /83 STEP    22 /83 STEP    23 /83 STEP    24 /83 STEP    25 /83 STEP    26 /83 STEP    27 /83 STEP    28 /83 STEP    29 /83 STEP    30 /83 STEP    31 /83 STEP    32 /83 STEP    33 /83 STEP    34 /83 STEP    35 /83 STEP    36 /83 STEP    37 /83 STEP    38 /83 STEP    39 /83 STEP    40 /83 STEP    41 /83 STEP    42 /83 STEP    43 /83 STEP    44 /83 STEP    45 /83 STEP    46 /83 STEP    47 /83 STEP    48 /83 STEP    49 /83 STEP    50 /83 STEP    51 /83 STEP    52 /83 STEP    53 /83 STEP    54 /83 STEP    55 /83 STEP    56 /83 STEP    57 /83 STEP    58 /83 STEP    59 /83 STEP    60 /83 STEP    61 /83 STEP    62 /83 STEP    63 /83 STEP    64 /83 STEP    65 /83 STEP    66 /83 STEP    67 /83 STEP    68 /83 STEP    69 /83 STEP    70 /83 STEP    71 /83 STEP    72 /83 STEP    73 /83 STEP    74 /83 STEP    75 /83 STEP    76 /83 STEP    77 /83 STEP    78 /83 STEP    79 /83 STEP    80 /83 STEP    81 /83 STEP    82 /83 STEP    83 /83 
+done.
+tbfast (aa) Version 7.526
+alg=A, model=BLOSUM62, 1.53, -0.00, -0.00, noshift, amax=0.0
+1 thread(s)
+
+minimumweight = 0.000010
+autosubalignment = 0.000000
+nthread = 0
+randomseed = 0
+blosum 62 / kimura 200
+poffset = 0
+niter = 16
+sueff_global = 0.100000
+nadd = 16
+Loading 'hat3' ... done.
+rescale = 1
+
+    0 / 84   10 / 84   20 / 84   30 / 84   40 / 84   50 / 84   60 / 84   70 / 84   80 / 84
+Segment   1/  1    1- 596
+STEP 001-001-0  identical.   STEP 001-001-1  identical.   STEP 001-002-0  identical.   STEP 001-002-1  identical.   STEP 001-003-0  identical.   STEP 001-003-1  identical.   STEP 001-004-0  identical.   STEP 001-004-1  identical.   STEP 001-005-0  identical.   STEP 001-005-1  identical.   STEP 001-006-0  identical.   STEP 001-006-1  identical.   STEP 001-007-0  identical.   STEP 001-007-1  identical.   STEP 001-008-0  identical.   STEP 001-008-1  identical.   STEP 001-009-0  rejected.STEP 001-009-1  identical.   STEP 001-010-0  identical.   STEP 001-010-1  identical.   STEP 001-011-0  identical.   STEP 001-011-1  identical.   STEP 001-012-0  identical.   STEP 001-012-1  rejected.STEP 001-013-0  identical.   STEP 001-013-1  identical.   STEP 001-014-0  rejected.STEP 001-014-1  identical.   STEP 001-015-0  identical.   STEP 001-015-1  identical.   STEP 001-016-0  identical.   STEP 001-016-1  identical.   STEP 001-017-0  identical.   STEP 001-017-1  identical.   STEP 001-018-0  identical.   STEP 001-018-1  rejected.STEP 001-019-0  identical.   STEP 001-019-1  rejected.STEP 001-020-0  rejected.STEP 001-020-1  identical.   STEP 001-021-0  identical.   STEP 001-021-1  identical.   STEP 001-022-0  identical.   STEP 001-022-1  accepted.STEP 001-023-0  identical.   STEP 001-023-1  rejected.STEP 001-024-0  identical.   STEP 001-024-1  identical.   STEP 001-025-0  identical.   STEP 001-025-1  identical.   STEP 001-026-0  accepted.STEP 001-026-1  identical.   STEP 001-027-0  rejected.STEP 001-027-1  rejected.STEP 001-028-0  identical.   STEP 001-028-1  rejected.STEP 001-029-0  identical.   STEP 001-029-1  identical.   STEP 001-030-0  accepted.STEP 001-030-1  identical.   STEP 001-031-0  rejected.STEP 001-031-1  identical.   STEP 001-032-0  rejected.STEP 001-032-1  rejected.STEP 001-033-0  rejected.STEP 001-033-1  rejected.STEP 001-034-0  rejected.STEP 001-034-1  identical.   STEP 001-035-0  rejected.STEP 001-035-1  rejected.STEP 001-036-0  rejected.STEP 001-036-1  identical.   STEP 001-037-0  rejected.STEP 001-037-1  rejected.STEP 001-038-0  rejected.STEP 001-038-1  rejected.STEP 001-039-0  identical.   STEP 001-039-1  rejected.STEP 001-040-0  accepted.STEP 001-040-1  accepted.STEP 001-041-0  accepted.STEP 001-041-1  identical.   STEP 001-042-0  rejected.STEP 001-042-1  rejected.STEP 001-043-0  identical.   STEP 001-043-1  rejected.STEP 001-044-0  rejected.STEP 001-044-1  rejected.STEP 001-045-0  identical.   STEP 001-045-1  rejected.STEP 001-046-0  identical.   STEP 001-046-1  identical.   STEP 001-047-0  rejected.STEP 001-047-1  rejected.STEP 001-048-0  rejected.STEP 001-048-1  rejected.STEP 001-049-0  identical.   STEP 001-049-1  identical.   STEP 001-050-0  accepted.STEP 001-050-1  accepted.STEP 001-051-0  rejected.STEP 001-051-1  rejected.STEP 001-052-0  rejected.STEP 001-052-1  rejected.STEP 001-053-0  identical.   STEP 001-053-1  rejected.STEP 001-054-0  rejected.STEP 001-054-1  accepted.STEP 001-055-0  accepted.STEP 001-055-1  rejected.STEP 001-056-0  accepted.STEP 001-056-1  accepted.STEP 001-057-0  identical.   STEP 001-057-1  rejected.STEP 001-058-0  rejected.STEP 001-058-1  rejected.STEP 001-059-0  identical.   STEP 001-059-1  rejected.STEP 001-060-0  identical.   STEP 001-060-1  accepted.STEP 001-061-0  accepted.STEP 001-061-1  accepted.STEP 001-062-0  rejected.STEP 001-062-1  rejected.STEP 001-063-0  rejected.STEP 001-063-1  rejected.STEP 001-064-0  rejected.STEP 001-064-1  accepted.STEP 001-065-0  rejected.STEP 001-065-1  rejected.STEP 001-066-0  rejected.STEP 001-066-1  accepted.STEP 001-067-0  accepted.STEP 001-067-1  rejected.STEP 001-068-0  rejected.STEP 001-068-1  rejected.STEP 001-069-0  rejected.STEP 001-069-1  rejected.STEP 001-070-0  identical.   STEP 001-070-1  rejected.STEP 001-071-0  rejected.STEP 001-071-1  accepted.STEP 001-072-0  rejected.STEP 001-072-1  rejected.STEP 001-073-0  rejected.STEP 001-073-1  rejected.STEP 001-074-0  accepted.STEP 001-074-1  rejected.STEP 001-075-0  rejected.STEP 001-075-1  identical.   STEP 001-076-0  rejected.STEP 001-076-1  accepted.STEP 001-077-0  rejected.STEP 001-077-1  accepted.STEP 001-078-0  rejected.STEP 001-078-1  rejected.STEP 001-079-0  accepted.STEP 001-079-1  rejected.STEP 001-080-0  rejected.STEP 001-080-1  accepted.STEP 001-081-0  rejected.STEP 001-081-1  rejected.STEP 001-082-0  accepted.STEP 001-082-1  accepted.STEP 001-083-1  rejected.STEP 002-083-1  rejected.STEP 002-082-0  identical.   STEP 002-082-1  identical.   STEP 002-081-0  rejected.STEP 002-081-1  rejected.STEP 002-080-0  rejected.STEP 002-080-1  rejected.STEP 002-079-0  accepted.STEP 002-079-1  rejected.STEP 002-078-0  rejected.STEP 002-078-1  rejected.STEP 002-077-0  rejected.STEP 002-077-1  identical.   STEP 002-076-0  rejected.STEP 002-076-1  accepted.STEP 002-075-0  rejected.STEP 002-075-1  identical.   STEP 002-074-0  accepted.STEP 002-074-1  rejected.STEP 002-073-0  rejected.STEP 002-073-1  rejected.STEP 002-072-0  rejected.STEP 002-072-1  rejected.STEP 002-071-0  rejected.STEP 002-071-1  accepted.STEP 002-070-0  identical.   STEP 002-070-1  accepted.STEP 002-069-0  rejected.STEP 002-069-1  rejected.STEP 002-068-0  rejected.STEP 002-068-1  rejected.STEP 002-067-0  accepted.STEP 002-067-1  accepted.STEP 002-066-0  rejected.STEP 002-066-1  rejected.STEP 002-065-0  rejected.STEP 002-065-1  accepted.STEP 002-064-0  accepted.STEP 002-064-1  rejected.STEP 002-063-0  rejected.STEP 002-063-1  rejected.STEP 002-062-0  rejected.STEP 002-062-1  rejected.STEP 002-061-0  rejected.STEP 002-061-1  accepted.STEP 002-060-0  identical.   STEP 002-060-1  accepted.STEP 002-059-0  rejected.STEP 002-059-1  accepted.STEP 002-058-0  rejected.STEP 002-058-1  rejected.STEP 002-057-0  identical.   STEP 002-057-1  rejected.STEP 002-056-0  identical.   STEP 002-056-1  identical.   STEP 002-055-0  rejected.STEP 002-055-1  accepted.STEP 002-054-0  rejected.STEP 002-054-1  rejected.STEP 002-053-0  identical.   STEP 002-053-1  rejected.STEP 002-052-0  accepted.STEP 002-052-1  rejected.STEP 002-051-0  identical.   STEP 002-051-1  identical.   STEP 002-050-0  identical.   STEP 002-050-1  accepted.STEP 002-049-0  identical.   STEP 002-049-1  identical.   STEP 002-048-0  identical.   STEP 002-048-1  identical.   STEP 002-047-0  identical.   STEP 002-047-1  accepted.STEP 002-046-0  identical.   STEP 002-046-1  identical.   STEP 002-045-0  identical.   STEP 002-045-1  rejected.STEP 002-044-0  rejected.STEP 002-044-1  rejected.STEP 002-043-0  identical.   STEP 002-043-1  identical.   STEP 002-042-0  identical.   STEP 002-042-1  rejected.STEP 002-041-0  rejected.STEP 002-041-1  rejected.STEP 002-040-0  accepted.STEP 002-040-1  rejected.STEP 002-039-0  identical.   STEP 002-039-1  accepted.STEP 002-038-0  identical.   STEP 002-038-1  rejected.STEP 002-037-0  accepted.STEP 002-037-1  accepted.STEP 002-036-0  identical.   STEP 002-036-1  identical.   STEP 002-035-0  rejected.STEP 002-035-1  rejected.STEP 002-034-0  rejected.STEP 002-034-1  identical.   STEP 002-033-0  identical.   STEP 002-033-1  rejected.STEP 002-032-0  accepted.STEP 002-032-1  rejected.STEP 002-031-0  rejected.STEP 002-031-1  identical.   STEP 002-030-0  identical.   STEP 002-030-1  identical.   STEP 002-029-0  identical.   STEP 002-029-1  identical.   STEP 002-028-0  identical.   STEP 002-028-1  identical.   STEP 002-027-0  identical.   STEP 002-027-1  identical.   STEP 002-026-0  accepted.STEP 002-026-1  identical.   STEP 002-025-0  identical.   STEP 002-025-1  identical.   STEP 002-024-0  identical.   STEP 002-024-1  identical.   STEP 002-023-0  identical.   STEP 002-023-1  identical.   STEP 002-022-0  identical.   STEP 002-022-1  accepted.STEP 002-021-0  identical.   STEP 002-021-1  identical.   STEP 002-020-0  identical.   STEP 002-020-1  identical.   STEP 002-019-0  identical.   STEP 002-019-1  rejected.STEP 002-018-0  identical.   STEP 002-018-1  identical.   STEP 002-017-0  identical.   STEP 002-017-1  identical.   STEP 002-016-0  identical.   STEP 002-016-1  identical.   STEP 002-015-0  identical.   STEP 002-015-1  identical.   STEP 002-014-0  rejected.STEP 002-014-1  identical.   STEP 002-013-0  identical.   STEP 002-013-1  identical.   STEP 002-012-0  identical.   STEP 002-012-1  rejected.STEP 002-011-0  identical.   STEP 002-011-1  identical.   STEP 002-010-0  identical.   STEP 002-010-1  identical.   STEP 002-009-0  rejected.STEP 002-009-1  identical.   STEP 002-008-0  identical.   STEP 002-008-1  identical.   STEP 002-007-0  identical.   STEP 002-007-1  identical.   STEP 002-006-0  identical.   STEP 002-006-1  identical.   STEP 002-005-0  identical.   STEP 002-005-1  identical.   STEP 002-004-0  identical.   STEP 002-004-1  rejected.STEP 002-003-0  identical.   STEP 002-003-1  identical.   STEP 002-002-0  identical.   STEP 002-002-1  identical.   STEP 002-001-0  identical.   STEP 002-001-1  identical.   STEP 003-001-0  identical.   STEP 003-001-1  identical.   STEP 003-002-0  identical.   STEP 003-002-1  identical.   STEP 003-003-0  identical.   STEP 003-003-1  identical.   STEP 003-004-0  identical.   STEP 003-004-1  rejected.STEP 003-005-0  identical.   STEP 003-005-1  identical.   STEP 003-006-0  identical.   STEP 003-006-1  identical.   STEP 003-007-0  identical.   STEP 003-007-1  identical.   STEP 003-008-0  identical.   STEP 003-008-1  identical.   STEP 003-009-0  rejected.STEP 003-009-1  identical.   STEP 003-010-0  identical.   STEP 003-010-1  identical.   STEP 003-011-0  identical.   STEP 003-011-1  identical.   STEP 003-012-0  identical.   STEP 003-012-1  rejected.STEP 003-013-0  identical.   STEP 003-013-1  identical.   STEP 003-014-0  rejected.STEP 003-014-1  identical.   STEP 003-015-0  identical.   STEP 003-015-1  identical.   STEP 003-016-0  identical.   STEP 003-016-1  identical.   STEP 003-017-0  identical.   STEP 003-017-1  identical.   STEP 003-018-0  identical.   STEP 003-018-1  identical.   STEP 003-019-0  identical.   STEP 003-019-1  rejected.STEP 003-020-0  identical.   STEP 003-020-1  identical.   STEP 003-021-0  identical.   STEP 003-021-1  identical.   STEP 003-022-0  identical.   STEP 003-022-1  identical.   STEP 003-023-0  identical.   STEP 003-023-1  identical.   STEP 003-024-0  identical.   STEP 003-024-1  identical.   STEP 003-025-0  identical.   STEP 003-025-1  identical.   STEP 003-026-0  identical.   STEP 003-026-1  identical.   STEP 003-027-0  identical.   STEP 003-027-1  identical.   STEP 003-028-0  identical.   STEP 003-028-1  identical.   STEP 003-029-0  identical.   STEP 003-029-1  identical.   STEP 003-030-0  identical.   STEP 003-030-1  identical.   STEP 003-031-0  rejected.STEP 003-031-1  identical.   STEP 003-032-0  identical.   STEP 003-032-1  rejected.STEP 003-033-0  identical.   STEP 003-033-1  rejected.STEP 003-034-0  rejected.STEP 003-034-1  identical.   STEP 003-035-0  rejected.STEP 003-035-1  rejected.STEP 003-036-0  identical.   STEP 003-036-1  identical.   STEP 003-037-0  identical.   STEP 003-037-1  identical.   STEP 003-038-0  identical.   STEP 003-038-1  rejected.STEP 003-039-0  identical.   STEP 003-039-1  identical.   STEP 003-040-0  identical.   STEP 003-040-1  rejected.STEP 003-041-0  rejected.STEP 003-041-1  rejected.STEP 003-042-0  identical.   STEP 003-042-1  rejected.STEP 003-043-0  identical.   STEP 003-043-1  identical.   STEP 003-044-0  rejected.STEP 003-044-1  rejected.STEP 003-045-0  identical.   STEP 003-045-1  rejected.STEP 003-046-0  identical.   STEP 003-046-1  identical.   STEP 003-047-0  identical.   STEP 003-047-1  identical.   STEP 003-048-0  identical.   STEP 003-048-1  identical.   STEP 003-049-0  identical.   STEP 003-049-1  identical.   STEP 003-050-0  identical.   STEP 003-050-1  identical.   STEP 003-051-0  identical.   STEP 003-051-1  identical.   STEP 003-052-0  identical.   STEP 003-052-1  rejected.STEP 003-053-0  identical.   STEP 003-053-1  rejected.STEP 003-054-0  rejected.STEP 003-054-1  rejected.STEP 003-055-0  rejected.STEP 003-055-1  identical.   STEP 003-056-0  accepted.STEP 003-056-1  identical.   STEP 003-057-0  identical.   STEP 003-057-1  accepted.STEP 003-058-0  rejected.STEP 003-058-1  accepted.STEP 003-059-0  accepted.STEP 003-059-1  accepted.STEP 003-060-0  identical.   STEP 003-060-1  identical.   STEP 003-061-0  rejected.STEP 003-061-1  rejected.STEP 003-062-0  identical.   STEP 003-062-1  rejected.STEP 003-063-0  rejected.STEP 003-063-1  rejected.STEP 003-064-0  accepted.STEP 003-064-1  identical.   STEP 003-065-0  rejected.STEP 003-065-1  rejected.STEP 003-066-0  rejected.STEP 003-066-1  rejected.STEP 003-067-0  rejected.STEP 003-067-1  accepted.STEP 003-068-0  rejected.STEP 003-068-1  rejected.STEP 003-069-0  rejected.STEP 003-069-1  rejected.STEP 003-070-0  identical.   STEP 003-070-1  identical.   STEP 003-071-0  identical.   STEP 003-071-1  accepted.STEP 003-072-0  rejected.STEP 003-072-1  rejected.STEP 003-073-0  accepted.STEP 003-073-1  rejected.STEP 003-074-0  accepted.STEP 003-074-1  identical.   STEP 003-075-0  rejected.STEP 003-075-1  identical.   STEP 003-076-0  rejected.STEP 003-076-1  rejected.STEP 003-077-0  rejected.STEP 003-077-1  rejected.STEP 003-078-0  rejected.STEP 003-078-1  rejected.STEP 003-079-0  rejected.STEP 003-079-1  rejected.STEP 003-080-0  rejected.STEP 003-080-1  rejected.STEP 003-081-0  rejected.STEP 003-081-1  rejected.STEP 003-082-0  accepted.STEP 003-082-1  rejected.STEP 003-083-1  rejected.STEP 004-083-1  rejected.STEP 004-082-0  identical.   STEP 004-082-1  rejected.STEP 004-081-0  rejected.STEP 004-081-1  rejected.STEP 004-080-0  rejected.STEP 004-080-1  rejected.STEP 004-079-0  rejected.STEP 004-079-1  rejected.STEP 004-078-0  rejected.STEP 004-078-1  rejected.STEP 004-077-0  rejected.STEP 004-077-1  rejected.STEP 004-076-0  rejected.STEP 004-076-1  rejected.STEP 004-075-0  rejected.STEP 004-075-1  identical.   STEP 004-074-0  identical.   STEP 004-074-1  identical.   STEP 004-073-0  identical.   STEP 004-073-1  rejected.STEP 004-072-0  rejected.STEP 004-072-1  rejected.STEP 004-071-0  identical.   STEP 004-071-1  identical.   STEP 004-070-0  identical.   STEP 004-070-1  identical.   STEP 004-069-0  rejected.STEP 004-069-1  rejected.STEP 004-068-0  rejected.STEP 004-068-1  rejected.STEP 004-067-0  rejected.STEP 004-067-1  rejected.STEP 004-066-0  accepted.STEP 004-066-1  rejected.STEP 004-065-0  rejected.STEP 004-065-1  rejected.STEP 004-064-0  rejected.STEP 004-064-1  identical.   STEP 004-063-0  rejected.STEP 004-063-1  rejected.STEP 004-062-0  identical.   STEP 004-062-1  rejected.STEP 004-061-0  rejected.STEP 004-061-1  accepted.STEP 004-060-0  identical.   STEP 004-060-1  identical.   STEP 004-059-0  identical.   STEP 004-059-1  rejected.STEP 004-058-0  rejected.STEP 004-058-1  rejected.STEP 004-057-0  identical.   STEP 004-057-1  identical.   STEP 004-056-0  identical.   STEP 004-056-1  identical.   STEP 004-055-0  rejected.STEP 004-055-1  accepted.STEP 004-054-0  accepted.STEP 004-054-1  accepted.STEP 004-053-0  identical.   STEP 004-053-1  rejected.STEP 004-052-0  rejected.STEP 004-052-1  identical.   STEP 004-051-0  identical.   STEP 004-051-1  rejected.STEP 004-050-0  identical.   STEP 004-050-1  accepted.STEP 004-049-0  identical.   STEP 004-049-1  identical.   STEP 004-048-0  identical.   STEP 004-048-1  rejected.STEP 004-047-0  rejected.STEP 004-047-1  identical.   STEP 004-046-0  identical.   STEP 004-046-1  identical.   STEP 004-045-0  identical.   STEP 004-045-1  rejected.STEP 004-044-0  identical.   STEP 004-044-1  identical.   STEP 004-043-0  identical.   STEP 004-043-1  identical.   STEP 004-042-0  identical.   STEP 004-042-1  rejected.STEP 004-041-0  rejected.STEP 004-041-1  rejected.STEP 004-040-0  rejected.STEP 004-040-1  rejected.STEP 004-039-0  identical.   STEP 004-039-1  accepted.STEP 004-038-0  identical.   STEP 004-038-1  rejected.STEP 004-037-0  identical.   STEP 004-037-1  identical.   STEP 004-036-0  identical.   STEP 004-036-1  identical.   STEP 004-035-0  identical.   STEP 004-035-1  identical.   STEP 004-034-0  rejected.STEP 004-034-1  identical.   STEP 004-033-0  identical.   STEP 004-033-1  accepted.STEP 004-032-0  identical.   STEP 004-032-1  accepted.STEP 004-031-0  rejected.STEP 004-031-1  identical.   STEP 004-030-0  identical.   STEP 004-030-1  rejected.STEP 004-029-0  identical.   STEP 004-029-1  identical.   STEP 004-028-0  identical.   STEP 004-028-1  identical.   STEP 004-027-0  identical.   STEP 004-027-1  identical.   STEP 004-026-0  identical.   STEP 004-026-1  identical.   STEP 004-025-0  identical.   STEP 004-025-1  identical.   STEP 004-024-0  identical.   STEP 004-024-1  rejected.STEP 004-023-0  identical.   STEP 004-023-1  identical.   STEP 004-022-0  identical.   STEP 004-022-1  identical.   STEP 004-021-0  identical.   STEP 004-021-1  identical.   STEP 004-020-0  identical.   STEP 004-020-1  identical.   STEP 004-019-0  identical.   STEP 004-019-1  rejected.STEP 004-018-0  identical.   STEP 004-018-1  identical.   STEP 004-017-0  identical.   STEP 004-017-1  identical.   STEP 004-016-0  identical.   STEP 004-016-1  identical.   STEP 004-015-0  identical.   STEP 004-015-1  identical.   STEP 004-014-0  rejected.STEP 004-014-1  identical.   STEP 004-013-0  identical.   STEP 004-013-1  identical.   STEP 004-012-0  identical.   STEP 004-012-1  rejected.STEP 004-011-0  identical.   STEP 004-011-1  identical.   STEP 004-010-0  identical.   STEP 004-010-1  identical.   STEP 004-009-0  rejected.STEP 004-009-1  identical.   STEP 004-008-0  identical.   STEP 004-008-1  identical.   STEP 004-007-0  identical.   STEP 004-007-1  identical.   STEP 004-006-0  identical.   STEP 004-006-1  identical.   STEP 004-005-0  identical.   STEP 004-005-1  identical.   STEP 004-004-0  identical.   STEP 004-004-1  rejected.STEP 004-003-0  identical.   STEP 004-003-1  identical.   STEP 004-002-0  identical.   STEP 004-002-1  identical.   STEP 004-001-0  identical.   STEP 004-001-1  identical.   STEP 005-001-0  identical.   STEP 005-001-1  identical.   STEP 005-002-0  identical.   STEP 005-002-1  identical.   STEP 005-003-0  identical.   STEP 005-003-1  identical.   STEP 005-004-0  identical.   STEP 005-004-1  rejected.STEP 005-005-0  identical.   STEP 005-005-1  identical.   STEP 005-006-0  identical.   STEP 005-006-1  identical.   STEP 005-007-0  identical.   STEP 005-007-1  identical.   STEP 005-008-0  identical.   STEP 005-008-1  identical.   STEP 005-009-0  rejected.STEP 005-009-1  identical.   STEP 005-010-0  identical.   STEP 005-010-1  identical.   STEP 005-011-0  identical.   STEP 005-011-1  identical.   STEP 005-012-0  identical.   STEP 005-012-1  rejected.STEP 005-013-0  identical.   STEP 005-013-1  identical.   STEP 005-014-0  rejected.STEP 005-014-1  identical.   STEP 005-015-0  identical.   STEP 005-015-1  identical.   STEP 005-016-0  identical.   STEP 005-016-1  identical.   STEP 005-017-0  identical.   STEP 005-017-1  identical.   STEP 005-018-0  identical.   STEP 005-018-1  identical.   STEP 005-019-0  identical.   STEP 005-019-1  rejected.STEP 005-020-0  identical.   STEP 005-020-1  identical.   STEP 005-021-0  identical.   STEP 005-021-1  identical.   STEP 005-022-0  identical.   STEP 005-022-1  identical.   STEP 005-023-0  identical.   STEP 005-023-1  identical.   STEP 005-024-0  identical.   STEP 005-024-1  rejected.STEP 005-025-0  identical.   STEP 005-025-1  identical.   STEP 005-026-0  identical.   STEP 005-026-1  identical.   STEP 005-027-0  identical.   STEP 005-027-1  identical.   STEP 005-028-0  identical.   STEP 005-028-1  identical.   STEP 005-029-0  identical.   STEP 005-029-1  identical.   STEP 005-030-0  identical.   STEP 005-030-1  rejected.STEP 005-031-0  rejected.STEP 005-031-1  identical.   STEP 005-032-0  identical.   STEP 005-032-1  identical.   STEP 005-033-0  identical.   STEP 005-033-1  identical.   STEP 005-034-0  rejected.STEP 005-034-1  identical.   STEP 005-035-0  identical.   STEP 005-035-1  identical.   STEP 005-036-0  identical.   STEP 005-036-1  identical.   STEP 005-037-0  identical.   STEP 005-037-1  identical.   STEP 005-038-0  identical.   STEP 005-038-1  rejected.STEP 005-039-0  identical.   STEP 005-039-1  identical.   STEP 005-040-0  rejected.STEP 005-040-1  rejected.STEP 005-041-0  rejected.STEP 005-041-1  rejected.STEP 005-042-0  identical.   STEP 005-042-1  rejected.STEP 005-043-0  identical.   STEP 005-043-1  identical.   STEP 005-044-0  identical.   STEP 005-044-1  identical.   STEP 005-045-0  identical.   STEP 005-045-1  rejected.STEP 005-046-0  identical.   STEP 005-046-1  identical.   STEP 005-047-0  rejected.STEP 005-047-1  identical.   STEP 005-048-0  identical.   STEP 005-048-1  rejected.STEP 005-049-0  identical.   STEP 005-049-1  identical.   STEP 005-050-0  identical.   STEP 005-050-1  identical.   STEP 005-051-0  identical.   STEP 005-051-1  rejected.STEP 005-052-0  rejected.STEP 005-052-1  identical.   STEP 005-053-0  identical.   STEP 005-053-1  rejected.
+Converged.
+
+done
+dvtditr (aa) Version 7.526
+alg=A, model=BLOSUM62, 1.53, -0.00, -0.00, noshift, amax=0.0
+0 thread(s)
+
+
+Strategy:
+ L-INS-i (Probably most accurate, very slow)
+ Iterative refinement method (<16) with LOCAL pairwise alignment information
+
+If unsure which option to use, try 'mafft --auto input > output'.
+For more information, see 'mafft --help', 'mafft --man' and the mafft page.
+
+The default gap scoring scheme has been changed in version 7.110 (2013 Oct).
+It tends to insert more gaps into gap-rich regions than previous versions.
+To disable this change, add the --leavegappyregion option.
+
+>P01533
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+---------------------------------GAACLCK--------------------
+----------SDG--------PNTRGN---------------------------------
+----------------------------------------------------------SM
+SGTIWV--FG----------------------CPSGWNNCEGRA-IIG------------
+-------------------------------------YCCKQ------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P0C1F1
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+---------------------------------GVPCLCD--------------------
+----------SDG--------PNVRGN---------------------------------
+----------------------------------------------------------TL
+SGTYWL--AG----------------------CPSGWHNCKSSGPLIG------------
+-------------------------------------ACCKQ------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P0C5G5
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+---------------------------------GVPCRCD--------------------
+----------SDG--------PSVHGN---------------------------------
+----------------------------------------------------------TL
+SGTIWV--GS----------------------CETGWHKCNTEHNLFH------------
+-------------------------------------ECCKQ------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P10453
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+---------------------------------GVACLCD--------------------
+----------SDG--------PNVRGN---------------------------------
+----------------------------------------------------------TL
+SGTIWL--AG----------------------CPSGWHNCKAHGPTIG------------
+-------------------------------------WCCKQ------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P0C1F5
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+---------------------------------GASCRCD--------------------
+----------SDG--------PTSRGD---------------------------------
+----------------------------------------------------------TL
+TGTLWL--IG---------------------RCPSGWHNCRGSGPFIG------------
+-------------------------------------YCCKQ------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P30831
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+----------------------------------ASCKCD--------------------
+----------DDG--------PDVRSA---------------------------------
+----------------------------------------------------------TF
+TGTVDF--AY----------------------CNAGWEKCLAVYTPVA------------
+-------------------------------------SCCRKKK----------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P0C5G3
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+---------------------------------GVSCLCD--------------------
+----------SDG--------PSVRGN---------------------------------
+----------------------------------------------------------TL
+SGILWFYPSG----------------------CPSGWHNCKAHGPTIG------------
+-------------------------------------WCCKQ------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P81383
+-------ASHGLTKTLNPKKIVIVGAGISGLTAAKLFREAGHEVVILEASDRVGGRIKTH
+R--EDGWYV--DVGPMRVP--QTHRIVREYIKKFNISLNPFRQTDENAWYLIKHVRQKMS
+A--NNPENFGYQLN-PNERGKSASQLFDETLDKVTDD-------------CTLQKEKYDS
+---------FSTKEYLIKEGKL--------STGAVEMIGDF------------LNEEAGF
+HNSFLIS-VMDHFLF-LNNSFDEITGGFDQLPERFFKDMDSIVHLNSTVE-KIVHINNKV
+TVFYEGLSTNMR-LVADYVLITATARATRLIKFVPPLSIPKTRALRSLIYASATKIILVC
+TDKFWEKDGIHGGRSITDLPSRVIYY-------PNHD-----FTNGIGVLLA---SYTWY
+SDS---EFYTTLSDEKCVDVVMDDLVEIHNVSKDYLKSVCGKHVVQKWALDQYSMGAFST
+YTPYQIT-HYSQ----------MLAQNEGRIYFAGE----------------YTAHPHGW
+IETSMKSAIREAINIHNA------------------------------------------
+--------------------------
+>A0A2U8QPE6
+-FLE--IARNGLKKTSNPKHVVVVGAGMSGLSAAYVLAKAGHKVTLLEASEGVGGRVKTY
+RNKQEGWYI--NLGPMRLP--ERHRIVREYIRKFHLPLSEFVQENENTWYYIKNIRKRVS
+EVKKNPDLFEYPVN-PSEKGKSASQLYQESLEKVIDELKR--------TNCNHILNKYDT
+---------YSTKEYLIKEGNL--------SPGAVDMIGDL------------LNEDSSF
+YLSFIES-LKSDDIFSYEKRFDEIVGGFDQLPISMYQAIAEMVHLNAQVI-KIQHNAKKV
+IVTYQTPAKTLPSVTADYVIVCSTSRAARHIRFQPPLPTNKARALRSIHYRSAIKIFLTC
+TKRFWEADGIHGGKSTTDLPSRFIYY-------FNQN-----FTNGIGVIMA----YVLA
+DDA---KFFQPHDLKTNADIVINDLSLIHQLPKEEIQALCRPSWIQKWSLDKYAMGSITS
+FTPYQFL-DYFE----------IAAAPVGRIHFAGE----------------YTAKHHGW
+IDSTIKSGLRAARDVNRA------------------------------------------
+--------------------------
+>B5U6Y8
+-FLE--IAKNGLKKTSNPKDIVVVGAGMSGLSAAYVLAGAGHKVTVLEASQLVGGRVRTH
+RNAKEGWYA--NLGPMRIP--EKHRIVREYIRKFGLELNEFVQETDNGWYFVKNIRKRVG
+EVKKDPGLLKYPVK-PSEAGKSAGQLYQEALGKAVEELKR--------TNCSYMLNKYDT
+---------YSTKEYLIKEGNL--------STGAVDMIGDL------------MNEDSGY
+YVSFVES-MKHDDIFAYEKRFDEIVGGMDQLPTSMYRAIEKSVLFKARVT-KIQQNAEKV
+RVTYQTAAKTLSDVTADYVIVCTTSRAARRINFKPPLPPKKAHALRSVHYRSATKIFLTC
+TKKFWEDDGIQGGKSTTDLPSRFIYY-------PNHN-----FTSGVGVIIA----YGIG
+DDS---NFFLSLTLNECADIVFSDLSSIHQLPKNDIQKFCNPSVIQKWSLDRYAMGAITT
+FTPYQFQ-DYSK----------ALTAPAGRVYFAGE----------------YTANAHGW
+IDSTIKSGLTAARDVNQASEL---------------------------------------
+--------------------------
+>P0CC17
+--LE--IAKNGLSTTSNPKRVVIVGAGMSGLSAAYVLANAGHQVTVLEASERAGGRVKTY
+RNEKEGWYA--NLGPMRLP--EKHRIVREYIRKFDLQLNEFSQENENAWYFIKNIRKRVG
+EVNKDPGVLEYPVK-PSEVGKSAGQLYEESLQKAVEELRR--------TNCSYMLNKYDT
+---------YSTKEYLLKEGNL--------SPGAVDMIGDL------------LNEDSGY
+YVSFIES-LKHDDIFAYEKRFDEIVGGMDKLPTSMYQAIQEKVHLNARVI-KIQQDVKEV
+TVTYQTSEKETLSVTADYVIVCTTSRAARRIKFEPPLPPKKAHALRSVHYRSGTKIFLTC
+TKKFWEDDGIHGGKSTTDLPSRFIYY-------PNHN-----FPNGVGVIIA----YGIG
+DDA---NYFQALDFEDCGDIVINDLSLIHQLPKEEIQAICRPSMIQRWSLDKYAMGGITT
+FTPYQFQ-HFSE----------ALTAPVDRIYFAGE----------------YTAQAHGW
+IDSTIKSGLRAARDVNRASEIKK-------------------------------------
+--------------------------
+>X2JCV5
+--LL--IAKNGLQQTSNPKRVVIVGAGMSGLSAAYVLAKTGHEVILLEASERVGGRVSTY
+RNDQEGWYA--NLGPMRLP--ERHRIVREYIRKFGLQLNEFSQENENAWYFIKNIRKRVG
+EVNKDPGVLEYPVK-PSEKGKSAPQLYRDSLQKIIEEYGR--------SNCSYILNKYDT
+---------YSTKDYLIKEGNL--------SPGAVDMVGDL------------LNEDSGY
+YVSFIES-LKPDDIFAYENRFDEIVGGFDKLPTSMYQAIQEKVRLNVRVI-KIQQDVKEV
+TVTYQTPAKNLSYVTADYVIVCTTSGAARRIKFEPPLPLKKAHALRSVHYRSGTKIFLTC
+TKKFWEDDGIHGGKSITDRPSRLIHY-------PNHN-----FPNGIGVLVI----FTIA
+DDA---DFFLALDNKTIADIVIHDLSLIHQLPKEKIRDLCYVSMIQKWSLDKYAMGGITT
+FTPYQFQ-HFSE----------ALTAPVDRIYFAGE----------------YTAQAHGW
+IDSTIKSGLTAARDVNRASENPSGIHLSNDNEL---------------------------
+--------------------------
+>Q4JHE3
+-FLE--IARNGLKKTSNPKHVVVVGAGMAGLSAAYVLAGAGHKVTLLEASERVGGRVHTY
+RNEKEGWYV--NLGPMRLP--ERHRIIREYIRKFGLKLNEFFQENENAWYFIRNIRKRVW
+EVKKDPGVFKYPVK-PSEEGKSASQLYRESLKKVIEELKR--------TNCSYILNKYDT
+---------YSTKEYLIKEGNL--------SRGAVDMIGDL------------LNEDSSY
+YLSFIES-LKSDDLFSYEKRFDEIVGGFDQLPISMYQAIAEMVHLNAQVI-KIQHNAEKV
+RVAYQTPAKTLSYVTADYVIVCSSSRAARRIYFEPPLPPKKAHALRSIHYKSGTKIFLTC
+SKKFWEADGIHGGKSTTDLPSRFIYY-------PNHN-----FTSGVGVIVA----YTIS
+DDA---DFFQSLDIKTSADIVINDLSLIHQLPKKEIQALCYPSMIKKWSLDKYAMGSITS
+FAPYQFQ-DFIE----------RVAAPVGRIYFAGE----------------YTARVHGW
+LDSTIKSGLTAARDVNRASQKPSRRQLSNDNEL---------------------------
+--------------------------
+>A8QL51
+EFLE--IARNGLKKTSNPKHVVVVGAGMAGLSAAYVLEKAGHRVTLLEASDRVGGRANTY
+RDEKEGWYV--NMGPMRLP--ERHRIVRTYIAKFGLKLNEFFQENENAWYFIRNIRKRVW
+EVKKDPGVFKYPVK-PSEEGKSASQLYRESLKKIIEELKR--------TNCSYILDKYDS
+---------YSTKEYLIKEGNL--------SRGAVDMIGDL------------LNEDSSY
+YLSFIES-LKNDDLFSYEKRFDEISGGFDQLPKSMHQDIAEMVHLNAQVT-KIQHDAEKV
+RVAYQTPAKTLSYVTADYVIVCATSRAVRRISFEPPLPSKKAHALRSIHYKSATKIFLTC
+TQKFWEADGIHGGKSTTDLPSRFIYY-------PNHN-----FTSGVGVIVA----YVLA
+DDS---DFFQALDIKTSADIVINDLSLIHQLPKNEIQALCYPSLIKKWSLDKYTMGALTS
+FTPYQFQ-DYSE----------TVAAPVGRIYFAGE----------------YTARVHGW
+LDSTIKSGLTAARDVNRASQKPSRIHLISDNQL---------------------------
+--------------------------
+>J3S3U6
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------NFCTQQHT---------------------------------------
+-----------------------------------------GGHLV-----SFHSTEE--
+---------------ADFVVKLAFQTFGH--SI---------------------------
+---FW-----------------------------------------IGL-------SNVW
+NKC------------------------------------------------------SWQ
+WSNGAML-KYED----------WAEE--SYCVYFKS------------------------
+-----------TNN--KWRSRACRMLARFVCEFQA-------------------------
+--------------------------
+>Q9I840
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+---------ADAERFCKLQPK---------------------------------------
+-----------------------------------------HSHLV-----SFQSAEE--
+---------------ADFVVKLTRPRLKA--NL---------------------------
+---VW-----------------------------------------MGL-------SNIW
+HGC------------------------------------------------------NWQ
+WSDGARL-NYKD----------WQEQ--SECLAFRG------------------------
+-----------VHT--EWLNMDCSSTCSFVCKFKA-------------------------
+--------------------------
+>Q4PRD0
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------------------------------------NW--
+---------ADAEKFCTEQHK---------------------------------------
+-----------------------------------------GSHLL-----SLHNIAE--
+---------------ADFVLKKTLAMLKD--GV---------------------------
+---IW-----------------------------------------MGL-------NDVW
+NEC------------------------------------------------------NWG
+WTDGAKL-DYKA----------WNEG--TNCFVFKI------------------------
+-----------AKN--HWSHMDCSSTHNFVCKFRV-------------------------
+--------------------------
+>B0VXV2
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+---------DDAERFCLEQAK---------------------------------------
+-----------------------------------------GGHLV-----SIESSEE--
+---------------ADFVAQLVANNVRRGISY---------------------------
+---IW-----------------------------------------IGLRV-----QGEE
+KQC------------------------------------------------------STK
+WSDGSSV-NYEN----------WIEALSKTCLGLEQ------------------------
+-----------DTNH-KWVNIYCGEINPFVCKA---------------------------
+--------------------------
+>Q4PRD2
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+---------EAAERFCMEHPN---------------------------------------
+-----------------------------------------NGHLV-----SIESMEE--
+---------------AEFVAKLLSNTTGKFITH---------------------------
+---FW-----------------------------------------IGLMI-----KDKE
+QEC------------------------------------------------------SSE
+WSDGSSV-SYDK----------LGKQEFRKCFVLEK------------------------
+-----------ESGYRMWFNRNCEERYLFVCKVP-----------------------PEC
+--------------------------
+>J3SBP0
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------------------------------------NW--
+---------DDAERFCSEQAK---------------------------------------
+-----------------------------------------GGHLV-----SIESDGE--
+---------------ADFVAQL-AQKIDKPDIY---------------------------
+---IW-----------------------------------------IGLRV-----QGKE
+QQC------------------------------------------------------SSE
+WSDGSSI-IYVN----------WNKGESQMCQGLTR------------------------
+-----------WTNFLKWDYTDCQAKKPFVCKFP-----------------------PEC
+--------------------------
+>Q9YGG9
+------------------------------------------------------------
+------------------------------------------------------------
+----------------------------------------------------QQKMKW--
+---------ADAERFCTEQRT---------------------------------------
+-----------------------------------------GAHLV-----SIESNTE--
+---------------AAFVNQMISENIKK-TDY---------------------------
+---VW-----------------------------------------IGLTV-----QNEE
+QQC------------------------------------------------------KSR
+WSDRSSV-SYEN----------LVKPNSKKCFVLKE------------------------
+-----------YEGSRKWFNVYCGQKYAFMCKFLR----------------------PR-
+--------------------------
+>Q962V9
+------------------------------------------------------------
+----------------REMFTELHNGYRAAFAR---------------------------
+----------------------------------------N------YKTSKMRTMVYDC
+TL------EEKAYKSAEKCSE---------------------------------------
+---------------------------------------------------EPSSEEEN-
+--------------VDVFSAATLNIPLEAGNSW-----WSEIFELRGKVYNKNGKT-SNI
+ANMVWDSHDKLGC-AVVDCSGKTHV---VCQYGPEA--------KGDGKTI-----YEEG
+APC----------------------------------SRCSDYGAG--------------
+----------------------------------------VTCDD---------------
+----------------DWQNLLCIGH----------------------------------
+--------------------------
+>Q8AVA3
+------------------------------------------------------------
+---------------------DKHNALRRSVK----------------------------
+-----------------------------------------------PTARNMLQMKWNS
+HA------AQNAKRWADRCTFAHSPPNT-RTVGKLRCGENI------------FMSSQPF
+PWSGVVQ-AWYDE----------------------------IKNFVYGIGAKPPGSVI--
+---------------GHYTQV---------------------------------------
+---VWYKSHLIGC-ASAKCSSS--KYLYVCQYCPAGN-----I---RGSIAT---PYKSG
+PPC-------------------------ADCPSACVNRLCTNPCN---------------
+-----------------------YNNDFSNCKSLAK----------------KSKCQTEW
+IKKKCPA--------------SCFCHNKII------------------------------
+--------------------------
+>Q8JI38
+------------------------------------------------------------
+---------------------DKHNALRRSVR----------------------------
+-----------------------------------------------PTARNMLQMEWNS
+DA------AQNAQRWADRCSFAHSPSHL-RTVGKFSCGENL------------FMSSQPY
+AWSRVIQ-SWYDE----------------------------NKNFIYDVGANPPGSVI--
+---------------GHYTQI---------------------------------------
+---VWYKSHLLGC-AAARCSSS--KYLYVCQYCPAGN-----I---IGSIAT---PYKSG
+PPC-------------------------GDCPSACVNGLCTNPCK---------------
+-----------------------HENEFTNCQSLVK----------------QTGCQNTW
+IQSKCPA--------------SCFCRTEII------------------------------
+--------------------------
+>B0VXV6
+------------------------------------------------------------
+---------------------DLHNSLRRSVN----------------------------
+-----------------------------------------------PTASNMLKMEWYS
+EA------AANAERWAYRCIESHSPRDS-RVLEGIKCGENI------------YMSSVPM
+KWTEIIH-IWHGE----------------------------NKNFKYGIGADPPNAVT--
+---------------GHYTQI---------------------------------------
+---VWYKSYRAGC-AAAYCPSLEYSYFYVCQYCPAGN-----I---RGKTAT---PYKSG
+PPC-------------------------GDCPSACDNGLCTNPCP---------------
+------------------------KKISTQLPRFGP----------------QAGCQDKQ
+MQSDCSA--------------TCFCQNKII------------------------------
+--------------------------
+>Q7T1K6
+------------------------------------------------------------
+--------------------VDLHNSLRRRVS----------------------------
+-----------------------------------------------PTASNMLKMEWYP
+EA------ASNAERWANTCSLNHSPDNL-RVLEGIQCGESI------------YMSSNAR
+TWTEIIH-LWHDE----------------------------YKNFVYGVGANPPGSVT--
+---------------GHYTQI---------------------------------------
+---VWYQTYRAGC-AVSYCPSSAWSYFYVCQYCPSGN-----F---QGKTAT---PYKLG
+PPC-------------------------GDCPSACDNGLCTNPCT---------------
+-----------------------IYNKLTNCDSLLK----------------QSSCQDDW
+IKSNCPA--------------SCFCRNKII------------------------------
+--------------------------
+>Q2XXP1
+------------------------------------------------------------
+-------------------IINKHNDLRRTVD----------------------------
+-----------------------------------------------PPAKNMLKMSWDN
+II------AESAKRAALRCNYKEHTSIAERTIGGVVCGENH------------FMSSNPR
+TWSSSIQ-SWFDE----------------------------RNSFMFGFGPTIPGVMV--
+---------------GHYTQV---------------------------------------
+---VWYKSYKVGC-AINLCPAQSLKYFQVCQYCPGGN-----V---AGRKYE---PYTIG
+EPC-------------------------AACPKDCDNGLCTNPCA---------------
+-----------------------YNDDYTSCPDLTK----------------QVGCNHP-
+VTANCKA--------------SCQCTTEIQ------------------------------
+--------------------------
+>C8YJG4
+---------------------VTTAAGEC-------------------------------
+--RGDMWAVCARISSDVTC--ARHANLQRSIRR--------------CFY----------
+------------------------------IRSTMCEIMLLRDHGDYPVASRMKVIVWDE
+EL------AALAKRHTQGCVP-----------EAYKCRHTLRFWTPGQLNFEFYADKMPF
+TMSLIST-------------------------------AIKRGHMQ---KHNITRDIV--
+---------------EKYQPVGPKGNVKELALA---------------------------
+---IFDRVTAVG----------------------------------CGLTT-----WKLG
+GKA--RAF-----------------------------FTCNFFSENDYNRPV--------
+---------YKTGNSPGEKCIKKDETFKNLCFAQEP------------------------
+------------------------------------I-------------------NPNE
+HN-----------------------L
+>C0K3N2
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------EEHPHEISHLFKP----SCVTVLRCG----------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------GCCSDESLT--------------
+------------------------------CTSTGKR---------------SVGREIMR
+VDPHKETSKIEVMQFTEHTDCECRPQSASG------------------------------
+--------------------------
+>P0DW98
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------KEYPDEVAHLFKP----SCVPVLRCS----------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------GCCSDESLK--------------
+------------------------------CTATGKH---------------SVGREVMR
+VDPHKGTSKIEVMQFKEHTDCECRPRSPGDVNNG---------------------RNPEE
+G------------EPRARFPFV----
+>Q330K6
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------KEYPNEVSHLFKP----SCVPVLRCG----------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------GCCSDESLT--------------
+------------------------------CTATGKR---------------SVGREVMR
+VDPHKGTSKIEVMQFKEHTACECRPRSPGDVNDG---------------------RNPKE
+G------------EPRARFPFV----
+>C0K3N3
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------DEYPSEVAHLFRP----SCVTVLRCG----------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------GCCTDESLT--------------
+------------------------------CTATGKR---------------SVGREIMR
+VDPRKGTSKIEVMQFTEHTECECRPRST--VNNGKR------------------KKNPKE
+G------------EPRAKFPLV----
+>Q90X24
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------EEHPDEVSHIFRP----SCVTALRCG----------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------GCCTDESLK--------------
+------------------------------CTATGKR---------------SVGREIMR
+VDPHKGTSKTEVMQFTEHTDCECRPRSASGVNSRKH------------------KRNPEE
+G------------EPRAKFPFV----
+>X5ICI2
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------EEHPSEIADLFKP----SCATVLRCG----------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------GCCSDESLA--------------
+------------------------------CTAVGKR---------------SVGREILR
+VDPRKGTSKIEVMQFTEHTDCECRPRSRSGVDSGKR------------------KRNPEE
+G------------EPRAKFPFV----
+>C0K3N1
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------EEYPDKISKIFRP----SCVAVLRCG----------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------GCCSDESLT--------------
+------------------------------CTSVGER---------------TVELQVMQ
+VTPKTLSSKIKVMKFREHTACECRPRSGSRVNIGKH------------------KRSPEE
+G------------EREPSSPLTPGSL
+>Q27049
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+----------------------------------------------------------EF
+FNGTWY------------------------------------LAHGPGVTSP--------
+-------------------------------------AVCQKFTTS----------GSKG
+FTQIVEI-GYNK----------FESNVKFQCNQVDNKNG---------------------
+----------------EQYSFKCKSSDNTEFEADFTFISVSYDNFALVCRSITFTSQPKE
+DDYLVLERTKSDTDPDAK-----EIC
+>Q04669
+------------------------------------------------------------
+----------------------------------------F-------------------
+------------------------------------------------------------
+--------KDGAGTFLLQKST---------DPQARDCLKGTP-----------NGNRDGN
+TLPVTMT-YKDDSKWVSLN----------------WMFTLEGANIVATLEGKRKQRGE--
+---------------LVYDVQSHDCHI---------------------------------
+------------------------------------------TKLSSGVYQQ----WQSN
+GSADDKDI-----------------------------KCCDEKFKE--------------
+----------------LTSGIDYTKPQEKGCETSAK------------------------
+------------------------------------------------------------
+--------------------------
+>G3CJS0
+D-----------------------------------------------------------
+------------------------------------------------------------
+-----------------------------------------------------VPHVYVT
+HS-KNGPKEKVCREYNTTKNS------------------------------------DKT
+TSTTVVT-LKTGG----------------------------TQSIVLSCNNSPKSGVK--
+---------------GQYFMD---------------------------------------
+-----------------------------CQ-VPGGTGG-INIQLESSIIATDNKNYALV
+HFC---------------------------------------------------------
+--------------------PITGRGVTEDIVVLQT----------------NKDNVDPG
+VTSAIKNYGWSLENWKSRKDAGCQ------------------------------------
+--------------------------
+>Q27042
+S-----------------------------------------------------------
+------------------------------------------------------------
+-----------------------------------------------------IPHVYVT
+HS-RNGPKEQVCREYKTTKNS------------------------------------DGT
+TTTLVTSDYKTGG---------------------------KPYHSELKCTNTPKSGVK--
+---------------GQFSVE---------------------------------------
+-----------------------------CE-VPNGNGGKKKIHVETSVIATDYKNYALL
+QSC---------------------------------------------------------
+--------------------TKTESGIADDVLLLQT----------------KKEGVDPG
+VTSVLKSVNWSLDDWFSRSKVNCDNMK---------------------------------
+--------------------------
+>Q94733
+------------------------------------------------------------
+------------------------------------------------------------
+-----------------------------------------------------------V
+TH-YLDKDPQVTDPYC--------------------------------------------
+------------------------------------------------------------
+---------------SSFTPKESGGTVKEALYH----------------FNSKKKTS---
+---FYNIGEG--------------------------------KLGSSGVQYT--AKYNTV
+DKK-RKEI------EPADPKDSYTLTVLEADDSSALVHICLRE-----------------
+-----------------------GPKDLGDLYTVLSHQ--------------KTGEPSAT
+VKNAVAQAGLKLNDFVDTKTLSCTYDDQFTSM----------------------------
+--------------------------
+>Q6PQK2
+------------------------------------------------------------
+------------------------------------------------------------
+-----------------------------------------------------FSGTWYE
+TH-YLDMDPQATEKFC--------------------------------------------
+------------------------------------------------------------
+---------------FSFAPRESGGTVKEALYH----------------FNVDSKVS---
+---FYNTGTG--------------------------------PLESNGAKYT--AKFNTV
+DKK-GKEI------KPADEKYSYTVTVIEAAKQSALIHICLQE-----------------
+-----------------------DGKDIGDLYSVLNRN--------------KNALPNKK
+IKKALNKVSLVLTKFVVTKDLDCKYDDKFLSSWQK-------------------------
+--------------------------
+>A7BJ46
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------------------QKKFLEGKWYV
+TKAKHGSNSTVCREYRAKTKGNDQI-----------------------------------
+-----------------------LVGD---------------------------------
+---------------GYY----------------------------------------SF
+NGGTFYFTVR-------------------CKRLPNKE-----------------------
+------------------------VQKP-------LQFTCTQKSTD----DPSK---MFK
+FQLEVTILDTDY----------ANYAVMYRCVQFPEQLGSHFEDNTLLLHRNPDQLVDEN
+QVERKLNLSFDSFRSREDVVDGCPKLPSKKKNKAS-------------------------
+--------------------------
+>P68725
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+----------------------------------------DNECKS--------------
+-----------------------EGGSYGYCYAF-----GCWCEG--LPNDKAW------
+----------------KSETNTCGGKK---------------------------------
+--------------------------
+>A0A7S8RFI7
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-----------------------------------SNSMCADRCTV--------------
+-----------------------LGASAGHCNNY-----ACFCTD--LRDRVKI------
+----------------WGDSVRCR--------------------------------KP--
+--------------------------
+>Q1I163
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------HYCASECSR--------------
+-----------------------VKGKDGYCYAW----LACYCYN--MPNWAPIW-----
+----------------NSATNRCRGRK---------------------------------
+--------------------------
+>Q86BW9
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------PYCNDLCTE--------------
+-----------------------NGAKSGYCQWAGRYGNACWCID--LPDKVPI------
+-----------------RIPGPCRGR----------------------------------
+--------------------------
+>P0C5K8
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-----------------------------------DNAYCDKLCKD--------------
+-----------------------KKADSGYCYWVHI---LCYCYG--LPDKEPT------
+-----------------KTNGRCKPGKK--------------------------------
+--------------------------
+>H1ZZI3
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+---VWD------------------------------------------------------
+-----------------------------------DEGYCDKFCKG--------------
+-----------------------RKADSGYCYKLKA---ACYCYG--LPDDSPT------
+-----------------KTSGRCNPNVR--------------------------------
+--------------------------
+>Q17254
+------------------------------------------------------------
+------------------------------------------------------VR----
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+----------------------------------------------DGYIAQ---PHNCA
+YHCLK------------------------------ISSGCDTLCKE--------------
+-----------------------NGATSGHCGHKSGHGSACWCKD--LPDKVGI------
+----------------IVHGEKCH-------------------------R----------
+--------------------------
+>P0C1R1
+I-----------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------LGTILGLLKG--------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------L
+>P17235
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------FLP------IIAKLVSGLL----------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P0CJ39
+------------------------------------------------------------
+----------FDV-----------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+----------------------------------------------MGIIKK--------
+-----------------------IAGAL--------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P0C5G7
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------------INLKAIAA--------------------
+----------MAKKLL--------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P0DX46
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------INWKKL
+GKA---------------------LNAL--------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------L
+>P07496
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+----------------------------------------INVLGILGLLGK--------
+-----------------------ALSHL--------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P0CD69
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+----------------------------------------LKLKSILGKLGV--------
+-----------------------ILSHLNK------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>A0A3S9V8L7
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------------LGELCLGNR-------------------
+----------------------------------------KRRGFPSMLKARAKRNEAFL
+L-----------------------------------------------------------
+------------------------------------------QRDGRGIVE---------
+-------------------------------------DCCYNDCT---------------
+-----------------------DEKLKEYCHTLQG------------------------
+------------------------------------------------------------
+--------------------------
+>A0A0B5AC95
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-----------------------------------LCYRKR-------------------
+----------NDA--------GEKRGRA--------SPLWQRRGSLSKLKARAKRNGAFH
+L-----------------------------------------------------------
+------------------------------------------PRDGRGVVE---------
+-------------------------------------HCCHRPCS---------------
+-----------------------NAEFKKYCG----------------------------
+------------------------------------------------------------
+--------------------------
+>A0A0B5ABD5
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-----------------------------------LCFRKR-------------------
+----------NDA--------GKKRGQA--------SPLWQRGGSLSMLKARAKRNEAFH
+L-----------------------------------------------------------
+------------------------------------------QRAHRGVVE---------
+-------------------------------------HCCKRACS---------------
+-----------------------NAEFMQFCGNS--------------------------
+------------------------------------------------------------
+--------------------------
+>A0A0F7YYV0
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------------VEIRCEEKEA--EQG-------------
+--------GANNA--------RAYTGRT--------SSLMKRRGFLSLLKKRGKRDEG-S
+L-----------------------------------------------------------
+------------------------------------------QRSGRGIVC---------
+-------------------------------------ECCKHHCT---------------
+-----------------------KEELTEYCH----------------------------
+------------------------------------------------------------
+--------------------------
+>A0A0B5A8P8
+S-----------------------------------------------------------
+------------------------------------------------------------
+----------------------------------------------VLCTPRGYVSNWFT
+KR---SAPNKPAETFVDQ------------------------------------------
+----------------------NLRGV-----------LLNKREALSYLRPREPRATR--
+---------------GTF------------------------------------------
+--------------------------------------------GSQGITC---------
+-------------------------------------ECCFNQCT---------------
+-----------------------YYELLQYCN----------------------------
+------------------------------------------------------------
+--------------------------
+>A0A0B5ADT3
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------NYHEEKCEEEEA--RRG-------------
+--------GTNDG--------GKKRRRA--------SPLRKRRRFISMLKARAKR-----
+------------------------------------------------------------
+-------------------------------------------RGYQGIAC---------
+-------------------------------------ECCQHYCT---------------
+-----------------------DQEFINYCPPVTESSSSSSSAV---------------
+------------------------------------------------------------
+--------------------------
+>A0A0B5A7M7
+------------------------------------------------------------
+----------PDI-----------------------------------------------
+----------------------------------------------VHTVCQVMGRGY--
+--------AGGQRQLRKRTSM---------------------------------------
+--------IDSDDM----EAEGGSRGGF----------LMSKRRALSYLQKETNPLVM--
+---------------AGYERRGI-------------------------------------
+----------------------------------------QKRHGEQGITC---------
+-------------------------------------ECCYNHCS---------------
+-----------------------FRELVQYCN----------------------------
+------------------------------------------------------------
+--------------------------
+>P0C6E2
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--C--------------------------------TTGPCCRQCK---------------
+LKPAGTT-CWK------------TSRTSHYCTGKSC------------------------
+---------------------DCP-------------V---YQG----------------
+--------------------------
+>P0C6B4
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+---------------------SVNP-----CCDPVIC-----------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------------------------KPRDG
+EHC--------------------------------ISGPCCNNCK---------------
+FLNSGTI-CQRA----------RGDGNHDYCTGITT------------------------
+---------------------DCPRNRYN-------------------------------
+--------------------------
+>P83254
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------NSGNP-----CCDPVTC-----------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------------------------KPRRG
+WHC--------------------------------VSNPCCDNCK---------------
+FMRAGTI-CNRA----------RGDDMNDYCTGISS------------------------
+---------------------DCPRNPYKD------------------------------
+--------------------------
+>P83658
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------NSVHP-----CCDPVIC-----------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------------------------EPREG
+EHC--------------------------------ISGPCCENCY---------------
+FLNSGTI-CKRA----------RGDGNQDYCTGITP------------------------
+---------------------DCPRNRYNV------------------------------
+--------------------------
+>P83044
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------NSAHP-----CCDPVTC-----------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------------------------KPKRG
+EHC--------------------------------ISGPCCENCK---------------
+FLTAGTV-CLPA----------WGDFDNDLCTGISS------------------------
+---------------------DCPRNPWHKS-----------------------------
+--------------------------
+>P0C6A3
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------NSAHP-----CCDPVKC-----------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------------------------EPREG
+EHC--------------------------------ISGPCCRNCK---------------
+FLNAGTI-CKKA----------MLDGLNDYCTGISS------------------------
+---------------------DCPRNRYKGKEDD--------------------------
+--------------------------
+>P0C6B0
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------MNSANP-----CCDPITC-----------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------------------------KPRRG
+EHC--------------------------------VSGPCCRNCK---------------
+FLNPGTI-CKRT----------MLDGLNDYCTGVTS------------------------
+---------------------DCPRNPWKSEEED--------------------------
+--------------------------
+>G0W2H8
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+----------------------------------GGHGYTGHCGQFMG------------
+-------------------------------------VCCYPADP---------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>G0W2I0
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--VYWLWKIS----------------------CPSGYGYTGYCGYFMG------------
+-------------------------------------LCCYPAGS---------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>C0HLS4
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-----------------------------------------------------------Y
+TGVYWFMITR----------------------CPNGHGYNLSCPYFLG------------
+-------------------------------------VCCVKK-----------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P0DMX9
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------C-----------------------
+------------------------SGK---------------------------------
+----------------------------------------------------------PG
+RGDLWIFRGT----------------------CPGGYGYTSNCYKWPN------------
+-------------------------------------ICCYPH-----------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P0DMY8
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------C-----------------------
+------------------------SGN---------------------------------
+----------------------------------------------------------PG
+RGDLWILRGP----------------------SPGGYGYTSNCYKWPN------------
+-------------------------------------ICCFPP-----------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>A0A1X9QHL1
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------------RGASCDCH--------------------
+------------------------------------------------------------
+----------------------------------------------------------PF
+VGTYWFGISN----------------------CPSGHGYRKKCASFFG------------
+-------------------------------------VCCVK------------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>P69930
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------C-----------------------
+------------------------EGK---------------------------------
+----------------------------------------------------------TE
+YGDKWLFHGG----------------------CPNNYGYNYKCFMKPGA-----------
+-------------------------------------VCCYPQNGR--------------
+------------------------------------------------------------
+------------------------------------------------------------
+--------------------------
+>A0A8B6XWY5
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------------------------NIWK-
+--------GDVVRGWKCAVEN-----------------------------------KSTK
+TLYALGT-------------------------------TPVSGHLATVLP-DIPPQST--
+---------------GMF------------------------------------------
+---VWSKSRGA-------------------------------ARGAIGVVH-----YQYG
+NKV---------------------LNIMASIPYD-------------WNL-------YGA
+WANARVT---------------YQREPFSNLYYGRKGT------------KYPTRDGNWG
+KVDGTKFF------------LTEKSHAKFKVIFSG-------------------------
+--------------------------
+>P0DQV7
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------------------------------------ALQQIDEVWK-
+--------GSTVRDWKCAVEN-----------------------------------KSNK
+TLYAMGT-------------------------------TPESGSMTTILD-DIPPENT--
+---------------GIF------------------------------------------
+---VWEKSRGA-------------------------------ATGAAGVVH-----YKYG
+NKV---------------------LNLMASIPYD-------------WNL-------YSA
+WANARLS---------------DDKVSFSDLYYGQNGA------------KSATKGGNWG
+EVDGTKFF------------LTSKSHAEFKVIFSGK------------------------
+--------------------------
+>A0A345GPN1
+---------------------VMEGANLG-------------------------------
+----------MSV-----------------------------------------------
+------------------------------LQTILQAI----------------------
+--------GDVSRKIAVGVDN-----------------------------------ESGR
+SWTAQNA-------------------------------YFRSGTSDVILPHTVPSGKA--
+---------------LLYDGQKNRGPV---------------------------------
+------------------------------------------ATGVVGVIT-----YTMG
+DGN--------------------TLAVMFSVPYD-------------YNW-------YSN
+WWNVKI---YHG-------KVRASQKMYEDLYYYRS----------------PFKGDNGW
+HERNLGY-GLKSKGF-----MNSSGAALLQIKVMKA------------------------
+--------------------------
+>Q9Y1U9
+-----------------VAGAIIKGAALT-------------------------------
+----------FNV-----------------------------------------------
+------------------------------LQTVLKAL----------------------
+--------GDISRKIAVGVDN-----------------------------------ESGK
+TWTALNT-------------------------------YFRSGTSDIVLPHKVPHGKA--
+---------------LLYNGQKDRGPV---------------------------------
+------------------------------------------ATGAVGVLA-----YAMS
+DGN--------------------TLAVLFSVPYD-------------YNW-------YSN
+WWNVRI---FKG-------RRRADQRMYEQLYYYLS----------------PFRGDNGW
+HERHLGY-GLKSRGF-----MNSGGQAILEIHVTKA------------------------
+--------------------------
+>A0A2Z5Z9X0
+----------PVKKSVAVAGAVIQGAALA-------------------------------
+----------FQV-----------------------------------------------
+------------------------------LDKILTSL----------------------
+--------GGIGRKIAIGVDN-----------------------------------ESGM
+KWAARNV-------------------------------YFYSGTSDTVLPYSVPHSKA--
+---------------FLYGARKTRGSV---------------------------------
+-------------------------------------------RGAVGVLA-----YSMS
+DGN--------------------TLGILFSVPYD-------------YNW-------YSN
+WWNIKV---YRG-------YKRANKWMYHDLYYYAR----------------PHKGNNEW
+HEKSLGY-GLKSKGF-----MTSSGQTKLEIRVSRA------------------------
+--------------------------
+>D2YZQ3
+---------NAEKKSAAVAGAVIAGGELA-------------------------------
+----------LKI-----------------------------------------------
+------------------------------LTKILDEI----------------------
+--------GKIDRKIAIGVDN-----------------------------------ESGL
+KWTALNT-------------------------------YYKSGASDVTLPYEVENSKA--
+---------------LLYTARKSKGPV---------------------------------
+------------------------------------------ARGAVGVLA-----YKMS
+SGN--------------------TLAVMFSVPFD-------------YNL-------YTN
+WWNVKI---YDG-------EKKADEKMYNELYNNNN----------------PIK-PSIW
+EKRDLGQDGLKLRGF-----MTSNGDAKLVIHIEKS------------------------
+--------------------------
+>P0DQV6
+VNSEASVVKEAFKKPASRKVNVKPPAAKP---------PAASKITK--------------
+----------PQVPPQKKPPAPKQTTTKKPLLA--------------------NIEGKIK
+GAAN--ETTKYLTNLAKEMGKEAESALKEKAKEALTGLL---DKADINGAFNAIASIWKN
+NE------NKPARYWKCAVEN-----------------------------------LSEE
+TLVALGT-------------------------------TPYSGNVKTVLS-DIPPQST--
+---------------GVF------------------------------------------
+---VWESDSA--------------------------------LTGAAGVVH-----YQLG
+DKI---------------------LNIMASDPYD-------------WTL-------YGA
+WANVRVS---------------DNKETFDNLYSGKNGA------------QYPTKAGNWG
+IADGVKFF------------LTNNKEAEFQVIFSG-------------------------
+--------------------------
