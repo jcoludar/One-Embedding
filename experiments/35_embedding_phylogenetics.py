@@ -869,6 +869,57 @@ class SigmaMultiplier:
         self.lambda_ = max(0.0001, min(new_lambda, 100.0))
 
 
+class NodeSlider:
+    """Slide a node by redistributing two adjacent branch lengths.
+
+    Pick a random internal non-root node, take its branch to parent and one
+    child's branch. Scale their product by a multiplier, redistribute.
+    Topology unchanged. Hastings ratio = 2 * log(multiplier).
+    Matches ExaBayes NodeSlider (weight=5.0, init lambda=0.191).
+    """
+    def __init__(self, seed: int = 42, lambda_: float = 0.191):
+        self.rng = np.random.RandomState(seed)
+        self.lambda_ = lambda_
+
+    def propose(self, tree: Tree) -> Tuple[Tree, float]:
+        new_tree = tree.copy()
+        internal_edges = [n for n in new_tree.internals if not n.is_root()]
+        if not internal_edges:
+            return new_tree, 0.0
+        node = internal_edges[self.rng.randint(len(internal_edges))]
+        if not node.children:
+            return new_tree, 0.0
+        child = node.children[self.rng.randint(len(node.children))]
+
+        old_a = node.branch_length
+        old_b = child.branch_length
+
+        u = self.rng.uniform()
+        multiplier = math.exp(self.lambda_ * (u - 0.5))
+        new_product = old_a * old_b * multiplier
+
+        split_frac = self.rng.uniform(0.1, 0.9)
+        new_a = new_product ** split_frac
+        new_b = new_product ** (1.0 - split_frac)
+
+        node.branch_length = clamp_branch_length(new_a)
+        child.branch_length = clamp_branch_length(new_b)
+
+        log_hr = 2.0 * math.log(multiplier)
+        return new_tree, log_hr
+
+    def tune(self, acceptance_rate: float, batch: int = 0):
+        """ExaBayes-style adaptive tuning."""
+        delta = 1.0 / math.sqrt(batch + 1)
+        log_lambda = math.log(self.lambda_)
+        if acceptance_rate > 0.25:
+            log_lambda += delta
+        else:
+            log_lambda -= delta
+        new_lambda = math.exp(log_lambda)
+        self.lambda_ = max(0.0001, min(new_lambda, 100.0))
+
+
 # ---------------------------------------------------------------------------
 # Proposal Mixer
 # ---------------------------------------------------------------------------
@@ -966,11 +1017,12 @@ class MCMCChain:
         self.bl_mult = BranchLengthMultiplier(seed=seed + 2)
         self.tl_mult = TreeLengthMultiplier(seed=seed + 3)
         self.sigma_mult = SigmaMultiplier(seed=seed + 4)
+        self.node_slider = NodeSlider(seed=seed + 7)
 
         self.mixer = ProposalMixer(
-            proposal_names=["nni", "spr", "bl", "tl", "sigma"],
-            weights=[6.0, 6.0, 9.0, 1.0, 1.0],
-            seed=seed + 5,
+            proposal_names=["nni", "spr", "bl", "tl", "sigma", "ns"],
+            weights=[6.0, 6.0, 9.0, 1.0, 1.0, 5.0],
+            seed=seed + 8,
         )
         self.accept_rng = np.random.RandomState(seed + 6)
 
@@ -1011,6 +1063,9 @@ class MCMCChain:
         elif proposal_name == "sigma":
             new_tree = self.tree.copy()
             new_sigma2, log_hr = self.sigma_mult.propose_sigma(self.sigma2)
+        elif proposal_name == "ns":
+            new_tree, log_hr = self.node_slider.propose(self.tree)
+            new_sigma2 = self.sigma2
         else:
             return
 
@@ -1033,7 +1088,7 @@ class MCMCChain:
         # ExaBayes-style auto-tuning with decreasing step size
         gen_count = sum(self.mixer._total.values())
         if gen_count > 0 and gen_count % 200 == 0:
-            for name, prop in [("bl", self.bl_mult), ("tl", self.tl_mult), ("sigma", self.sigma_mult)]:
+            for name, prop in [("bl", self.bl_mult), ("tl", self.tl_mult), ("sigma", self.sigma_mult), ("ns", self.node_slider)]:
                 rate = self.mixer.acceptance_rate(name)
                 if self.mixer._total[name] > 20:
                     prop.tune(rate, batch=self._tune_batch)

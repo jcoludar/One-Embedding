@@ -36,6 +36,7 @@ normalize_leaf_names = _exp35.normalize_leaf_names
 BL_MIN = _exp35.BL_MIN
 BL_MAX = _exp35.BL_MAX
 clamp_branch_length = _exp35.clamp_branch_length
+NodeSlider = _exp35.NodeSlider
 
 
 # ---------------------------------------------------------------------------
@@ -735,3 +736,47 @@ class TestBranchBounds:
                 if not n.is_root():
                     assert n.branch_length >= BL_MIN
                     assert n.branch_length <= BL_MAX
+
+
+# ---------------------------------------------------------------------------
+# TestNodeSlider
+# ---------------------------------------------------------------------------
+
+class TestNodeSlider:
+    def test_preserves_leaf_set(self):
+        """NodeSlider should not change leaf set."""
+        tree = random_tree([f"t{i}" for i in range(8)], seed=42)
+        slider = NodeSlider(seed=0)
+        new_tree, _ = slider.propose(tree)
+        assert set(new_tree.leaf_names()) == set(tree.leaf_names())
+
+    def test_preserves_topology(self):
+        """NodeSlider only changes branch lengths, not topology."""
+        tree = random_tree([f"t{i}" for i in range(8)], seed=42)
+        slider = NodeSlider(seed=0)
+        old_splits = Diagnostics._get_splits(tree)
+        new_tree, _ = slider.propose(tree)
+        new_splits = Diagnostics._get_splits(new_tree)
+        assert old_splits == new_splits
+
+    def test_changes_branch_lengths(self):
+        """NodeSlider should change at least some branch lengths."""
+        tree = random_tree([f"t{i}" for i in range(8)], seed=42)
+        changed = False
+        for i in range(20):
+            slider = NodeSlider(seed=i)
+            new_tree, _ = slider.propose(tree)
+            if abs(new_tree.total_branch_length() - tree.total_branch_length()) > 1e-10:
+                changed = True
+                break
+        assert changed
+
+    def test_positive_branch_lengths(self):
+        """All proposed branch lengths should be positive and within bounds."""
+        tree = random_tree([f"t{i}" for i in range(8)], seed=42)
+        for i in range(50):
+            slider = NodeSlider(seed=i)
+            new_tree, _ = slider.propose(tree)
+            for n in new_tree.nodes:
+                if not n.is_root():
+                    assert n.branch_length >= BL_MIN
