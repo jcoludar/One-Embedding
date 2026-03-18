@@ -1739,6 +1739,12 @@ if __name__ == "__main__":
                         help="Use per-residue embeddings aligned by MSA")
     parser.add_argument("--msa", type=str, default=None,
                         help="Path to aligned FASTA (default: auto-detect)")
+    parser.add_argument("--emb-path", type=str, default=None,
+                        help="Path to H5 with per-residue embeddings (overrides default)")
+    parser.add_argument("--labels", type=str, default=None,
+                        help="Path to CSV with identifier,family columns for label-based eval")
+    parser.add_argument("--dataset", type=str, default="conotoxin",
+                        help="Dataset name for output files (default: conotoxin)")
     args = parser.parse_args()
 
     import matplotlib
@@ -1756,23 +1762,41 @@ if __name__ == "__main__":
     BENCH_PATH = DATA_DIR / "benchmarks" / "embedding_phylo_results.json"
     BENCH_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    EMB_PATH = SPECIES_ROOT / "data" / "conotoxin_embeddings.h5"
-    IQTREE_PATH = SPECIES_ROOT / "results" / "iqtree_conotoxin.treefile"
+    ds = args.dataset
+    if args.emb_path:
+        EMB_PATH = Path(args.emb_path)
+    else:
+        EMB_PATH = SPECIES_ROOT / "data" / "conotoxin_embeddings.h5"
+    IQTREE_PATH = SPECIES_ROOT / "results" / f"iqtree_{ds}.treefile"
+
+    # Load family labels if provided
+    family_labels: Optional[Dict[str, str]] = None
+    if args.labels:
+        import csv as csv_mod
+        family_labels = {}
+        with open(args.labels) as f:
+            for row in csv_mod.DictReader(f):
+                family_labels[row["identifier"]] = row["family"]
+        print(f"  Loaded {len(family_labels)} family labels")
 
     results = {}
 
     print(f"  Config: {args.n_gen:,} generations, {args.n_runs} runs × {args.n_chains} chains")
+    print(f"  Dataset: {ds}, Embeddings: {EMB_PATH}")
 
     # ── Step 1: Load and preprocess embeddings ────────────────────────
     print("=" * 60)
-    print("Step 1: Load conotoxin embeddings")
+    print(f"Step 1: Load {ds} embeddings")
     print("=" * 60)
 
     embeddings_raw = {}
     with h5py.File(EMB_PATH, "r") as f:
         for key in f.keys():
             emb = np.array(f[key], dtype=np.float32)
-            embeddings_raw[key] = emb.mean(axis=0)
+            if emb.ndim == 2:
+                embeddings_raw[key] = emb.mean(axis=0)
+            else:
+                embeddings_raw[key] = emb  # already pooled
     print(f"  Loaded {len(embeddings_raw)} proteins, dim={next(iter(embeddings_raw.values())).shape[0]}")
 
     # Apply ABTT3 + RP512
@@ -1842,7 +1866,7 @@ if __name__ == "__main__":
     t_nj = time.time() - t0
     print(f"  NJ tree: {nj_tree.n_leaves} leaves, "
           f"total BL={nj_tree.total_branch_length():.2f}, built in {t_nj:.3f}s")
-    (RESULTS_DIR / "conotoxin_nj.nwk").write_text(write_newick(nj_tree))
+    (RESULTS_DIR / f"{ds}_nj.nwk").write_text(write_newick(nj_tree))
 
     # ── Step 3: MCMC ──────────────────────────────────────────────────
     print("\n" + "=" * 60)
@@ -1872,7 +1896,7 @@ if __name__ == "__main__":
             print(f"    swaps: {rr['n_swaps_accepted']}/{rr['n_swaps_attempted']} ({sr:.2%})")
 
     for i, rr in enumerate(run_results):
-        (RESULTS_DIR / f"conotoxin_trees_run{i}.nwk").write_text("\n".join(rr["sampled_trees"]))
+        (RESULTS_DIR / f"{ds}_trees_run{i}.nwk").write_text("\n".join(rr["sampled_trees"]))
 
     results["n_generations"] = args.n_gen
     results["n_runs"] = args.n_runs
@@ -1898,7 +1922,7 @@ if __name__ == "__main__":
     results["converged"] = asdsf < 0.05
 
     diag_out = {"asdsf": asdsf}
-    with open(RESULTS_DIR / "conotoxin_diagnostics.json", "w") as f:
+    with open(RESULTS_DIR / f"{ds}_diagnostics.json", "w") as f:
         json.dump(diag_out, f, indent=2, default=float)
 
     # ── Step 5: Consensus tree ────────────────────────────────────────
@@ -1911,8 +1935,58 @@ if __name__ == "__main__":
         all_trees.extend(rr["sampled_trees"])
     consensus = ConsensusBuilder.majority_rule(all_trees, burnin_frac=0.25)
     consensus_nwk = write_newick(consensus)
-    (RESULTS_DIR / "conotoxin_consensus.nwk").write_text(consensus_nwk)
+    (RESULTS_DIR / f"{ds}_consensus.nwk").write_text(consensus_nwk)
     print(f"  Consensus tree: {consensus.n_leaves} leaves")
+
+    # ── Step 5b: Label-based evaluation ───────────────────────────────
+    if family_labels:
+        print("\n" + "=" * 60)
+        print("Step 5b: Label-based evaluation")
+        print("=" * 60)
+
+        # Filter labels to only include proteins in the tree
+        tree_labels = {n: family_labels[n] for n in consensus.leaf_names()
+                       if n in family_labels}
+        print(f"  {len(tree_labels)} proteins with labels")
+        fam_counts = {}
+        for fam in tree_labels.values():
+            fam_counts[fam] = fam_counts.get(fam, 0) + 1
+        print(f"  {len(fam_counts)} families")
+
+        # Monophyly
+        mono = evaluate_monophyly(consensus, tree_labels)
+        n_mono = sum(1 for v in mono.values() if v["monophyletic"])
+        print(f"\n  Monophyly: {n_mono}/{len(mono)} families monophyletic")
+        for fam, info in sorted(mono.items(), key=lambda x: -x[1]["best_purity"]):
+            status = "MONO" if info["monophyletic"] else "    "
+            print(f"    {status} {fam}: purity={info['best_purity']:.2f} "
+                  f"(best node: {info['best_node_size']} leaves, {info['n_members']} members)")
+
+        # Also check NJ tree
+        mono_nj = evaluate_monophyly(nj_tree, tree_labels)
+        n_mono_nj = sum(1 for v in mono_nj.values() if v["monophyletic"])
+        print(f"\n  NJ monophyly: {n_mono_nj}/{len(mono_nj)}")
+
+        # Clade purity
+        purity_consensus = clade_purity_score(consensus, tree_labels)
+        purity_nj = clade_purity_score(nj_tree, tree_labels)
+        print(f"\n  Clade purity: consensus={purity_consensus:.3f}, NJ={purity_nj:.3f}")
+
+        # Family separation in embedding space
+        sep = family_separation_score(data, tree_labels)
+        print(f"\n  Embedding space separation:")
+        print(f"    Within-family distance:  {sep['within_mean']:.3f}")
+        print(f"    Between-family distance: {sep['between_mean']:.3f}")
+        print(f"    Separation ratio:        {sep['separation_ratio']:.3f}")
+        print(f"    Silhouette approx:       {sep['silhouette_approx']:.3f}")
+
+        results["n_monophyletic_consensus"] = n_mono
+        results["n_monophyletic_nj"] = n_mono_nj
+        results["n_families"] = len(mono)
+        results["clade_purity_consensus"] = purity_consensus
+        results["clade_purity_nj"] = purity_nj
+        results["separation_ratio"] = sep["separation_ratio"]
+        results["silhouette_approx"] = sep["silhouette_approx"]
 
     # ── Step 6: Benchmark against IQ-TREE ─────────────────────────────
     print("\n" + "=" * 60)
@@ -1972,7 +2046,7 @@ if __name__ == "__main__":
     axes[1, 1].legend()
 
     plt.tight_layout()
-    fig.savefig(RESULTS_DIR / "conotoxin_diagnostics.png", dpi=150)
+    fig.savefig(RESULTS_DIR / f"{ds}_diagnostics.png", dpi=150)
     plt.close()
     print(f"  Saved: {RESULTS_DIR / 'conotoxin_diagnostics.png'}")
 
