@@ -23,6 +23,19 @@ import numpy as np
 
 
 # ---------------------------------------------------------------------------
+# Branch length bounds (ExaBayes BoundsChecker)
+# ---------------------------------------------------------------------------
+
+BL_MIN = 1e-10
+BL_MAX = 100.0
+
+
+def clamp_branch_length(bl: float) -> float:
+    """Clamp branch length to valid range [BL_MIN, BL_MAX]."""
+    return max(BL_MIN, min(bl, BL_MAX))
+
+
+# ---------------------------------------------------------------------------
 # Tree data structures
 # ---------------------------------------------------------------------------
 
@@ -784,6 +797,7 @@ class BranchLengthMultiplier:
         u = self.rng.uniform()
         multiplier = math.exp(self.lambda_ * (u - 0.5))
         node.branch_length *= multiplier
+        node.branch_length = clamp_branch_length(node.branch_length)
         return new_tree, math.log(multiplier)
 
     def tune(self, acceptance_rate: float, batch: int = 0):
@@ -813,6 +827,7 @@ class TreeLengthMultiplier:
         for node in new_tree.nodes:
             if not node.is_root():
                 node.branch_length *= multiplier
+                node.branch_length = clamp_branch_length(node.branch_length)
                 n_branches += 1
         return new_tree, n_branches * math.log(multiplier)
 

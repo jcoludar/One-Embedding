@@ -33,6 +33,9 @@ ConsensusBuilder = _exp35.ConsensusBuilder
 robinson_foulds = _exp35.robinson_foulds
 estimate_sigma2 = _exp35.estimate_sigma2
 normalize_leaf_names = _exp35.normalize_leaf_names
+BL_MIN = _exp35.BL_MIN
+BL_MAX = _exp35.BL_MAX
+clamp_branch_length = _exp35.clamp_branch_length
 
 
 # ---------------------------------------------------------------------------
@@ -689,3 +692,46 @@ class TestConsensusBranchLengths:
         )
         leaf_a = [n for n in consensus.leaves if n.name == "A"][0]
         assert abs(leaf_a.branch_length - 0.1) < 0.05
+
+
+# ---------------------------------------------------------------------------
+# TestBranchBounds
+# ---------------------------------------------------------------------------
+
+class TestBranchBounds:
+    def test_clamp_below_min(self):
+        """clamp_branch_length should enforce minimum."""
+        assert clamp_branch_length(1e-20) == BL_MIN
+        assert clamp_branch_length(0.0) == BL_MIN
+
+    def test_clamp_above_max(self):
+        """clamp_branch_length should enforce maximum."""
+        assert clamp_branch_length(200.0) == BL_MAX
+        assert clamp_branch_length(1e10) == BL_MAX
+
+    def test_clamp_in_range(self):
+        """Values in range should pass through unchanged."""
+        assert clamp_branch_length(0.5) == 0.5
+        assert clamp_branch_length(1.0) == 1.0
+
+    def test_bl_multiplier_respects_bounds(self):
+        """BranchLengthMultiplier should clamp to [BL_MIN, BL_MAX]."""
+        tree = parse_newick("((A:0.0000001,B:0.001):0.0001,C:0.001);")
+        for i in range(100):
+            prop = BranchLengthMultiplier(seed=i, lambda_=10.0)
+            new_tree, _ = prop.propose(tree)
+            for n in new_tree.nodes:
+                if not n.is_root():
+                    assert n.branch_length >= BL_MIN
+                    assert n.branch_length <= BL_MAX
+
+    def test_tl_multiplier_respects_bounds(self):
+        """TreeLengthMultiplier should clamp to [BL_MIN, BL_MAX]."""
+        tree = parse_newick("((A:50.0,B:80.0):30.0,C:90.0);")
+        for i in range(100):
+            prop = TreeLengthMultiplier(seed=i, lambda_=10.0)
+            new_tree, _ = prop.propose(tree)
+            for n in new_tree.nodes:
+                if not n.is_root():
+                    assert n.branch_length >= BL_MIN
+                    assert n.branch_length <= BL_MAX
