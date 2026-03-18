@@ -14,6 +14,20 @@ Compressed H5 (26 KB/protein)
                                                          ──→  Tools 2, 3, 4, 6, 7, 8, 10
 ```
 
+**Critical finding from research:** All existing per-residue prediction tools
+use bottleneck dimensions far smaller than our 512d:
+
+| Tool | Task | Input Dim | Bottleneck | Our codec |
+|------|------|-----------|------------|-----------|
+| SETH | Disorder | 1024 | **28** | 512 (18x wider) |
+| TMbed | TM topology | 1024 | **64** | 512 (8x wider) |
+| bindEmbed21 | Binding sites | 1024 | ~64 | 512 (8x wider) |
+| DeepTMHMM | TM topology | 1280 | **128** | 512 (4x wider) |
+| VespaG | Mutations | 2560 | **660K params** | 512 (sufficient) |
+
+Our codec has massive headroom. Even `micro` mode (PQ M=32) should preserve
+enough information for all 10 tools.
+
 ---
 
 ## Tool 1: Embedding Phylogenetics [DONE]
@@ -121,19 +135,35 @@ git clone https://github.com/OATML-Markslab/ProteinGym.git  # Benchmark suite
 
 ### Closest analogs
 
-| Tool | Paper | GitHub | Approach | Performance |
-|------|-------|--------|----------|-------------|
-| **TMbed** | BMC Bioinf 2022 | BernhoferM/TMbed | 1D-CNN + CRF on ProtT5 per-residue embeddings | SOTA for TM prediction |
-| **DeepTMHMM** | bioRxiv 2022 | (DTU server) | Transformer + HMM on ESM-2 | Comparable to TMbed |
-| **SETH** | Frontiers Bioinf 2022 | Rostlab/SETH | CNN on ProtT5 for SS3/SS8/disorder jointly | Q3=0.86 SS3 |
+| Tool | Paper | GitHub | Approach | Hidden Dim | Performance |
+|------|-------|--------|----------|-----------|-------------|
+| **TMbed** | BMC Bioinf 2022 | BernhoferM/TMbed | Parallel depthwise CNN (k=9,21) + Viterbi | **64** | TMH recall 89% |
+| **DeepTMHMM** | bioRxiv 2022 | (DTU/BioLib) | BiLSTM + CRF on ESM-1b | **128** | Comparable |
+| **SignalP 6.0** | Nature Biotech 2022 | (DTU) | BERT + CRF | — | SOTA SP |
+
+### TMbed architecture detail (from `tmbed/model.py`)
+
+```
+ProtT5 (L, 1024) → Pointwise Conv (1024→64) → LayerNorm → ReLU
+  → Parallel depthwise convolutions:
+    - Kernel=9 (beta strand length) + padding=4
+    - Kernel=21 (alpha helix length) + padding=10
+  → Concatenate: 64+64+64 = 192 channels
+  → Dropout2d (p=0.50)
+  → Pointwise Conv (192→5 classes)
+  → Gaussian smooth (sigma=1, k=7) + Viterbi decoder
+```
+
+**Bottleneck is only 64 channels.** Our 512d codec is 8x wider.
+Viterbi decoder enforces grammar (min segment length, alternating in/out)
+without trainable params.
 
 ### Our approach
 
 TMbed uses a lightweight 1D-CNN on 1024d ProtT5 embeddings. We already showed 88%
-TMbed F1 retention in compressed 512d space (Experiment 15). A simple LogisticRegression
-probe or 2-layer CNN on our (L, 512) decoded embeddings should give ~0.65+ F1.
-
-The key advantage: runs from the 26 KB compressed file, no PLM needed at inference.
+TMbed F1 retention in compressed 512d space (Experiment 15). Port the architecture
+with 512d input instead of 1024d. The dual kernel sizes (9 for beta, 21 for helix)
+are biologically motivated — keep them.
 
 ### What to clone/study
 
@@ -185,25 +215,38 @@ We showed CheZOD ρ=0.584 from PQ-compressed embeddings.
 
 ### Closest analogs
 
-| Tool | Paper | GitHub | Approach | Performance |
-|------|-------|--------|----------|-------------|
-| **SETH** | Frontiers Bioinf 2022 | Rostlab/SETH | CNN on ProtT5, predicts SS + disorder jointly | CheZOD ρ~0.65 |
-| **ODiNPred** | Nature Methods 2020 | protein-nmr/odinferno | Gradient boosting on PLM features | CheZOD ρ~0.64 |
-| **flDPnn** | NAR 2021 | — | MLP on ESM-1b embeddings | AUC ~0.85 |
-| **ESMDisPred** | 2024 | wasicse/ESMDisPred | CNN+Transformer on ESM2 | Top at CAID3 |
-| **IUPred3** | NAR 2022 | (web) | Energy-based, no PLM | Classic baseline |
+| Tool | Paper | GitHub | Approach | Hidden Dim | CheZOD ρ |
+|------|-------|--------|----------|-----------|----------|
+| **SETH** | Frontiers Bioinf 2022 | DagmarIlz/SETH | 2-layer CNN on ProtT5 | **28** | ~0.65 |
+| **ADOPT** | NAR Genomics 2023 | PeptoneLtd/ADOPT | BiTransformer on ESM | larger | 0.69 |
+| **ODiNPred** | Nature Methods 2020 | protein-nmr/odinferno | Gradient boosting | — | ~0.64 |
+| **ESMDisPred** | bioRxiv 2026 | wasicse/ESMDisPred | CNN+Transformer on ESM2 | — | CAID3 top |
+| **IUPred3** | NAR 2022 | (web) | Energy-based, no PLM | — | baseline |
+
+### SETH architecture detail (from `SETH_1.py`)
+
+```
+ProtT5 (L, 1024) → Conv2d (1024→28, kernel=5, pad=2) → Tanh
+                  → Conv2d (28→1, kernel=5, pad=2)
+                  → per-residue CheZOD Z-score
+```
+
+**That's it. Two conv layers. 28 hidden channels. Kernel=5.**
+This is the gold standard for "how simple can a probe be."
+If SETH works at 28 channels, our 512d is massive overkill.
 
 ### Our approach
 
-SETH uses a simple CNN on 1024d ProtT5. We'd port the architecture to 512d input.
-Since our compressed embeddings retain 97% of per-residue information (Q3=0.807),
-disorder prediction should transfer well. The advantage: runs from compressed file.
+Port SETH directly: change input from 1024d to 512d. The kernel=5 context
+window means disorder is a local property — exactly what per-residue embeddings
+encode. Our compressed embeddings retain 97% SS3 Q3, so disorder signal
+should be well preserved.
 
 ### What to clone/study
 
 ```bash
-# SETH source is part of Rostlab tools
-git clone https://github.com/Rostlab/SETH.git   # If available
+git clone https://github.com/DagmarIlz/SETH.git      # 2-layer CNN, simplest possible
+git clone https://github.com/PeptoneLtd/ADOPT.git     # BiTransformer, higher quality
 ```
 
 ---
@@ -245,23 +288,35 @@ patterns.
 
 ### Closest analogs
 
-| Tool | Paper | GitHub | Approach |
-|------|-------|--------|----------|
-| **bindEmbed21DL** | (Rostlab) | Rostlab/bindPredict | 2-layer CNN on ProtT5 → metal/nucleic/small molecule binding |
-| **ScanNet** | Nature Methods 2022 | jertubiana/ScanNet | Geometric DL on 3D structure → binding sites |
-| **IDBindT5** | Sci Reports 2024 | — | ProtT5 → binding in disordered regions |
+| Tool | Paper | GitHub | Approach | Targets |
+|------|-------|--------|----------|---------|
+| **bindEmbed21DL** | Sci Reports 2021 | Rostlab/bindPredict | 2-layer CNN on ProtT5 | Metal, nucleic acid, small molecule |
+| **CLAPE-SMB** | J Cheminf 2024 | JueWangTHU/CLAPE-SMB | ESM-2 + contrastive learning | Small molecule binding |
+| **PARSE** | PNAS 2025 | awfderry/PARSE | Cosine distance to catalytic site DB | Catalytic residues (1-shot) |
+| **ScanNet** | Nature Methods 2022 | jertubiana/ScanNet | Geometric DL on 3D | PPI binding sites |
+| **IDBindT5** | Sci Reports 2024 | — | ProtT5 → binding in IDRs | Disordered binding |
 
 ### Our approach
 
-bindEmbed21DL uses a simple 2-layer CNN on 1024d ProtT5 per-residue embeddings to
-predict binding residues. Directly portable to our 512d. For a zero-shot approach
-(no training): compute local embedding anomaly score — how much does each residue's
-embedding differ from its ±5 neighbors? Spikes indicate functional importance.
+bindEmbed21DL: 2-layer CNN on 1024d ProtT5 → per-residue binding prediction.
+Same pattern as SETH and TMbed. Directly portable to our 512d.
+
+**PARSE is especially interesting:** it uses cosine distance between residue
+embeddings and a reference database of catalytic sites. This is essentially
+k-NN at residue level — exactly what our codec enables. With our compressed
+per-residue embeddings, we could build a residue-level catalytic site database
+and do fast cosine retrieval per position.
+
+**Zero-shot approach (no training):** compute local embedding anomaly score —
+how much does each residue's embedding differ from its ±5 neighbors?
+Spikes = functional importance.
 
 ### What to clone/study
 
 ```bash
-git clone https://github.com/Rostlab/bindPredict.git  # Binding site prediction from ProtT5
+git clone https://github.com/Rostlab/bindPredict.git     # 2-layer CNN binding prediction
+git clone https://github.com/awfderry/PARSE.git           # 1-shot catalytic site by cosine retrieval
+git clone https://github.com/JueWangTHU/CLAPE-SMB.git     # Contrastive binding prediction
 ```
 
 ---
