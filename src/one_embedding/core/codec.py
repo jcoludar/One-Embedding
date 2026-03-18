@@ -91,6 +91,8 @@ class Codec:
                 protein_vec: (dct_k * d_out,) float16 — protein-level vector.
         """
         raw = np.asarray(raw, dtype=np.float32)
+        if raw.ndim != 2:
+            raise ValueError(f"Expected 2D array (L, D), got shape {raw.shape}")
         L, D = raw.shape
 
         # Step 1: ABTT preprocessing (if fitted)

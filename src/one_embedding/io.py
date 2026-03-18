@@ -101,7 +101,7 @@ def write_oemb(
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    per_residue = np.asarray(data["per_residue"], dtype=np.float32)
+    per_residue = np.asarray(data["per_residue"])
     protein_vec = np.asarray(data["protein_vec"], dtype=np.float16)
 
     with h5py.File(path, "w") as f:
@@ -163,7 +163,7 @@ def write_oemb_batch(
         f.attrs["n_proteins"] = len(proteins)
 
         for pid, data in proteins.items():
-            per_residue = np.asarray(data["per_residue"], dtype=np.float32)
+            per_residue = np.asarray(data["per_residue"])
             protein_vec = np.asarray(data["protein_vec"], dtype=np.float16)
 
             grp = f.create_group(pid)
@@ -199,6 +199,8 @@ def read_oemb_batch(
         ids_to_load = list(f.keys()) if protein_ids is None else protein_ids
 
         for pid in ids_to_load:
+            if pid not in f:
+                raise KeyError(f"Protein '{pid}' not found in {path}. Available: {list(f.keys())[:10]}")
             grp = f[pid]
             result[pid] = {
                 "per_residue": np.array(grp["per_residue"], dtype=np.float32),

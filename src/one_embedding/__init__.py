@@ -153,12 +153,14 @@ from src.one_embedding.core import Codec
 def encode(input_path, output_path, d_out=512, dct_k=4, seed=42):
     """Compress per-residue embeddings H5 to .oemb format."""
     import h5py
-    from src.one_embedding.io import write_oemb_batch
+    import numpy as np
+    from src.one_embedding.io import OEMB_VERSION
 
     codec = Codec(d_out=d_out, dct_k=dct_k, seed=seed)
 
     # Fit ABTT from corpus (sample residues without loading all into memory)
-    import numpy as np
+    # Create the RNG once and reuse it across all proteins
+    rng = np.random.RandomState(seed)
     residues = []
     with h5py.File(input_path, "r") as f:
         keys = list(f.keys())
@@ -166,7 +168,7 @@ def encode(input_path, output_path, d_out=512, dct_k=4, seed=42):
             emb = f[key][:]
             # Sample up to 200 residues per protein for fitting
             if emb.shape[0] > 200:
-                idx = np.random.RandomState(seed).choice(emb.shape[0], 200, replace=False)
+                idx = rng.choice(emb.shape[0], 200, replace=False)
                 residues.append(emb[idx])
             else:
                 residues.append(emb)
@@ -176,26 +178,50 @@ def encode(input_path, output_path, d_out=512, dct_k=4, seed=42):
     from src.one_embedding.core.preprocessing import fit_abtt
     codec._abtt_params = fit_abtt(stacked, k=3, seed=seed)
 
-    # Encode proteins one at a time (streaming)
-    proteins = {}
-    with h5py.File(input_path, "r") as f:
-        for key in f.keys():
-            proteins[key] = codec.encode(f[key][:])
-
-    write_oemb_batch(output_path, proteins)
+    # Encode proteins incrementally — write each protein directly to H5
+    # to avoid accumulating all encoded data in memory.
+    with h5py.File(output_path, "w") as out_f:
+        out_f.attrs["oemb_version"] = OEMB_VERSION
+        out_f.attrs["n_proteins"] = len(keys)
+        with h5py.File(input_path, "r") as in_f:
+            for key in in_f.keys():
+                encoded = codec.encode(in_f[key][:])
+                g = out_f.create_group(key)
+                g.create_dataset("per_residue", data=encoded["per_residue"], compression="gzip")
+                g.create_dataset("protein_vec", data=encoded["protein_vec"])
 
 
 def decode(path, protein_id=None):
     """Read .oemb file into arrays."""
+    import numpy as np
     import h5py
-    from src.one_embedding.io import read_oemb, read_oemb_batch
-    with h5py.File(path, "r") as f:
+    from src.one_embedding.io import read_oemb_batch
+    with h5py.File(str(path), "r") as f:
         if "per_residue" in f:
-            return read_oemb(path)
+            # Single protein file
+            result = {
+                "per_residue": np.array(f["per_residue"]),
+                "protein_vec": np.array(f["protein_vec"]),
+            }
+            for attr in ("sequence", "source_model", "codec", "protein_id"):
+                if attr in f.attrs:
+                    result[attr] = str(f.attrs[attr])
+            return result
         elif protein_id:
-            return read_oemb_batch(path, [protein_id]).get(protein_id)
+            # Specific protein from batch file
+            if protein_id not in f:
+                raise KeyError(f"Protein '{protein_id}' not found")
+            g = f[protein_id]
+            entry = {
+                "per_residue": np.array(g["per_residue"]),
+                "protein_vec": np.array(g["protein_vec"]),
+            }
+            if "sequence" in g.attrs:
+                entry["sequence"] = str(g.attrs["sequence"])
+            return entry
         else:
-            return read_oemb_batch(path)
+            # Full batch — delegate to read_oemb_batch
+            return read_oemb_batch(str(path))
 
 
 def embed(input_path, output_path, model="prot_t5"):

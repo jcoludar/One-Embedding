@@ -1,4 +1,8 @@
-"""Disorder prediction from compressed embeddings."""
+"""Disorder prediction from compressed embeddings.
+
+Note: Uses embedding norm as an untrained heuristic proxy.
+For validated predictions, use trained probes from src.evaluation.
+"""
 import numpy as np
 from ._base import load_per_residue
 
