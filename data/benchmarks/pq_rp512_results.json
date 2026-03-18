@@ -1,0 +1,167 @@
+{
+  "steps_done": [
+    "B1",
+    "B2",
+    "B3"
+  ],
+  "B1": {
+    "pq_M8": {
+      "method": "pq_M8",
+      "M": 8,
+      "sub_dim": 64,
+      "family_ret1": 0.6258823529411764,
+      "family_mrr": 0.713320603801445,
+      "ss3_q3": 0.7140002959893443,
+      "cos_sim": 0.4649,
+      "per_protein_bytes": 5496,
+      "per_protein_kb": 5.4,
+      "vs_mean_pool": 2.7,
+      "codebook_kb": 512.0,
+      "mean_L": 175,
+      "elapsed_s": 18.3
+    },
+    "pq_M16": {
+      "method": "pq_M16",
+      "M": 16,
+      "sub_dim": 32,
+      "family_ret1": 0.7223529411764706,
+      "family_mrr": 0.802973754366825,
+      "ss3_q3": 0.7118543732425633,
+      "cos_sim": 0.5373,
+      "per_protein_bytes": 6896,
+      "per_protein_kb": 6.7,
+      "vs_mean_pool": 3.4,
+      "codebook_kb": 512.0,
+      "mean_L": 175,
+      "elapsed_s": 25.1
+    },
+    "pq_M32": {
+      "method": "pq_M32",
+      "M": 32,
+      "sub_dim": 16,
+      "family_ret1": 0.7658823529411765,
+      "family_mrr": 0.841244091378076,
+      "ss3_q3": 0.7390853929258546,
+      "cos_sim": 0.6661,
+      "per_protein_bytes": 9696,
+      "per_protein_kb": 9.5,
+      "vs_mean_pool": 4.7,
+      "codebook_kb": 512.0,
+      "mean_L": 175,
+      "elapsed_s": 41.3
+    },
+    "pq_M64": {
+      "method": "pq_M64",
+      "M": 64,
+      "sub_dim": 8,
+      "family_ret1": 0.7788235294117647,
+      "family_mrr": 0.8515017492731827,
+      "ss3_q3": 0.7780079917122984,
+      "cos_sim": 0.823,
+      "per_protein_bytes": 15296,
+      "per_protein_kb": 14.9,
+      "vs_mean_pool": 7.5,
+      "codebook_kb": 512.0,
+      "mean_L": 175,
+      "elapsed_s": 70.1
+    },
+    "pq_M128": {
+      "method": "pq_M128",
+      "M": 128,
+      "sub_dim": 4,
+      "family_ret1": 0.7835294117647059,
+      "family_mrr": 0.8553662434950039,
+      "ss3_q3": 0.807310936806275,
+      "cos_sim": 0.9475,
+      "per_protein_bytes": 26496,
+      "per_protein_kb": 25.9,
+      "vs_mean_pool": 12.9,
+      "codebook_kb": 512.0,
+      "mean_L": 175,
+      "elapsed_s": 137.7
+    }
+  },
+  "B2": {
+    "opq_M16": {
+      "method": "opq_M16",
+      "M": 16,
+      "family_ret1": 0.7141176470588235,
+      "family_mrr": 0.784192863190614,
+      "ss3_q3": 0.6774456119579695,
+      "per_protein_bytes": 6896,
+      "per_protein_kb": 6.7,
+      "vs_mean_pool": 3.4,
+      "elapsed_s": 24.7
+    },
+    "opq_M32": {
+      "method": "opq_M32",
+      "M": 32,
+      "family_ret1": 0.7588235294117647,
+      "family_mrr": 0.8332499558540811,
+      "ss3_q3": 0.7020497262098564,
+      "per_protein_bytes": 9696,
+      "per_protein_kb": 9.5,
+      "vs_mean_pool": 4.7,
+      "elapsed_s": 39.7
+    }
+  },
+  "B3": {
+    "pq16_res_none": {
+      "method": "pq16_res_none",
+      "family_ret1": 0.7223529411764706,
+      "family_mrr": 0.802973754366825,
+      "ss3_q3": 0.7118543732425633,
+      "per_protein_bytes": 6896,
+      "per_protein_kb": 6.7,
+      "vs_mean_pool": 3.4
+    },
+    "pq16_res_int4": {
+      "method": "pq16_res_int4",
+      "family_ret1": 0.7847058823529411,
+      "family_mrr": 0.8561581376020179,
+      "ss3_q3": 0.8154876424448719,
+      "per_protein_bytes": 51696,
+      "per_protein_kb": 50.5,
+      "vs_mean_pool": 25.2
+    },
+    "pq16_res_int2": {
+      "method": "pq16_res_int2",
+      "family_ret1": 0.7764705882352941,
+      "family_mrr": 0.8522076929196923,
+      "ss3_q3": 0.7913645108776084,
+      "per_protein_bytes": 29296,
+      "per_protein_kb": 28.6,
+      "vs_mean_pool": 14.3
+    },
+    "rvq_2level": {
+      "method": "rvq_2level",
+      "n_levels": 2,
+      "family_ret1": 0.5952941176470589,
+      "family_mrr": 0.6803649544239387,
+      "ss3_q3": 0.7089684771348231,
+      "per_protein_bytes": 4446,
+      "per_protein_kb": 4.3,
+      "vs_mean_pool": 2.2
+    },
+    "rvq_3level": {
+      "method": "rvq_3level",
+      "n_levels": 3,
+      "family_ret1": 0.5929411764705882,
+      "family_mrr": 0.6790726389478341,
+      "ss3_q3": 0.7093014651472547,
+      "per_protein_bytes": 4621,
+      "per_protein_kb": 4.5,
+      "vs_mean_pool": 2.3
+    },
+    "rvq_4level": {
+      "method": "rvq_4level",
+      "n_levels": 4,
+      "family_ret1": 0.5941176470588235,
+      "family_mrr": 0.6805306487181753,
+      "ss3_q3": 0.7088574811306793,
+      "per_protein_bytes": 4796,
+      "per_protein_kb": 4.7,
+      "vs_mean_pool": 2.3
+    }
+  }
+}

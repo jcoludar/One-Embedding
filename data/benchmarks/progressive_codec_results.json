@@ -1,0 +1,103 @@
+{
+  "steps_done": [
+    "D1",
+    "D2"
+  ],
+  "D1": {
+    "full": {
+      "mode": "full",
+      "desc": "int4 per-residue (V1 compatible)",
+      "family_ret1": 0.7858823529411765,
+      "family_mrr": 0.8568804418636319,
+      "ss3_q3": 0.8159686251294953,
+      "ss8_q8": 0.6814044694391002,
+      "disorder_rho": 0.5973077169874701,
+      "tm_f1": 0.7518002071873828,
+      "per_protein_bytes": 56177,
+      "per_protein_kb": 54.9,
+      "vs_mean_pool": 27.4,
+      "mean_L": 175,
+      "elapsed_s": 18.1
+    },
+    "balanced": {
+      "mode": "balanced",
+      "desc": "PQ M=128",
+      "family_ret1": 0.7858823529411765,
+      "family_mrr": 0.8568804418636319,
+      "ss3_q3": 0.807310936806275,
+      "ss8_q8": 0.6699348823442356,
+      "disorder_rho": 0.5837295384286888,
+      "tm_f1": 0.7311370694787254,
+      "per_protein_bytes": 33777,
+      "per_protein_kb": 33.0,
+      "vs_mean_pool": 16.5,
+      "mean_L": 175,
+      "elapsed_s": 180.9
+    },
+    "compact": {
+      "mode": "compact",
+      "desc": "PQ M=64",
+      "family_ret1": 0.7858823529411765,
+      "family_mrr": 0.8568804418636319,
+      "ss3_q3": 0.7780079917122984,
+      "ss8_q8": 0.6365620837649845,
+      "disorder_rho": 0.5486420745287701,
+      "tm_f1": 0.70116442790286,
+      "per_protein_bytes": 22577,
+      "per_protein_kb": 22.0,
+      "vs_mean_pool": 11.0,
+      "mean_L": 175,
+      "elapsed_s": 100.0
+    },
+    "micro": {
+      "mode": "micro",
+      "desc": "PQ M=32",
+      "family_ret1": 0.7858823529411765,
+      "family_mrr": 0.8568804418636319,
+      "ss3_q3": 0.7390853929258546,
+      "ss8_q8": 0.5937916235015539,
+      "disorder_rho": 0.4952783923481329,
+      "tm_f1": 0.5793514332843901,
+      "per_protein_bytes": 16977,
+      "per_protein_kb": 16.6,
+      "vs_mean_pool": 8.3,
+      "mean_L": 175,
+      "elapsed_s": 62.7
+    },
+    "binary": {
+      "mode": "binary",
+      "desc": "1-bit sign quantization",
+      "family_ret1": 0.7858823529411765,
+      "family_mrr": 0.8568804418636319,
+      "ss3_q3": 0.7758990676335652,
+      "ss8_q8": 0.6359331064081694,
+      "disorder_rho": 0.596633055314778,
+      "tm_f1": 0.7497267751858627,
+      "per_protein_bytes": 22577,
+      "per_protein_kb": 22.0,
+      "vs_mean_pool": 11.0,
+      "mean_L": 175,
+      "elapsed_s": 16.3
+    }
+  },
+  "D2": {
+    "compact": {
+      "mode": "compact",
+      "vec_match": true,
+      "pr_match": true,
+      "status": "PASS"
+    },
+    "binary": {
+      "mode": "binary",
+      "vec_match": true,
+      "pr_match": true,
+      "status": "PASS"
+    },
+    "full": {
+      "mode": "full",
+      "vec_match": true,
+      "pr_match": true,
+      "status": "PASS"
+    }
+  }
+}

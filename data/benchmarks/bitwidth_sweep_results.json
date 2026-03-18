@@ -1,0 +1,96 @@
+{
+  "steps_done": [
+    "A1",
+    "A2",
+    "A3"
+  ],
+  "A1": {
+    "fp16": {
+      "method": "fp16",
+      "family_ret1": 0.7858823529411765,
+      "family_mrr": 0.8568799805026168,
+      "ss3_q3": 0.8175965665236051,
+      "per_protein_bytes": 183296,
+      "per_protein_kb": 179.0,
+      "vs_mean_pool": 89.5,
+      "mean_L": 175,
+      "elapsed_s": 18.6
+    },
+    "int8": {
+      "method": "int8",
+      "family_ret1": 0.7858823529411765,
+      "family_mrr": 0.8568800110917923,
+      "ss3_q3": 0.8175595678555572,
+      "per_protein_bytes": 93696,
+      "per_protein_kb": 91.5,
+      "vs_mean_pool": 45.8,
+      "mean_L": 175,
+      "elapsed_s": 18.9
+    },
+    "int4": {
+      "method": "int4",
+      "family_ret1": 0.7835294117647059,
+      "family_mrr": 0.855317419380394,
+      "ss3_q3": 0.8159686251294953,
+      "per_protein_bytes": 48896,
+      "per_protein_kb": 47.8,
+      "vs_mean_pool": 23.9,
+      "mean_L": 175,
+      "elapsed_s": 19.1
+    },
+    "int2": {
+      "method": "int2",
+      "family_ret1": 0.7776470588235294,
+      "family_mrr": 0.8530984016917803,
+      "ss3_q3": 0.7844087612845938,
+      "per_protein_bytes": 26496,
+      "per_protein_kb": 25.9,
+      "vs_mean_pool": 12.9,
+      "mean_L": 175,
+      "elapsed_s": 19.3
+    },
+    "binary": {
+      "method": "binary",
+      "family_ret1": 0.7870588235294118,
+      "family_mrr": 0.8574807557353592,
+      "ss3_q3": 0.7758990676335652,
+      "per_protein_bytes": 15296,
+      "per_protein_kb": 14.9,
+      "vs_mean_pool": 7.5,
+      "mean_L": 175,
+      "elapsed_s": 19.2
+    }
+  },
+  "A2": {
+    "nonuniform": {
+      "method": "nonuniform_avg2.2bit",
+      "family_ret1": 0.7811764705882352,
+      "family_mrr": 0.8546747557560782,
+      "ss3_q3": 0.7956563563711706,
+      "per_protein_bytes": 29296,
+      "per_protein_kb": 28.6,
+      "vs_mean_pool": 14.3,
+      "avg_bits_per_dim": 2.25
+    }
+  },
+  "A3": {
+    "rabitq_binary": {
+      "method": "rabitq_binary",
+      "family_ret1": 0.78,
+      "family_mrr": 0.8533229995753143,
+      "ss3_q3": 0.7763800503181886,
+      "per_protein_bytes": 15296,
+      "per_protein_kb": 14.9,
+      "vs_mean_pool": 7.5
+    },
+    "rabitq_int2": {
+      "method": "rabitq_int2",
+      "family_ret1": 0.7847058823529411,
+      "family_mrr": 0.8562111380166169,
+      "ss3_q3": 0.7850377386414089,
+      "per_protein_bytes": 26496,
+      "per_protein_kb": 25.9,
+      "vs_mean_pool": 12.9
+    }
+  }
+}
