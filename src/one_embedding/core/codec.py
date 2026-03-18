@@ -157,24 +157,63 @@ class Codec:
         return path
 
     def load_params(self, path: str) -> "Codec":
-        """Load ABTT parameters from a JSON file.
+        """Load ABTT parameters from a JSON or .npz file.
 
         Args:
-            path: Path to params file saved by save_params().
+            path: Path to params file saved by save_params() or pre-fitted .npz.
 
         Returns:
             self (for chaining).
         """
-        data = json.loads(Path(path).read_text())
-        self._abtt_params = {
-            "mean": np.asarray(data["mean"], dtype=np.float32),
-            "top_pcs": np.asarray(data["top_pcs"], dtype=np.float32),
-        }
-        # Restore codec hyperparams if present
-        if "d_out" in data:
-            self.d_out = data["d_out"]
-        if "dct_k" in data:
-            self.dct_k = data["dct_k"]
-        if "seed" in data:
-            self.seed = data["seed"]
+        path = Path(path)
+        if path.suffix == ".npz":
+            data = np.load(str(path))
+            self._abtt_params = {
+                "mean": data["abtt_mean"].astype(np.float32),
+                "top_pcs": data["abtt_pcs"].astype(np.float32),
+            }
+            if "d_out" in data:
+                self.d_out = int(data["d_out"].item())
+            if "dct_k" in data:
+                self.dct_k = int(data["dct_k"].item())
+            if "seed" in data:
+                self.seed = int(data["seed"].item())
+        else:
+            data = json.loads(path.read_text())
+            self._abtt_params = {
+                "mean": np.asarray(data["mean"], dtype=np.float32),
+                "top_pcs": np.asarray(data["top_pcs"], dtype=np.float32),
+            }
+            if "d_out" in data:
+                self.d_out = data["d_out"]
+            if "dct_k" in data:
+                self.dct_k = data["dct_k"]
+            if "seed" in data:
+                self.seed = data["seed"]
         return self
+
+    @classmethod
+    def for_plm(cls, model: str = "prot_t5") -> "Codec":
+        """Create a Codec with pre-fitted parameters for a specific PLM.
+
+        Args:
+            model: "prot_t5" or "esm2"
+
+        Returns:
+            Ready-to-encode Codec instance.
+
+        Example:
+            codec = Codec.for_plm("prot_t5")
+            result = codec.encode(raw_embeddings)
+        """
+        weights_dir = Path(__file__).parent.parent / "tools" / "weights"
+        model_map = {
+            "prot_t5": "abtt_prot_t5_xl.npz",
+            "esm2": "abtt_esm2_650m.npz",
+        }
+        if model not in model_map:
+            raise ValueError(f"Unknown model '{model}'. Available: {list(model_map.keys())}")
+        path = weights_dir / model_map[model]
+        if not path.exists():
+            raise FileNotFoundError(f"Pre-fitted params not found at {path}. Run fit() instead.")
+        return cls().load_params(str(path))
