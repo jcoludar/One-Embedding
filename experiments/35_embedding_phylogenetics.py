@@ -786,6 +786,18 @@ class BranchLengthMultiplier:
         node.branch_length *= multiplier
         return new_tree, math.log(multiplier)
 
+    def tune(self, acceptance_rate: float, batch: int = 0):
+        """ExaBayes-style adaptive tuning: delta = 1/sqrt(batch+1)."""
+        delta = 1.0 / math.sqrt(batch + 1)
+        log_lambda = math.log(self.lambda_)
+        if acceptance_rate > 0.25:  # ExaBayes TARGET_RATIO = 0.25
+            log_lambda += delta  # too many accepts → bolder moves
+        else:
+            log_lambda -= delta  # too few accepts → more conservative
+        new_lambda = math.exp(log_lambda)
+        # ExaBayes bounds: [0.0001, 100]
+        self.lambda_ = max(0.0001, min(new_lambda, 100.0))
+
 
 class TreeLengthMultiplier:
     """Scale ALL branch lengths by same multiplier."""
@@ -804,6 +816,18 @@ class TreeLengthMultiplier:
                 n_branches += 1
         return new_tree, n_branches * math.log(multiplier)
 
+    def tune(self, acceptance_rate: float, batch: int = 0):
+        """ExaBayes-style adaptive tuning: delta = 1/sqrt(batch+1)."""
+        delta = 1.0 / math.sqrt(batch + 1)
+        log_lambda = math.log(self.lambda_)
+        if acceptance_rate > 0.25:  # ExaBayes TARGET_RATIO = 0.25
+            log_lambda += delta  # too many accepts → bolder moves
+        else:
+            log_lambda -= delta  # too few accepts → more conservative
+        new_lambda = math.exp(log_lambda)
+        # ExaBayes bounds: [0.0001, 100]
+        self.lambda_ = max(0.0001, min(new_lambda, 100.0))
+
 
 class SigmaMultiplier:
     """Log-uniform multiplier for BM rate σ²."""
@@ -816,6 +840,18 @@ class SigmaMultiplier:
         multiplier = math.exp(self.lambda_ * (u - 0.5))
         new_sigma2 = sigma2 * multiplier
         return new_sigma2, math.log(multiplier)
+
+    def tune(self, acceptance_rate: float, batch: int = 0):
+        """ExaBayes-style adaptive tuning: delta = 1/sqrt(batch+1)."""
+        delta = 1.0 / math.sqrt(batch + 1)
+        log_lambda = math.log(self.lambda_)
+        if acceptance_rate > 0.25:  # ExaBayes TARGET_RATIO = 0.25
+            log_lambda += delta  # too many accepts → bolder moves
+        else:
+            log_lambda -= delta  # too few accepts → more conservative
+        new_lambda = math.exp(log_lambda)
+        # ExaBayes bounds: [0.0001, 100]
+        self.lambda_ = max(0.0001, min(new_lambda, 100.0))
 
 
 # ---------------------------------------------------------------------------
@@ -873,6 +909,20 @@ def simulate_bm(tree: Tree, sigma2: float, D: int, seed: int = 42) -> Dict[str, 
     return {node.name: node_values[node.id] for node in tree.leaves}
 
 
+def estimate_sigma2(data: Dict[str, np.ndarray], tree: Tree) -> float:
+    """Estimate σ² from data and tree using method-of-moments.
+
+    Under BM, Var(X_i - X_j) = σ² * (t_i + t_j) for siblings.
+    We approximate by using overall data variance / total tree length.
+    """
+    vecs = np.array(list(data.values()))
+    data_var = np.var(vecs)
+    total_bl = tree.total_branch_length()
+    if total_bl < 1e-10:
+        return 1.0
+    return float(data_var / total_bl)
+
+
 # ---------------------------------------------------------------------------
 # MCMC Chain
 # ---------------------------------------------------------------------------
@@ -908,6 +958,8 @@ class MCMCChain:
             seed=seed + 5,
         )
         self.accept_rng = np.random.RandomState(seed + 6)
+
+        self._tune_batch = 0
 
         # Samples (cold chain only)
         self.sampled_trees: List[str] = []
@@ -963,6 +1015,15 @@ class MCMCChain:
 
         self.mixer.record_acceptance(proposal_name, accepted)
 
+        # ExaBayes-style auto-tuning with decreasing step size
+        gen_count = sum(self.mixer._total.values())
+        if gen_count > 0 and gen_count % 200 == 0:
+            for name, prop in [("bl", self.bl_mult), ("tl", self.tl_mult), ("sigma", self.sigma_mult)]:
+                rate = self.mixer.acceptance_rate(name)
+                if self.mixer._total[name] > 20:
+                    prop.tune(rate, batch=self._tune_batch)
+            self._tune_batch += 1
+
     def run(self):
         for gen in range(self.n_generations):
             self._step()
@@ -995,11 +1056,13 @@ class MC3Runner:
         if start_tree is None:
             start_tree = random_tree(sorted(data.keys()), seed=seed)
 
+        sigma2_init = estimate_sigma2(data, start_tree)
+
         self.chains: List[MCMCChain] = []
         for i in range(n_chains):
             chain = MCMCChain(
                 data=data, start_tree=start_tree.copy(),
-                sigma2_init=1.0, n_generations=0,
+                sigma2_init=sigma2_init, n_generations=0,
                 sample_freq=sample_freq, beta=betas[i],
                 seed=seed + i * 10,
             )
@@ -1010,6 +1073,7 @@ class MC3Runner:
         self.n_swaps_accepted = 0
 
     def run(self):
+        report_interval = max(self.n_generations // 10, 1000)
         for gen in range(self.n_generations):
             for chain in self.chains:
                 chain._step()
@@ -1023,6 +1087,12 @@ class MC3Runner:
 
             if (gen + 1) % self.swap_freq == 0 and self.n_chains > 1:
                 self._attempt_swap()
+
+            if (gen + 1) % report_interval == 0:
+                pct = 100 * (gen + 1) / self.n_generations
+                logL = self.cold_chain.logL
+                sigma2 = self.cold_chain.sigma2
+                print(f"    [{pct:5.1f}%] gen={gen+1:>8d}  logL={logL:.1f}  \u03c3\u00b2={sigma2:.4f}", flush=True)
 
     def _attempt_swap(self):
         i = self.swap_rng.randint(self.n_chains - 1)
@@ -1215,7 +1285,14 @@ class Diagnostics:
 # ── Consensus Tree ────────────────────────────────────────────────────────
 
 class ConsensusBuilder:
-    """Majority-rule consensus tree from posterior sample."""
+    """Majority-rule consensus tree from posterior sample.
+
+    Uses the standard Build algorithm: sort compatible splits by size
+    ascending (smallest/most specific first), then merge clusters
+    bottom-up. All majority-rule splits (>50%) are guaranteed mutually
+    compatible, so they all get included. This matches ExaBayes consense
+    behaviour.
+    """
 
     @staticmethod
     def majority_rule(trees_nwk: List[str], burnin_frac: float = 0.25,
@@ -1228,61 +1305,100 @@ class ConsensusBuilder:
             return parse_newick(trees_nwk[-1])
 
         split_counts: Dict[frozenset, int] = {}
-        leaf_names = None
+        leaf_names_set: Optional[set] = None
         for nwk in post_trees:
             tree = parse_newick(nwk)
-            if leaf_names is None:
-                leaf_names = set(tree.leaf_names())
+            if leaf_names_set is None:
+                leaf_names_set = set(tree.leaf_names())
             for split in Diagnostics._get_splits(tree):
                 split_counts[split] = split_counts.get(split, 0) + 1
 
-        majority_splits = [(s, c / n_post) for s, c in split_counts.items() if c / n_post >= threshold]
-        majority_splits.sort(key=lambda x: len(x[0]), reverse=True)
+        # Filter to majority splits, sort by SIZE ASCENDING (build bottom-up)
+        majority_splits = [
+            (s, c / n_post)
+            for s, c in split_counts.items()
+            if c / n_post >= threshold
+        ]
+        majority_splits.sort(key=lambda x: len(x[0]))  # smallest first
 
-        all_leaves = sorted(leaf_names)
-        node_id_counter = [0]
+        # Build tree bottom-up using cluster merging
+        node_id = [0]
         def _next_id():
-            nid = node_id_counter[0]; node_id_counter[0] += 1; return nid
+            nid = node_id[0]; node_id[0] += 1; return nid
 
-        leaf_nodes = {}
-        for name in all_leaves:
-            leaf_nodes[name] = TreeNode(id=_next_id(), name=name, branch_length=0.01)
-
-        groups = [{name} for name in all_leaves]
-        parent_map: Dict[str, TreeNode] = {n: leaf_nodes[n] for n in all_leaves}
+        # Start: each leaf is its own cluster
+        clusters: Dict[frozenset, TreeNode] = {}
+        for name in sorted(leaf_names_set):
+            clusters[frozenset({name})] = TreeNode(
+                id=_next_id(), name=name, branch_length=0.01,
+            )
 
         for split, freq in majority_splits:
-            split_set = set(split)
-            matching_groups = [g for g in groups if g & split_set]
-            if all(g <= split_set for g in matching_groups) and len(matching_groups) >= 2:
-                children = []
-                for g in matching_groups:
-                    rep = list(g)[0]
-                    children.append(parent_map[rep])
-                new_node = TreeNode(id=_next_id(), children=children, branch_length=0.01)
-                for child in children:
-                    child.parent = new_node
-                merged = set()
-                new_groups = []
-                for g in groups:
-                    if g <= split_set:
-                        merged.update(g)
-                    else:
-                        new_groups.append(g)
-                new_groups.append(merged)
-                groups = new_groups
-                for name in merged:
-                    parent_map[name] = new_node
+            # Find clusters that are subsets of this split
+            children_items = []
+            remaining = {}
+            for cluster_set, cluster_node in clusters.items():
+                if cluster_set <= split:
+                    children_items.append((cluster_set, cluster_node))
+                else:
+                    remaining[cluster_set] = cluster_node
 
-        remaining_nodes = []
-        seen = set()
-        for g in groups:
-            rep = list(g)[0]
-            node = parent_map[rep]
-            if id(node) not in seen:
-                remaining_nodes.append(node)
-                seen.add(id(node))
+            if len(children_items) >= 2:
+                new_node = TreeNode(id=_next_id(), branch_length=0.01)
+                merged_set = frozenset()
+                for cs, cn in children_items:
+                    cn.parent = new_node
+                    new_node.children.append(cn)
+                    merged_set = merged_set | cs
+                remaining[merged_set] = new_node
+                clusters = remaining
 
+        # MRE: add compatible minority splits (ExaBayes extended consensus)
+        minority_splits = [
+            (s, c / n_post)
+            for s, c in split_counts.items()
+            if c / n_post < threshold
+        ]
+        minority_splits.sort(key=lambda x: -x[1])  # highest frequency first
+
+        # Max possible splits for fully resolved tree
+        max_splits = len(leaf_names_set) - 3
+
+        for split, freq in minority_splits:
+            # Stop if fully resolved
+            if len(clusters) <= 2:
+                break
+            # Check compatibility with current tree
+            compatible = True
+            for existing_set in clusters:
+                # Two splits are compatible if one is subset of other,
+                # or they don't overlap
+                overlap = existing_set & split
+                if overlap and overlap != existing_set and overlap != split:
+                    compatible = False
+                    break
+            if not compatible:
+                continue
+            # Apply this split (same logic as majority)
+            children_items = []
+            remaining = {}
+            for cluster_set, cluster_node in clusters.items():
+                if cluster_set <= split:
+                    children_items.append((cluster_set, cluster_node))
+                else:
+                    remaining[cluster_set] = cluster_node
+            if len(children_items) >= 2:
+                new_node = TreeNode(id=_next_id(), branch_length=0.01)
+                merged_set = frozenset()
+                for cs, cn in children_items:
+                    cn.parent = new_node
+                    new_node.children.append(cn)
+                    merged_set = merged_set | cs
+                remaining[merged_set] = new_node
+                clusters = remaining
+
+        # Join remaining top-level clusters under root
+        remaining_nodes = list(clusters.values())
         if len(remaining_nodes) == 1:
             root = remaining_nodes[0]
         else:
@@ -1301,9 +1417,27 @@ def robinson_foulds(tree1: Tree, tree2: Tree) -> int:
     return len(splits1.symmetric_difference(splits2))
 
 
+def normalize_leaf_names(tree: Tree) -> Tree:
+    """Strip |orgXXX suffixes from leaf names (IQ-TREE convention)."""
+    for leaf in tree.leaves:
+        if '|' in leaf.name:
+            leaf.name = leaf.name.split('|')[0]
+    tree._reindex()
+    return tree
+
+
 # ── Experiment Main ───────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Exp 35: Bayesian phylogenetics from embeddings")
+    parser.add_argument("--n-gen", type=int, default=200_000, help="Generations per chain")
+    parser.add_argument("--n-runs", type=int, default=2, help="Independent MCMC runs")
+    parser.add_argument("--n-chains", type=int, default=4, help="Chains per run (MC3)")
+    parser.add_argument("--sample-freq", type=int, default=200, help="Sample every N generations")
+    parser.add_argument("--swap-freq", type=int, default=50, help="MC3 swap attempt frequency")
+    args = parser.parse_args()
+
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -1323,6 +1457,8 @@ if __name__ == "__main__":
     IQTREE_PATH = SPECIES_ROOT / "results" / "iqtree_conotoxin.treefile"
 
     results = {}
+
+    print(f"  Config: {args.n_gen:,} generations, {args.n_runs} runs × {args.n_chains} chains")
 
     # ── Step 1: Load and preprocess embeddings ────────────────────────
     print("=" * 60)
@@ -1378,20 +1514,14 @@ if __name__ == "__main__":
 
     # ── Step 3: MCMC ──────────────────────────────────────────────────
     print("\n" + "=" * 60)
-    print("Step 3: Run Bayesian MCMC (2 runs × 4 chains)")
+    print(f"Step 3: Run Bayesian MCMC ({args.n_runs} runs × {args.n_chains} chains)")
     print("=" * 60)
-
-    N_RUNS = 2
-    N_CHAINS = 4
-    N_GEN = 200_000
-    SAMPLE_FREQ = 200
-    SWAP_FREQ = 50
 
     t0 = time.time()
     orch = MultiRunOrchestrator(
-        data=data, n_runs=N_RUNS, n_chains=N_CHAINS,
-        n_generations=N_GEN, sample_freq=SAMPLE_FREQ,
-        swap_freq=SWAP_FREQ, seed=42,
+        data=data, n_runs=args.n_runs, n_chains=args.n_chains,
+        n_generations=args.n_gen, sample_freq=args.sample_freq,
+        swap_freq=args.swap_freq, seed=42,
     )
     run_results = orch.run()
     t_mcmc = time.time() - t0
@@ -1411,9 +1541,9 @@ if __name__ == "__main__":
     for i, rr in enumerate(run_results):
         (RESULTS_DIR / f"conotoxin_trees_run{i}.nwk").write_text("\n".join(rr["sampled_trees"]))
 
-    results["n_generations"] = N_GEN
-    results["n_runs"] = N_RUNS
-    results["n_chains"] = N_CHAINS
+    results["n_generations"] = args.n_gen
+    results["n_runs"] = args.n_runs
+    results["n_chains"] = args.n_chains
     results["mcmc_time_s"] = t_mcmc
 
     # ── Step 4: Convergence diagnostics ───────────────────────────────
@@ -1460,6 +1590,8 @@ if __name__ == "__main__":
         iqtree_nwk = IQTREE_PATH.read_text().strip()
         iqtree_tree = parse_newick(iqtree_nwk)
         iqtree_tree.resolve_polytomies()
+
+        iqtree_tree = normalize_leaf_names(iqtree_tree)
 
         rf_consensus = robinson_foulds(consensus, iqtree_tree)
         rf_nj = robinson_foulds(nj_tree, iqtree_tree)

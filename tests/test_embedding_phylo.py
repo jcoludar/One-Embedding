@@ -31,6 +31,8 @@ MultiRunOrchestrator = _exp35.MultiRunOrchestrator
 Diagnostics = _exp35.Diagnostics
 ConsensusBuilder = _exp35.ConsensusBuilder
 robinson_foulds = _exp35.robinson_foulds
+estimate_sigma2 = _exp35.estimate_sigma2
+normalize_leaf_names = _exp35.normalize_leaf_names
 
 
 # ---------------------------------------------------------------------------
@@ -624,3 +626,41 @@ class TestRobinsonFoulds:
         t1 = parse_newick("((A,B),(C,D));")
         t2 = parse_newick("((A,C),(B,D));")
         assert robinson_foulds(t1, t2) == robinson_foulds(t2, t1)
+
+
+# ---------------------------------------------------------------------------
+# TestEstimateSigma2
+# ---------------------------------------------------------------------------
+
+class TestEstimateSigma2:
+    def test_positive(self):
+        tree = parse_newick("((A:1,B:1):1,C:1);")
+        data = simulate_bm(tree, 2.0, 32, seed=42)
+        s2 = estimate_sigma2(data, tree)
+        assert s2 > 0
+
+    def test_scales_with_true_sigma(self):
+        tree = parse_newick("((A:1,B:1):1,C:1);")
+        data_low = simulate_bm(tree, 0.1, 128, seed=42)
+        data_high = simulate_bm(tree, 10.0, 128, seed=42)
+        s2_low = estimate_sigma2(data_low, tree)
+        s2_high = estimate_sigma2(data_high, tree)
+        assert s2_high > s2_low
+
+
+# ---------------------------------------------------------------------------
+# TestAutoTuning
+# ---------------------------------------------------------------------------
+
+class TestAutoTuning:
+    def test_lambda_decreases_on_low_acceptance(self):
+        prop = BranchLengthMultiplier(seed=0, lambda_=2.0)
+        old_lambda = prop.lambda_
+        prop.tune(0.05, batch=0)  # very low acceptance
+        assert prop.lambda_ < old_lambda
+
+    def test_lambda_increases_on_high_acceptance(self):
+        prop = BranchLengthMultiplier(seed=0, lambda_=2.0)
+        old_lambda = prop.lambda_
+        prop.tune(0.80, batch=0)  # very high acceptance
+        assert prop.lambda_ > old_lambda
