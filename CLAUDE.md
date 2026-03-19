@@ -4,6 +4,34 @@
 Universal codec for PLM per-residue embeddings. **232 compression methods benchmarked** across 34 experiments. The recommended codec (V2 `balanced`) uses ABTT3 preprocessing + random projection to 512d + Product Quantization (M=128) to achieve **33 KB/protein** — 40% smaller than V1 — while preserving Ret@1=0.786 and SS3 Q3=0.807 (97% of raw ProtT5). Five selectable quality tiers from 17–55 KB. All tiers share identical retrieval quality; storage/size tradeoff is purely in per-residue fidelity.
 
 ## Quick Start
+
+### One Embedding Package (recommended)
+```python
+import one_embedding as oe
+
+# Encode raw PLM embeddings to .oemb format
+oe.encode("raw_embeddings.h5", "compressed.oemb")
+
+# Decode
+data = oe.decode("compressed.oemb")
+data['per_residue']   # (L, 512) for per-residue tasks
+data['protein_vec']   # (2048,) for retrieval / clustering / UMAP
+
+# Embed sequences directly (ProtT5 or ESM2)
+vecs = oe.embed(["MKTAYIAKQRQISFVKSHFSRQ..."], model="prot_t5")
+```
+
+```bash
+# CLI
+one-embedding encode raw.h5 compressed.oemb
+one-embedding inspect compressed.oemb
+one-embedding disorder compressed.oemb
+one-embedding search query.oemb database/ --top-k 10
+
+# 7 built-in tools: disorder, classify, search, align, ss3, conserve, mutate
+```
+
+### Low-level API (research / custom pipelines)
 ```bash
 # Extract PLM embeddings (prerequisite)
 uv run python experiments/01_extract_residue_embeddings.py
@@ -18,6 +46,10 @@ uv run python experiments/31_bitwidth_sweep.py                # Binary/int2/int4
 uv run python experiments/32_pq_on_rp512.py                   # Product Quantization sweep
 uv run python experiments/33_vq_codec.py                      # Vector Quantization + hybrids
 uv run python experiments/34_progressive_codec.py              # V2 codec tiers benchmark
+
+# Toolkit retention benchmarks (Exp 36/37)
+uv run python experiments/36_toolkit_benchmark.py             # Disorder + SS3 retention
+uv run python experiments/37_structural_retention.py           # lDDT + contact precision
 
 # Generate all publication figures
 uv run python experiments/make_benchmark_barplots.py          # Per-benchmark + V2 + Pareto
@@ -68,6 +100,18 @@ codec = OneEmbeddingCodec(d_out=512, dct_k=4)
 codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.h5")
 # Receiver needs only h5py — no codec code, no scipy
 ```
+
+### Retention Benchmarks (V2 balanced vs raw ProtT5)
+| Task | Retention | Method |
+|------|-----------|--------|
+| SS3 Q3 | 101.7% | LogReg probe (CB513) |
+| Family Ret@1 | 99.7% | cosine, SCOPe |
+| Conservation | 98.3% | — |
+| Alignment overlap | 96.1% | — |
+| Disorder ρ (CheZOD) | 90.9% (Ridge) / 99.0% (CNN) | TriZOD also tested |
+| TM-score correlation | 89.0% | — |
+| Structural lDDT | 100.7% | Exp 37 |
+| Contact precision | 106.5% | Exp 37 |
 
 ## The Journey: 232 Methods in 34 Experiments
 
@@ -143,14 +187,16 @@ Theoretical floor: ~5–7 KB per protein (from intrinsic dimensionality ~80 × e
 - Two-head joint training — hurts retrieval vs sequential approach
 
 ## Architecture
-- `src/one_embedding/` — **OneEmbeddingCodec** (V1), **OneEmbeddingCodecV2** (PQ), transforms (DCT, Haar, spectral), universal codecs, preprocessing (ABTT, PCA rotation), quantization (int2/int4/int8/binary/PQ/RVQ), path transforms, enriched transforms, data analysis
+- `one_embedding/` — **Published package** (one_embedding/core/ codec, one_embedding/extract/ PLM wrappers, one_embedding/tools/ 7 tools, one_embedding/cli.py, one_embedding/io.py .oemb format, one_embedding/__init__.py top-level API)
+- `src/one_embedding/` — **Research library**: OneEmbeddingCodec (V1), OneEmbeddingCodecV2 (PQ), transforms (DCT, Haar, spectral), universal codecs, preprocessing (ABTT, PCA rotation), quantization (int2/int4/int8/binary/PQ/RVQ), path transforms, enriched transforms, data analysis
 - `src/compressors/` — ChannelCompressor (trained), AttentionPool, MLP-AE, VQ, baselines
 - `src/extraction/` — ESM2 + ProtT5 + ESM-C embedding extraction
 - `src/training/` — Unified trainer with reconstruction, contrastive, VICReg losses
-- `src/evaluation/` — Retrieval (cosine+euclidean), per-residue probes (SS3/SS8/disorder/TM/SignalP), biological annotations (GO/EC/Pfam/taxonomy), hierarchy, statistical tests
+- `src/evaluation/` — Retrieval (cosine+euclidean), per-residue probes (SS3/SS8/disorder/TM/SignalP), biological annotations (GO/EC/Pfam/taxonomy), hierarchy, statistical tests, FAISS search index
 - `src/utils/` — Device management (MPS/CPU), H5 I/O
-- `experiments/` — 34 experiment scripts (01–34) + figure generators
-- `tests/` — 318 tests across 13 modules
+- `experiments/` — 37 experiment scripts (01–37) + figure generators
+- `tests/` — 560 tests across multiple modules
+- `.oemb format` — H5-based single/batch protein embedding files (protein_vec + per_residue)
 
 ## Hardware
 - MacBook Pro (Mac15,10) with Apple M3 Max, 14 cores (10P + 4E), 96 GB RAM
