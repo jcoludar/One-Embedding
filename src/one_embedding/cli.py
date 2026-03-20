@@ -32,21 +32,24 @@ def extract(input, output, model):
 @main.command()
 @click.argument("input", type=click.Path(exists=True))
 @click.option("-o", "--output", type=click.Path(), default=None)
-def encode(input, output):
-    """Per-residue H5 → compressed .oemb."""
+@click.option("--d-out", type=int, default=768, help="Output dimensionality (default: 768)")
+def encode(input, output, d_out):
+    """Per-residue H5 → compressed .one.h5."""
     from src.one_embedding import encode as _encode
-    output = output or input.rsplit(".", 1)[0] + ".oemb"
+    output = output or input.rsplit(".", 1)[0] + ".one.h5"
     click.echo("Encoding...")
-    _encode(input, output)
+    _encode(input, output, d_out=d_out)
     click.echo(f"Saved: {output}")
 
 
 @main.command()
 @click.argument("input", type=click.Path(exists=True))
 def inspect(input):
-    """Show .oemb file contents."""
-    from src.one_embedding.io import inspect_oemb
-    info = inspect_oemb(input)
+    """Show .one.h5 or .oemb file contents."""
+    from src.one_embedding.io import inspect_one_h5, inspect_oemb
+    info = inspect_one_h5(input)
+    if info.get("format") != "one_embedding":
+        info = inspect_oemb(input)
     for k, v in info.items():
         click.echo(f"  {k}: {v}")
 
