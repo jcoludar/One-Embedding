@@ -1,7 +1,7 @@
 """Secondary structure prediction (3-state: H/E/C).
 
 Uses a trained 2-layer CNN probe on compressed embeddings.
-Trained on CB513 (400 train / 111 test), Q3=0.432 on test set.
+Trained on CB513 (408 train / 103 test, seed=42), Q3=0.855 on test set (512d).
 
 Supports multiple embedding dimensions (512d, 768d) via auto-detection.
 Falls back to heuristic if no trained weights exist for the detected dimension.

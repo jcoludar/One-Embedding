@@ -200,16 +200,18 @@ class TestCNNInstantiation:
             out = model(x)
         assert out.shape == (1, 80, 1)
 
-    def test_disorder_cnn_768d_missing_weights(self):
+    def test_disorder_cnn_768d_loads(self):
+        import torch
+
         from src.one_embedding.tools.disorder import _load_cnn, _MODEL_CACHE
 
         _MODEL_CACHE.pop("disorder_768", None)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            model = _load_cnn(input_dim=768)
-            assert model is None
-            assert len(w) == 1
-            assert "768" in str(w[0].message)
+        model = _load_cnn(input_dim=768)
+        assert model is not None
+        x = torch.randn(1, 80, 768)
+        with torch.no_grad():
+            out = model(x)
+        assert out.shape == (1, 80, 1)
 
     def test_disorder_cnn_unsupported_dim(self):
         from src.one_embedding.tools.disorder import _load_cnn, _MODEL_CACHE
@@ -236,16 +238,18 @@ class TestCNNInstantiation:
             out = model(x)
         assert out.shape == (1, 80, 3)
 
-    def test_ss3_cnn_768d_missing_weights(self):
+    def test_ss3_cnn_768d_loads(self):
+        import torch
+
         from src.one_embedding.tools.ss3 import _load_cnn, _MODEL_CACHE
 
         _MODEL_CACHE.pop("ss3_768", None)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            model = _load_cnn(input_dim=768)
-            assert model is None
-            assert len(w) == 1
-            assert "768" in str(w[0].message)
+        model = _load_cnn(input_dim=768)
+        assert model is not None
+        x = torch.randn(1, 80, 768)
+        with torch.no_grad():
+            out = model(x)
+        assert out.shape == (1, 80, 3)
 
 
 # ── predict() fallback tests ────────────────────────────────────────
@@ -264,18 +268,14 @@ class TestPredictFallback:
                 assert scores.shape == (80,)
                 assert np.isfinite(scores).all()
 
-    def test_disorder_cnn_fallback_768d(self):
-        """CNN method on 768d (no weights) should fall back to norm with warning."""
+    def test_disorder_cnn_768d_works(self):
+        """CNN method on 768d should use the trained CNN (weights exist)."""
         from src.one_embedding.tools.disorder import predict, _MODEL_CACHE
 
         _MODEL_CACHE.pop("disorder_768", None)
         with tempfile.TemporaryDirectory() as d:
             path = _make_one_h5_batch(d, n=2, D=768)
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter("always")
-                result = predict(path, method="cnn")
-                # Should have warned about missing weights
-                assert any("768" in str(wi.message) for wi in w)
+            result = predict(path, method="cnn")
             assert len(result) == 2
             for pid, scores in result.items():
                 assert scores.shape == (80,)
@@ -305,17 +305,14 @@ class TestPredictFallback:
                 assert preds.shape == (80,)
                 assert set(np.unique(preds)).issubset({0, 1, 2})
 
-    def test_ss3_cnn_fallback_768d(self):
-        """CNN method on 768d (no weights) should fall back to heuristic with warning."""
+    def test_ss3_cnn_768d_works(self):
+        """CNN method on 768d should use the trained CNN (weights exist)."""
         from src.one_embedding.tools.ss3 import predict, _MODEL_CACHE
 
         _MODEL_CACHE.pop("ss3_768", None)
         with tempfile.TemporaryDirectory() as d:
             path = _make_one_h5_batch(d, n=2, D=768)
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter("always")
-                result = predict(path, method="cnn")
-                assert any("768" in str(wi.message) for wi in w)
+            result = predict(path, method="cnn")
             assert len(result) == 2
             for pid, preds in result.items():
                 assert preds.shape == (80,)

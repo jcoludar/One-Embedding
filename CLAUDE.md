@@ -104,7 +104,7 @@ codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.h5")
 ### Retention Benchmarks (V2 balanced vs raw ProtT5)
 | Task | Retention | Method |
 |------|-----------|--------|
-| SS3 Q3 | 101.7% | LogReg probe (CB513) |
+| SS3 Q3 | 96.7% (LogReg) / 100.3% (CNN) | LogReg + CNN probe (CB513) |
 | Family Ret@1 | 99.7% | cosine, SCOPe |
 | Conservation | 98.3% | — |
 | Alignment overlap | 96.1% | — |

@@ -128,7 +128,7 @@ How much task performance does the V2 `balanced` codec preserve compared to raw 
 
 | Task | Metric | Raw 1024d | Compressed 512d | Retention |
 |------|--------|:---------:|:---------------:|:---------:|
-| SS3 (secondary structure) | Q3 accuracy | 0.426 | 0.433 | **101.7%** |
+| SS3 (secondary structure) | Q3 accuracy | 0.846 | 0.819 | **96.7%** |
 | Family retrieval | Ret@1 | 0.731 | 0.729 | **99.7%** |
 | Conservation | Pairwise distance rho | -- | -- | **98.3%** |
 | Alignment overlap | Mean overlap | -- | -- | **96.1%** |
@@ -205,7 +205,7 @@ The package includes 7 tools that work directly on compressed `.oemb` embeddings
 | Tool | Description | Method |
 |------|-------------|--------|
 | **disorder** | Intrinsic disorder prediction | Trained CNN probe (SETH-style), rho=0.707 |
-| **ss3** | Secondary structure (3-class: H/E/C) | Trained CNN probe, Q3=0.432 |
+| **ss3** | Secondary structure (3-class: H/E/C) | Trained CNN probe, Q3=0.855 |
 | **search** | Similarity search / k-NN retrieval | Cosine similarity on protein_vec |
 | **classify** | Family classification | k-NN against reference database |
 | **align** | Pairwise residue alignment | Per-residue embedding alignment |
@@ -358,7 +358,7 @@ Re-tested all compression on ABTT3+RP512 (decorrelated, isotropic). Results dram
 
 ### Phase 10: Retention Validation (Experiments 36-37)
 
-Comprehensive toolkit and structural retention benchmarks on V2 balanced. SS3 retention 101.7%, family Ret@1 99.7%, structural lDDT 100.7%, contact precision 106.5%. Disorder retention 90.9% with Ridge, 99.0% with CNN probes.
+Comprehensive toolkit and structural retention benchmarks on V2 balanced. SS3 retention 96.7% (LogReg) / 100.3% (CNN), family Ret@1 99.7%, structural lDDT 100.7%, contact precision 106.5%. Disorder retention 90.9% with Ridge, 99.0% with CNN probes.
 
 ### Phase 11: Embedding Phylogenetics (Experiment 35)
 

@@ -267,29 +267,24 @@ def benchmark_ss3():
     """Evaluate SS3 prediction on CB513 using LogisticRegression probe."""
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import accuracy_score
-    import csv
+    import random
 
     print("\n" + "=" * 60)
     print("B. Secondary Structure (SS3, CB513)")
     print("=" * 60)
 
-    # Load CB513 data
-    cb513_path = PROJ_ROOT / "data" / "per_residue_benchmarks" / "CB513.csv"
-    if not cb513_path.exists():
-        print("  CB513.csv not found, skipping")
+    # Load CB513 data using the canonical loader (returns dicts keyed by protein ID)
+    from src.evaluation.per_residue_tasks import load_cb513_csv
+    _, ss3_labels, _, _ = load_cb513_csv(
+        PROJ_ROOT / "data" / "per_residue_benchmarks" / "CB513.csv"
+    )
+    if not ss3_labels:
+        print("  CB513.csv not found or empty, skipping")
         return None
 
-    sequences = []
-    ss3_labels = []
+    print(f"  CB513: {len(ss3_labels)} proteins with SS3 labels")
+
     SS3_MAP = {"H": 0, "E": 1, "C": 2}
-
-    with open(cb513_path) as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            sequences.append(row["input"])
-            ss3_labels.append([SS3_MAP.get(c, 2) for c in row["dssp3"]])
-
-    print(f"  CB513: {len(sequences)} proteins")
 
     # Check if we have embeddings
     emb_path = PROJ_ROOT / "data" / "residue_embeddings" / "prot_t5_xl_cb513.h5"
@@ -324,19 +319,41 @@ def benchmark_ss3():
         emb_rp = random_orthogonal_project(emb_abtt, d_out=512, seed=42)
         comp_embs[pid] = emb_rp.astype(np.float32)
 
-    # Build dataset (first 400 train, last 113 test — standard CB513 split)
-    keys = sorted(raw_embs.keys())
-    n_train = min(400, len(keys))
-    train_keys = keys[:n_train]
-    test_keys = keys[n_train:]
+    # Build dataset: 80/20 split by protein ID (seed=42), matching Exp 39 methodology
+    # Use only proteins that have BOTH embeddings and labels
+    common_ids = sorted(pid for pid in ss3_labels if pid in raw_embs)
+    rng = random.Random(42)
+    rng.shuffle(common_ids)
+    split_idx = int(0.8 * len(common_ids))
+    train_keys = common_ids[:split_idx]
+    test_keys = common_ids[split_idx:]
+    print(f"  Split: {len(train_keys)} train, {len(test_keys)} test (seed=42)")
 
     results = {}
     for label, emb_dict in [("raw_1024d", raw_embs), ("compressed_512d", comp_embs)]:
-        # Build arrays
-        X_train = np.concatenate([emb_dict[k][:len(ss3_labels[i])] for i, k in enumerate(train_keys) if k in emb_dict])
-        y_train = np.concatenate([np.array(ss3_labels[i])[:emb_dict[k].shape[0]] for i, k in enumerate(train_keys) if k in emb_dict])
-        X_test = np.concatenate([emb_dict[k][:len(ss3_labels[i])] for i, k in enumerate(test_keys, n_train) if k in emb_dict])
-        y_test = np.concatenate([np.array(ss3_labels[i])[:emb_dict[k].shape[0]] for i, k in enumerate(test_keys, n_train) if k in emb_dict])
+        # Build arrays using dict-based lookup (no positional indexing)
+        X_train_parts, y_train_parts = [], []
+        for pid in train_keys:
+            emb = emb_dict[pid]
+            lab_str = ss3_labels[pid]
+            lab = np.array([SS3_MAP[c] for c in lab_str], dtype=np.int64)
+            L = min(emb.shape[0], len(lab))
+            X_train_parts.append(emb[:L])
+            y_train_parts.append(lab[:L])
+
+        X_test_parts, y_test_parts = [], []
+        for pid in test_keys:
+            emb = emb_dict[pid]
+            lab_str = ss3_labels[pid]
+            lab = np.array([SS3_MAP[c] for c in lab_str], dtype=np.int64)
+            L = min(emb.shape[0], len(lab))
+            X_test_parts.append(emb[:L])
+            y_test_parts.append(lab[:L])
+
+        X_train = np.concatenate(X_train_parts)
+        y_train = np.concatenate(y_train_parts)
+        X_test = np.concatenate(X_test_parts)
+        y_test = np.concatenate(y_test_parts)
 
         lr = LogisticRegression(max_iter=500, random_state=42, n_jobs=-1)
         lr.fit(X_train, y_train)
