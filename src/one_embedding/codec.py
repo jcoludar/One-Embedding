@@ -4,17 +4,17 @@ Encodes raw PLM per-residue embeddings into a single file containing both
 per-residue and protein-level representations, with metadata for reproducibility.
 
 Usage:
-    # Encode (float16 default — ~26% of raw PLM size)
-    codec = OneEmbeddingCodec(d_out=512, dct_k=4)
+    # Encode (float16 default, 768d by default — 2.5x compression)
+    codec = OneEmbeddingCodec(d_out=768, dct_k=4)
     codec.encode_h5(raw_embeddings_h5, "output_dir/")
 
-    # Full precision: dtype="float32" (~51% of raw)
-    codec = OneEmbeddingCodec(d_out=512, dct_k=4, dtype="float32")
+    # 512d for more compression (~4x)
+    codec = OneEmbeddingCodec(d_out=512, dct_k=4)
 
     # Decode (receiver side — no knowledge of codec internals needed)
-    emb = OneEmbeddingCodec.load("output_dir/protein_id.h5")
-    emb["per_residue"]   # (L, 512) for per-residue probes
-    emb["protein_vec"]   # (2048,) for retrieval/UMAP/clustering
+    emb = OneEmbeddingCodec.load("output_dir/protein_id.one.h5")
+    emb["per_residue"]   # (L, D) for per-residue probes (D=768 or 512)
+    emb["protein_vec"]   # (D*K,) for retrieval/UMAP/clustering
     emb["metadata"]      # dict with codec params, dtype
 """
 
@@ -33,10 +33,11 @@ class OneEmbeddingCodec:
     """Training-free codec: random projection + DCT pooling.
 
     Args:
-        d_out: Output dimensionality for per-residue (default 512).
+        d_out: Output dimensionality for per-residue (default 768, configurable).
+               Use 768 for best retention (100.1% mean), 512 for more compression.
         dct_k: Number of DCT coefficients for protein vector (default 4).
         seed: Fixed seed for projection matrix (default 42).
-        dtype: Storage dtype — "float16" (default, 25% of raw) or "float32".
+        dtype: Storage dtype — "float16" (default, 2.5x compression at 768d) or "float32".
                Computation is always float32; dtype only affects save/load.
     """
 

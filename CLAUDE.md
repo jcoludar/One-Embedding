@@ -1,7 +1,7 @@
 # Protein Embedding Codec
 
 ## Project Overview
-Universal codec for PLM per-residue embeddings. **232 compression methods benchmarked** across 34 experiments. The recommended codec (V2 `balanced`) uses ABTT3 preprocessing + random projection to 512d + Product Quantization (M=128) to achieve **33 KB/protein** — 40% smaller than V1 — while preserving Ret@1=0.786 and SS3 Q3=0.807 (97% of raw ProtT5). Five selectable quality tiers from 17–55 KB. All tiers share identical retrieval quality; storage/size tradeoff is purely in per-residue fidelity.
+Universal codec for PLM per-residue embeddings. **232 compression methods benchmarked** across 42 experiments. The 1.0 codec uses ABTT3 preprocessing + random projection to 768d (configurable) + float16 storage in `.one.h5` format, achieving **275 KB/protein** (2.5x compression) with **100.1% mean retention** across five tasks. Optional extreme compression tiers (PQ/int4/binary on 512d) go down to 10–52 KB.
 
 ## Quick Start
 
@@ -9,13 +9,13 @@ Universal codec for PLM per-residue embeddings. **232 compression methods benchm
 ```python
 import one_embedding as oe
 
-# Encode raw PLM embeddings to .oemb format
-oe.encode("raw_embeddings.h5", "compressed.oemb")
+# Encode raw PLM embeddings to .one.h5 format
+oe.encode("raw_embeddings.h5", "compressed.one.h5")
 
 # Decode
-data = oe.decode("compressed.oemb")
-data['per_residue']   # (L, 512) for per-residue tasks
-data['protein_vec']   # (2048,) for retrieval / clustering / UMAP
+data = oe.decode("compressed.one.h5")
+data['per_residue']   # (L, D) for per-residue tasks (768d default)
+data['protein_vec']   # (D*K,) for retrieval / clustering / UMAP
 
 # Embed sequences directly (ProtT5 or ESM2)
 vecs = oe.embed(["MKTAYIAKQRQISFVKSHFSRQ..."], model="prot_t5")
@@ -23,10 +23,10 @@ vecs = oe.embed(["MKTAYIAKQRQISFVKSHFSRQ..."], model="prot_t5")
 
 ```bash
 # CLI
-one-embedding encode raw.h5 compressed.oemb
-one-embedding inspect compressed.oemb
-one-embedding disorder compressed.oemb
-one-embedding search query.oemb database/ --top-k 10
+one-embedding encode raw.h5 compressed.one.h5
+one-embedding inspect compressed.one.h5
+one-embedding disorder compressed.one.h5
+one-embedding search query.one.h5 database/ --top-k 10
 
 # 7 built-in tools: disorder, classify, search, align, ss3, conserve, mutate
 ```
@@ -60,11 +60,11 @@ uv run python experiments/11_channel_compression.py
 uv run python experiments/13_robust_validation.py --step R1
 ```
 
-## One Embedding V2 (Recommended)
+## One Embedding 1.0 (Recommended)
 
-Pipeline: ABTT k=3 (remove top-3 PCs) → RP to 512d → PQ/int4/binary quantize.
-Protein vector (for retrieval): DCT K=4 of projected embeddings → (2048,) fp16.
-Requires one-time codebook fitting on a training corpus (~512 KB shared file).
+Pipeline: ABTT k=3 (remove top-3 PCs) → RP to 768d (configurable) → float16 storage in `.one.h5`.
+Protein vector (for retrieval): DCT K=4 of projected embeddings → (D*4,) fp16.
+No codebook needed for the base codec. Optional PQ tiers (on 512d) require codebook fitting.
 
 | Mode | Quantization | Size (L=175) | vs Mean Pool | Ret@1 | SS3 Q3 | SS8 Q8 | Disorder ρ | TM F1 |
 |------|-------------|-------------|-------------|-------|--------|--------|-----------|-------|
@@ -77,43 +77,38 @@ Requires one-time codebook fitting on a training corpus (~512 KB shared file).
 Size formula: L × M + 4096 bytes (PQ codes + protein_vec fp16). PQ codes are incompressible (7.81/8.00 bits entropy — balanced codebook utilization). Shared codebook: ~512 KB per mode (downloaded once).
 
 ```python
-# One-time: fit codebook on training corpus
-from src.one_embedding.codec_v2 import OneEmbeddingCodecV2
-codec = OneEmbeddingCodecV2(mode='balanced')
-codec.fit(training_embeddings)
-codec.save_codebook('codebook.h5')
+# 1.0 codec: 768d float16 (default)
+from src.one_embedding.codec import OneEmbeddingCodec
+codec = OneEmbeddingCodec(d_out=768, dct_k=4)
+codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.one.h5")
 
-# Encode (sender side)
+# Decode (receiver side — h5py + numpy only)
+data = OneEmbeddingCodec.load("compressed.one.h5")
+data['per_residue']   # (L, 768) for per-residue tasks
+data['protein_vec']   # (3072,) for retrieval / clustering / UMAP
+```
+
+### Extreme Compression Tiers (optional, requires codebook)
+```python
+from src.one_embedding.codec_v2 import OneEmbeddingCodecV2
 codec = OneEmbeddingCodecV2(mode='balanced', codebook_path='codebook.h5')
 codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.h5")
-
-# Decode (receiver side — h5py + numpy + shared codebook)
-data = OneEmbeddingCodecV2.load("compressed.h5", codebook_path="codebook.h5")
-data['per_residue']   # (L, 512) for per-residue tasks
-data['protein_vec']   # (2048,) for retrieval / clustering / UMAP
+# 26 KB/protein with PQ M=128 on 512d
 ```
 
-### V1 Codec (training-free, no codebook needed)
-```python
-from src.one_embedding.codec import OneEmbeddingCodec
-codec = OneEmbeddingCodec(d_out=512, dct_k=4)
-codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.h5")
-# Receiver needs only h5py — no codec code, no scipy
-```
-
-### Retention Benchmarks (V2 balanced vs raw ProtT5)
+### Retention Benchmarks (1.0 768d vs raw ProtT5)
 | Task | Retention | Method |
 |------|-----------|--------|
-| SS3 Q3 | 96.7% (LogReg) / 100.3% (CNN) | LogReg + CNN probe (CB513) |
-| Family Ret@1 | 99.7% | cosine, SCOPe |
-| Conservation | 98.3% | — |
-| Alignment overlap | 96.1% | — |
-| Disorder ρ (CheZOD) | 90.9% (Ridge) / 99.0% (CNN) | TriZOD also tested |
-| TM-score correlation | 89.0% | — |
-| Structural lDDT | 100.7% | Exp 37 |
-| Contact precision | 106.5% | Exp 37 |
+| SS3 Q3 | 98.8% | LogReg probe (CB513) |
+| SS8 Q8 | 98.6% | LogReg probe (CB513) |
+| Disorder ρ | 94.8% | Ridge (CheZOD) |
+| TM topology F1 | 98.9% | LogReg (TMbed) |
+| Family Ret@1 | 109.1% | cosine, SCOPe |
+| **Mean retention** | **100.1%** | |
+| Structural lDDT | 100.7% | Exp 37 (512d) |
+| Contact precision | 106.5% | Exp 37 (512d) |
 
-## The Journey: 232 Methods in 34 Experiments
+## The Journey: 232 Methods in 42 Experiments
 
 ### Phase 1–4: Trained Compression (Experiments 1–10)
 Explored attention pooling, MLP autoencoders, ChannelCompressor. Trained ChannelCompressor with contrastive fine-tuning achieved Ret@1=0.795 (d256, 3-seed mean). Requires labels and training — not universal.
@@ -187,16 +182,16 @@ Theoretical floor: ~5–7 KB per protein (from intrinsic dimensionality ~80 × e
 - Two-head joint training — hurts retrieval vs sequential approach
 
 ## Architecture
-- `one_embedding/` — **Published package** (one_embedding/core/ codec, one_embedding/extract/ PLM wrappers, one_embedding/tools/ 7 tools, one_embedding/cli.py, one_embedding/io.py .oemb format, one_embedding/__init__.py top-level API)
+- `one_embedding/` — **Published package** (one_embedding/core/ codec, one_embedding/extract/ PLM wrappers, one_embedding/tools/ 7 tools, one_embedding/cli.py, one_embedding/io.py .one.h5/.oemb format, one_embedding/__init__.py top-level API)
 - `src/one_embedding/` — **Research library**: OneEmbeddingCodec (V1), OneEmbeddingCodecV2 (PQ), transforms (DCT, Haar, spectral), universal codecs, preprocessing (ABTT, PCA rotation), quantization (int2/int4/int8/binary/PQ/RVQ), path transforms, enriched transforms, data analysis
 - `src/compressors/` — ChannelCompressor (trained), AttentionPool, MLP-AE, VQ, baselines
 - `src/extraction/` — ESM2 + ProtT5 + ESM-C embedding extraction
 - `src/training/` — Unified trainer with reconstruction, contrastive, VICReg losses
 - `src/evaluation/` — Retrieval (cosine+euclidean), per-residue probes (SS3/SS8/disorder/TM/SignalP), biological annotations (GO/EC/Pfam/taxonomy), hierarchy, statistical tests, FAISS search index
 - `src/utils/` — Device management (MPS/CPU), H5 I/O
-- `experiments/` — 37 experiment scripts (01–37) + figure generators
-- `tests/` — 560 tests across multiple modules
-- `.oemb format` — H5-based single/batch protein embedding files (protein_vec + per_residue)
+- `experiments/` — 42 experiment scripts (01–42) + figure generators
+- `tests/` — 632 tests across multiple modules
+- `.one.h5 format` — H5-based single/batch protein embedding files (protein_vec + per_residue). Legacy `.oemb` also supported.
 
 ## Hardware
 - MacBook Pro (Mac15,10) with Apple M3 Max, 14 cores (10P + 4E), 96 GB RAM

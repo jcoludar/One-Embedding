@@ -1,46 +1,35 @@
 # One Embedding: Universal Compression for PLM Protein Embeddings
 
-A universal codec that compresses any protein language model's per-residue output into a compact, fixed-schema representation -- the **One Embedding**. The recommended V2 codec (`balanced` mode) achieves **26 KB/protein** (27x compression) while preserving 99.7% retrieval quality and 96% per-residue task retention. Five selectable quality tiers from 10--52 KB. Works with any PLM (ProtT5, ESM2, ESM-C). Receiver needs only `h5py`, `numpy`, and a shared codebook.
+A universal codec that compresses any protein language model's per-residue output into a compact, fixed-schema representation -- the **One Embedding**. The 1.0 codec projects to 768d (configurable) and stores as float16 in `.one.h5` format, achieving **275 KB/protein** (2.5x compression) with **100.1% mean retention** across five tasks. Optional extreme compression tiers (PQ/int4/binary on 512d) go down to 10--52 KB. Works with any PLM (ProtT5, ESM2, ESM-C). Receiver needs only `h5py` and `numpy`.
 
 ## TL;DR
 
-Protein language models produce large variable-length per-residue embedding matrices `(L, D)`. The V2 codec compresses each to **26 KB** using: All-but-the-Top (remove top-3 corpus PCs) -> random projection to 512d -> Product Quantization (M=128 sub-spaces, K=256 centroids). A protein-level vector `(2048,)` is computed via DCT K=4 for retrieval/clustering. All five quality tiers share identical retrieval quality (Ret@1=0.786); the storage/size trade-off is purely in per-residue fidelity.
+Protein language models produce large variable-length per-residue embedding matrices `(L, D)`. The 1.0 codec compresses each using: All-but-the-Top (remove top-3 corpus PCs) -> random projection to 768d (configurable) -> store as float16 in `.one.h5` format. A protein-level vector `(D*dct_k,)` is computed via DCT K=4 for retrieval/clustering. The 768d default preserves near-perfect task retention (100.1% mean across SS3, SS8, disorder, TM, and retrieval). Optional extreme compression tiers (on 512d) use PQ/int4/binary quantization for 10--52 KB payloads.
 
-- **Retrieval/clustering**: `protein_vec` -> (2048,) vector. Cosine similarity.
-- **Per-residue (SS3, disorder)**: decode PQ codes with shared codebook -> (L, 512) embeddings.
+- **Retrieval/clustering**: `protein_vec` -> (3072,) vector at 768d. Cosine similarity.
+- **Per-residue (SS3, disorder)**: `per_residue` -> (L, 768) float16 embeddings.
 
-232 compression methods benchmarked across 37 experiments to arrive at this design.
+232 compression methods benchmarked across 42 experiments to arrive at this design.
 
 ## Quick Start
 
 ### Python API
 
 ```python
-from src.one_embedding.codec_v2 import OneEmbeddingCodecV2
+from src.one_embedding.codec import OneEmbeddingCodec
 
-# One-time: fit codebook on training corpus
-codec = OneEmbeddingCodecV2(mode='balanced')
-codec.fit(training_embeddings)      # dict of {id: (L, 1024) ndarray}
-codec.save_codebook('codebook.h5')  # ~512 KB shared file
+# 1.0 codec: 768d float16 (default, ~275 KB/protein, 100.1% mean retention)
+codec = OneEmbeddingCodec(d_out=768, dct_k=4)
+codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.one.h5")
 
-# Encode (sender side)
-codec = OneEmbeddingCodecV2(mode='balanced', codebook_path='codebook.h5')
-codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.h5")
+# Decode (receiver side -- h5py + numpy only)
+data = OneEmbeddingCodec.load("compressed.one.h5")
+data['per_residue']   # (L, 768) float16 for per-residue tasks
+data['protein_vec']   # (3072,) float16 for retrieval / clustering / UMAP
 
-# Decode (receiver side -- h5py + numpy + shared codebook)
-data = OneEmbeddingCodecV2.load("compressed.h5", codebook_path="codebook.h5")
-data['per_residue']   # (L, 512) for per-residue tasks
-data['protein_vec']   # (2048,) for retrieval / clustering / UMAP
-```
-
-### Pre-fitted Codebooks
-
-```python
-from src.one_embedding.core.codec import Codec
-
-# V1 codec with pre-fitted ABTT for ProtT5 or ESM2 (no codebook needed)
-codec = Codec.for_plm('prot_t5')
-codec.encode_h5_to_h5("raw_prot_t5.h5", "compressed.h5")
+# With pre-fitted ABTT for ProtT5 or ESM2
+codec = OneEmbeddingCodec.for_plm('prot_t5', d_out=768)
+codec.encode_h5_to_h5("raw_prot_t5.h5", "compressed.one.h5")
 ```
 
 ### CLI
@@ -49,16 +38,17 @@ codec.encode_h5_to_h5("raw_prot_t5.h5", "compressed.h5")
 # Extract PLM embeddings from FASTA
 one-embedding extract sequences.fasta embeddings.h5 --model prot_t5
 
-# Compress to .oemb format (V1 codec)
-one-embedding encode embeddings.h5 compressed.oemb
+# Compress to .one.h5 format (768d default)
+one-embedding encode embeddings.h5 compressed.one.h5
+one-embedding encode embeddings.h5 compressed.one.h5 --d-out 512  # or 512d
 
 # Inspect contents
-one-embedding inspect compressed.oemb
+one-embedding inspect compressed.one.h5
 
 # Built-in tools
-one-embedding disorder compressed.oemb
-one-embedding search query.oemb database/ --top-k 10
-one-embedding align protein_a.oemb protein_b.oemb
+one-embedding disorder compressed.one.h5
+one-embedding search query.one.h5 database/ --top-k 10
+one-embedding align protein_a.one.h5 protein_b.one.h5
 ```
 
 ### Running Experiments
@@ -83,11 +73,11 @@ uv run python experiments/make_benchmark_barplots.py       # Per-benchmark + V2 
 uv run python experiments/make_publication_figures.py       # Publication figures
 ```
 
-## V2 Codec: Five Quality Tiers
+## Compression Tiers (Optional Extreme Compression)
 
 ![V2 Pareto](docs/figures/pub_v2_pareto.png)
 
-The V2 codec pipeline: **ABTT k=3** (remove top-3 corpus PCs for isotropy) -> **RP to 512d** (seeded random projection, deterministic) -> **quantize** (PQ, int4, or binary) -> **DCT K=4** for protein-level vector.
+For storage-constrained applications, the V2 codec adds quantization on top of the 512d base: **ABTT k=3** -> **RP to 512d** -> **quantize** (PQ, int4, or binary) -> **DCT K=4** for protein-level vector. These tiers trade per-residue fidelity for smaller size, down to 10 KB/protein.
 
 All tiers share the same preprocessing and protein vector. The only difference is per-residue quantization:
 
@@ -122,28 +112,27 @@ Shared codebook: ~512 KB per mode, fitted once on a training corpus and reused f
 
 ## Retention Benchmarks
 
-How much task performance does the V2 `balanced` codec preserve compared to raw ProtT5-XL 1024d embeddings?
+How much task performance does the 1.0 codec (768d float16) preserve compared to raw ProtT5-XL 1024d embeddings?
 
-### Toolkit Retention (Experiment 36)
+### 768d Retention (Experiment 41)
 
-| Task | Metric | Raw 1024d | Compressed 512d | Retention |
+| Task | Metric | Raw 1024d | Compressed 768d | Retention |
 |------|--------|:---------:|:---------------:|:---------:|
-| SS3 (secondary structure) | Q3 accuracy | 0.846 | 0.819 | **96.7%** |
-| Family retrieval | Ret@1 | 0.731 | 0.729 | **99.7%** |
-| Conservation | Pairwise distance rho | -- | -- | **98.3%** |
-| Alignment overlap | Mean overlap | -- | -- | **96.1%** |
-| Disorder (Ridge) | Global Spearman rho | 0.692 | 0.630 | **90.9%** |
-| Disorder (CNN) | Global Spearman rho | -- | -- | **99.0%** |
-| TM-score | Spearman rho | 0.093 | 0.082 | **89.0%** |
+| SS3 (secondary structure) | Q3 accuracy | 0.846 | 0.837 | **98.8%** |
+| SS8 (secondary structure) | Q8 accuracy | 0.714 | 0.703 | **98.6%** |
+| Disorder | Spearman rho | 0.663 | 0.629 | **94.8%** |
+| TM topology | Macro F1 | 0.858 | 0.848 | **98.9%** |
+| Family retrieval | Ret@1 | 0.731 | 0.798 | **109.1%** |
+| **Mean retention** | | | | **100.1%** |
 
-### Structural Retention (Experiment 37)
+### Structural Retention (Experiment 37, 512d)
 
 | Metric | Retention | Dataset |
 |--------|:---------:|---------|
 | Local distance difference (lDDT) | **100.7%** | 50 SCOPe domains |
 | Contact precision | **106.5%** | 50 SCOPe domains |
 
-The codec preserves (and sometimes improves) structural information. Contact precision exceeds raw because PQ quantization acts as a denoiser, sharpening local spatial signals.
+The codec preserves (and sometimes improves) structural information. Retrieval exceeds raw because ABTT preprocessing exposes discriminative family-level directions that raw cosine similarity misses.
 
 ## Embedding Phylogenetics (Experiment 35)
 
@@ -152,7 +141,7 @@ The codec preserves (and sometimes improves) structural information. Contact pre
 PLM embeddings encode enough evolutionary signal to reconstruct phylogenetic trees -- without sequence alignment. We implemented a full Bayesian MCMC framework with Brownian motion likelihood for 512-dimensional continuous character data (a capability no existing phylogenetic software supports).
 
 | Tree Method | Data | Monophyletic Families |
-|-------------|------|-:--------------------:|
+|-------------|------|:---------------------:|
 | FastTree (ML) | AA sequence | 4 / 12 |
 | IQ-TREE WAG+I+G4 (ML) | AA sequence | 5 / 12 |
 | Embedding NJ | per-protein 512d | 9 / 12 |
@@ -169,18 +158,19 @@ ToxFam v2 benchmark: 84 proteins sampled from 12 diverse venom protein families 
 ```
 Raw PLM output (L, 1024)            -- any PLM, any protein
   -> All-but-the-Top k=3            -- remove 3 corpus PCs (isotropy transform)
-  -> Random project to 512d         -- fixed seed=42, norm-preserving (JL lemma)
-  -> Product Quantize (M=128)       -- 128 sub-spaces x 256 centroids each
-  -> Store PQ codes (L, 128) uint8  -- per-residue: 128 bytes/residue
-  + DCT K=4 on projected embeddings -- protein vector: (2048,) fp16
+  -> Random project to 768d         -- fixed seed=42, norm-preserving (JL lemma)
+  -> Store (L, 768) float16         -- per-residue: 1536 bytes/residue
+  + DCT K=4 on projected embeddings -- protein vector: (3072,) fp16
+  = .one.h5 file                    -- self-contained, h5py + numpy to decode
 ```
 
 **Why each step matters:**
 
 - **ABTT k=3**: Removes the dominant protein-identity PCs that dominate cosine similarity. Exposes discriminative family-level directions. +0.006 Ret@1 for free. From Mu & Viswanath (2018), validated for PLM protein embeddings.
-- **RP 512d**: Johnson-Lindenstrauss dimensionality reduction. Preserves pairwise distances with high probability. Deterministic (fixed seed). ProtT5 has intrinsic dimensionality ~374, so 512d captures ~85% of variance.
-- **PQ M=128**: Splits 512d into 128 sub-spaces of 4d each. Each sub-vector is replaced by the index of its nearest centroid (256 centroids per sub-space). Balanced codebook utilization: 7.81/8.00 bits entropy -- incompressible by design.
-- **DCT K=4**: Discrete Cosine Transform on the sequence dimension, keeping the first 4 coefficients per channel. Creates a fixed-size (2048,) protein-level vector from variable-length per-residue embeddings. DCT K=1 === mean pooling (mathematically).
+- **RP 768d**: Johnson-Lindenstrauss dimensionality reduction. Preserves pairwise distances with high probability. Deterministic (fixed seed). ProtT5 has intrinsic dimensionality ~374, so 768d captures ~95% of variance with 100.1% mean task retention. Configurable: use 512d for more compression.
+- **DCT K=4**: Discrete Cosine Transform on the sequence dimension, keeping the first 4 coefficients per channel. Creates a fixed-size protein-level vector from variable-length per-residue embeddings. DCT K=1 === mean pooling (mathematically).
+
+For extreme compression, PQ quantization can be applied on top of 512d projections (see Compression Tiers above).
 
 ## Storage Comparison
 
@@ -189,18 +179,19 @@ Raw PLM output (L, 1024)            -- any PLM, any protein
 | Representation | Size/protein | Compression | Retrieval | Per-Residue |
 |----------------|:------------:|:-----------:|:---------:|:-----------:|
 | Raw ProtT5 (L, 1024) fp32 | 700 KB | 1x | Baseline | Baseline |
-| **V2 `balanced` PQ M=128** | **26 KB** | **27x** | **0.786** | **(L, 512)** |
+| **1.0 codec (RP768) fp16** | **275 KB** | **2.5x** | **0.798** | **(L, 768)** |
+| V2 `balanced` PQ M=128 | 26 KB | 27x | 0.786 | (L, 512) |
 | V2 `full` int4 | 52 KB | 14x | 0.786 | (L, 512) |
 | V2 `compact` PQ M=64 | 15 KB | 47x | 0.786 | (L, 512) |
 | V1 codec (RP512) fp16 | 179 KB | 4x | 0.780 | (L, 512) |
-| protein_vec only (2048,) fp16 | 4 KB | 175x | 0.786 | No |
+| protein_vec only (3072,) fp16 | 6 KB | 117x | 0.798 | No |
 | mean pool only (1024,) fp32 | 4 KB | 175x | 0.734 | No |
 
 Mean L=175 residues. V2 sizes are data payload; on-disk H5 files add ~7 KB.
 
 ## Built-in Tools
 
-The package includes 7 tools that work directly on compressed `.oemb` embeddings:
+The package includes 7 tools that work directly on compressed `.one.h5` embeddings:
 
 | Tool | Description | Method |
 |------|-------------|--------|
@@ -212,7 +203,7 @@ The package includes 7 tools that work directly on compressed `.oemb` embeddings
 | **conserve** | Conservation scoring | Embedding norm heuristic |
 | **mutate** | Mutation sensitivity scanning | Local context sensitivity |
 
-CNN probes (disorder, ss3) are trained on 512d compressed embeddings and ship as pre-trained weights (~460 KB each). Conservation and mutation tools use untrained heuristics.
+CNN probes (disorder, ss3) are trained on compressed embeddings and ship as pre-trained weights (~460 KB each) supporting both 512d and 768d inputs. Conservation and mutation tools use untrained heuristics.
 
 ## Key Results: Training-Free Codec
 
@@ -220,7 +211,8 @@ CNN probes (disorder, ss3) are trained on 512d compressed embeddings and ship as
 
 | Codec | Ret@1 | SS3 Q3 | Dim | Per-Residue? |
 |-------|:-----:|:------:|:---:|:------------:|
-| **V2 balanced (PQ M=128)** | **0.786** | **0.807** | 2048+512 | Yes (L, 512) |
+| **1.0 (RP768 fp16)** | **0.798** | **0.837** | 3072+768 | **Yes (L, 768)** |
+| V2 balanced (PQ M=128) | 0.786 | 0.807 | 2048+512 | Yes (L, 512) |
 | V1 rp512+dct K4 | 0.780 | 0.815 | 2048 | Yes (L, 512) fp16 |
 | [mean\|max] euc | 0.786 | -- | 2048 | No |
 | mean pool (ground zero) | 0.734 | 0.840 | 1024 | Yes (raw) |
@@ -304,27 +296,27 @@ Every codec is benchmarked against a comprehensive suite spanning retrieval, str
 
 **Training-free codecs are deterministic** -- no training randomness. RP/FH use fixed seed=42. Multi-seed RP variance (Exp 29): Ret@1 = 0.779 +/- 0.004 across 10 seeds.
 
-## V1 Codec (Training-Free, No Codebook)
+## Base Codec (Training-Free, No Codebook)
 
-The V1 codec requires no codebook fitting -- fully deterministic with zero dependencies beyond the RP seed:
+The base codec requires no codebook fitting -- fully deterministic with zero dependencies beyond the RP seed:
 
 ```python
 from src.one_embedding.codec import OneEmbeddingCodec
 
-codec = OneEmbeddingCodec(d_out=512, dct_k=4)
-codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.h5")
+codec = OneEmbeddingCodec(d_out=768, dct_k=4)  # 768d default (1.0)
+codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.one.h5")
 
 # Receiver needs only h5py + numpy -- no codec library, no codebook
-data = OneEmbeddingCodec.load("compressed.h5")
-data['per_residue']   # (L, 512) float16
-data['protein_vec']   # (2048,) float16
+data = OneEmbeddingCodec.load("compressed.one.h5")
+data['per_residue']   # (L, 768) float16
+data['protein_vec']   # (3072,) float16
 ```
 
-V1 stores `(L, 512)` float16 per-residue embeddings + `(2048,)` protein vector. Size: ~179 KB/protein (4x compression). No quantization beyond float16. Pre-fitted ABTT weights available for ProtT5 and ESM2 via `Codec.for_plm('prot_t5')`.
+The 1.0 codec stores `(L, 768)` float16 per-residue embeddings + `(3072,)` protein vector. Size: ~275 KB/protein (2.5x compression). No quantization beyond float16. Pre-fitted ABTT weights available for ProtT5 and ESM2 via `OneEmbeddingCodec.for_plm('prot_t5', d_out=768)`.
 
-Use V1 when you need: zero setup, no codebook distribution, simplest possible receiver.
+Use 512d (`d_out=512`, ~179 KB) for more compression, or add PQ tiers for extreme compression.
 
-## The Journey: 232 Methods in 37 Experiments
+## The Journey: 232 Methods in 42 Experiments
 
 ### Phase 1-4: Trained Compression (Experiments 1-10)
 
@@ -405,7 +397,7 @@ src/
     universal_transforms.py Random/feature-hashed projection
     extract/               ESM2 + ProtT5 embedding extraction
     tools/                 7 built-in tools (disorder, ss3, search, ...)
-    io.py                  .oemb file format (H5-based, single + batch)
+    io.py                  .one.h5 / .oemb file format (H5-based, single + batch)
     cli.py                 Click CLI: extract, encode, inspect, disorder, search, align
     __init__.py            Top-level API: encode(), decode(), embed()
 
