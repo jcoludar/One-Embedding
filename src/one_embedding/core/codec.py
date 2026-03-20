@@ -193,11 +193,15 @@ class Codec:
         return self
 
     @classmethod
-    def for_plm(cls, model: str = "prot_t5") -> "Codec":
+    def for_plm(cls, model: str = "prot_t5", d_out: int = 768) -> "Codec":
         """Create a Codec with pre-fitted parameters for a specific PLM.
+
+        The ABTT weights (mean + top_pcs) operate in the original D=1024
+        space before projection, so existing .npz files work at any d_out.
 
         Args:
             model: "prot_t5" or "esm2"
+            d_out: Output dimensionality for random projection (default 768).
 
         Returns:
             Ready-to-encode Codec instance.
@@ -216,4 +220,6 @@ class Codec:
         path = weights_dir / model_map[model]
         if not path.exists():
             raise FileNotFoundError(f"Pre-fitted params not found at {path}. Run fit() instead.")
-        return cls().load_params(str(path))
+        codec = cls().load_params(str(path))
+        codec.d_out = d_out  # Override .npz d_out with caller's choice
+        return codec
