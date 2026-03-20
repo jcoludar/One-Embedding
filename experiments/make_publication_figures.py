@@ -777,6 +777,49 @@ def fig_storage_comparison(data):
     print(f"Saved {out}")
 
 
+def fig_phylo_monophyly(data):
+    """Bar chart: monophyletic families recovered by embedding vs sequence trees."""
+    methods = [
+        ("FastTree\n(sequence)", 4, "#6B7280"),
+        ("IQ-TREE\n(sequence)", 5, "#9CA3AF"),
+        ("Embed NJ\n(per-protein)", 9, "#10B981"),
+        ("Embed BM MCMC\n(per-protein)", 10, "#059669"),
+        ("Embed NJ\n(per-residue)", 11, "#7C3AED"),
+        ("Embed MCMC\n(per-residue)", 10, "#A78BFA"),
+    ]
+
+    labels = [m[0] for m in methods]
+    values = [m[1] for m in methods]
+    colors = [m[2] for m in methods]
+
+    fig, ax = plt.subplots(figsize=(9, 4.5))
+    x = np.arange(len(labels))
+    bars = ax.bar(x, values, color=colors, edgecolor="white",
+                  linewidth=0.5, width=0.65)
+
+    for bar, val in zip(bars, values):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.2,
+                f"{val}/12", ha="center", va="bottom",
+                fontsize=11, fontweight="bold", color="#374151")
+
+    ax.set_ylabel("Monophyletic Families (out of 12)")
+    ax.set_title("Phylogenetic Tree Quality: Embedding vs Sequence Methods\n"
+                 "ToxFam v2 — 84 conotoxin proteins, 12 families")
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=9)
+    ax.set_ylim(0, 13.5)
+    ax.axhline(y=12, color="#E5E7EB", linestyle="--", linewidth=1, zorder=0)
+    ax.text(len(labels) - 0.5, 12.2, "perfect (12/12)",
+            fontsize=8, color="#9CA3AF", ha="right")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    out = FIG_DIR / "pub_phylo_monophyly.png"
+    fig.savefig(out)
+    plt.close(fig)
+    print(f"Saved {out}")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -793,5 +836,6 @@ if __name__ == "__main__":
     fig_biology_hierarchy(data)
     fig_trained_addendum(data)
     fig_storage_comparison(data)
+    fig_phylo_monophyly(data)
 
     print(f"\nDone! All figures saved to {FIG_DIR}/")
