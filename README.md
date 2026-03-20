@@ -1,6 +1,6 @@
 # One Embedding: Universal Compression for PLM Protein Embeddings
 
-A universal codec that compresses any protein language model's per-residue output into a compact, fixed-schema representation -- the **One Embedding**. The recommended V2 codec (`balanced` mode) achieves **26 KB/protein** (27x compression) while preserving 99.7% retrieval quality and 97% per-residue task retention. Five selectable quality tiers from 10--52 KB. Works with any PLM (ProtT5, ESM2, ESM-C). Receiver needs only `h5py`, `numpy`, and a shared codebook.
+A universal codec that compresses any protein language model's per-residue output into a compact, fixed-schema representation -- the **One Embedding**. The recommended V2 codec (`balanced` mode) achieves **26 KB/protein** (27x compression) while preserving 99.7% retrieval quality and 96% per-residue task retention. Five selectable quality tiers from 10--52 KB. Works with any PLM (ProtT5, ESM2, ESM-C). Receiver needs only `h5py`, `numpy`, and a shared codebook.
 
 ## TL;DR
 
@@ -9,7 +9,7 @@ Protein language models produce large variable-length per-residue embedding matr
 - **Retrieval/clustering**: `protein_vec` -> (2048,) vector. Cosine similarity.
 - **Per-residue (SS3, disorder)**: decode PQ codes with shared codebook -> (L, 512) embeddings.
 
-232 compression methods benchmarked across 37 experiments to arrive at this design.
+232 compression methods benchmarked across 31 experiments (experiments 01--04, 11--37) to arrive at this design.
 
 ## Quick Start
 
@@ -94,7 +94,7 @@ All tiers share the same preprocessing and protein vector. The only difference i
 | Mode | Quantization | Payload Size | Compression | Ret@1 | SS3 Q3 | SS8 Q8 | Disorder rho | TM F1 |
 |------|-------------|:------------:|:-----------:|:-----:|:------:|:------:|:------------:|:-----:|
 | **`balanced`** | **PQ M=128** | **26 KB** | **27x** | **0.786** | **0.807** | **0.670** | **0.584** | **0.731** |
-| `full` | int4 scalar | 52 KB | 13x | 0.786 | 0.816 | 0.681 | 0.597 | 0.752 |
+| `full` | int4 scalar | 52 KB | 14x | 0.786 | 0.816 | 0.681 | 0.597 | 0.752 |
 | `compact` | PQ M=64 | 15 KB | 47x | 0.786 | 0.778 | 0.637 | 0.549 | 0.701 |
 | `binary` | 1-bit sign | 19 KB | 37x | 0.786 | 0.776 | 0.636 | 0.597 | 0.750 |
 | `micro` | PQ M=32 | 10 KB | 70x | 0.786 | 0.739 | 0.594 | 0.495 | 0.579 |
@@ -160,7 +160,7 @@ PLM embeddings encode enough evolutionary signal to reconstruct phylogenetic tre
 | **BM MCMC warm-start from NJ** | **per-residue 320Kd** | **11 / 12** |
 | BM MCMC (50K gen) | per-residue 320Kd | 10 / 12 |
 
-ToxFam v2 benchmark: 84 conotoxin proteins across 12 families. Embedding trees recover 2x more monophyletic families than sequence-based maximum likelihood methods. The best result (11/12) comes from a per-residue BM MCMC warm-started from a neighbor-joining tree. The Brownian motion model treats each of the 512 compressed dimensions as an independent continuous trait evolving along the tree -- justified by the decorrelation from ABTT3 + random projection preprocessing.
+ToxFam v2 benchmark: 84 proteins sampled from 12 diverse venom protein families (Snaclec, CRISP, Disintegrin, Actinoporin, Insulin, etc. — 7 proteins per family). Embedding trees recover 2x more monophyletic families than sequence-based maximum likelihood methods. The best result (11/12) comes from a per-residue BM MCMC warm-started from a neighbor-joining tree. The Brownian motion model treats each of the 512 compressed dimensions as an independent continuous trait evolving along the tree -- justified by the decorrelation from ABTT3 + random projection preprocessing.
 
 **Implementation:** ExaBayes-style MCMC with vectorized Felsenstein pruning O(N*D), partial likelihood caching, extended SPR proposals, MC3 heated chains, and convergence diagnostics (ASDSF, ESS, PSRF). Cross-validated against RevBayes (sigma-squared CIs overlap). 71 tests.
 
@@ -190,9 +190,9 @@ Raw PLM output (L, 1024)            -- any PLM, any protein
 |----------------|:------------:|:-----------:|:---------:|:-----------:|
 | Raw ProtT5 (L, 1024) fp32 | 700 KB | 1x | Baseline | Baseline |
 | **V2 `balanced` PQ M=128** | **26 KB** | **27x** | **0.786** | **(L, 512)** |
-| V2 `full` int4 | 52 KB | 13x | 0.786 | (L, 512) |
+| V2 `full` int4 | 52 KB | 14x | 0.786 | (L, 512) |
 | V2 `compact` PQ M=64 | 15 KB | 47x | 0.786 | (L, 512) |
-| V1 codec (ABTT3+RP512) fp16 | 179 KB | 4x | 0.780 | (L, 512) |
+| V1 codec (RP512) fp16 | 179 KB | 4x | 0.780 | (L, 512) |
 | protein_vec only (2048,) fp16 | 4 KB | 175x | 0.786 | No |
 | mean pool only (1024,) fp32 | 4 KB | 175x | 0.734 | No |
 
@@ -221,7 +221,7 @@ CNN probes (disorder, ss3) are trained on 512d compressed embeddings and ship as
 | Codec | Ret@1 | SS3 Q3 | Dim | Per-Residue? |
 |-------|:-----:|:------:|:---:|:------------:|
 | **V2 balanced (PQ M=128)** | **0.786** | **0.807** | 2048+512 | Yes (L, 512) |
-| V1 ABTT3+rp512+dct K4 | 0.786 | 0.811 | 2048 | Yes (L, 512) fp16 |
+| V1 rp512+dct K4 | 0.780 | 0.815 | 2048 | Yes (L, 512) fp16 |
 | [mean\|max] euc | 0.786 | -- | 2048 | No |
 | mean pool (ground zero) | 0.734 | 0.840 | 1024 | Yes (raw) |
 | *Trained CC d256* | *0.795* | *0.834* | *256* | *Yes (256d)* |
@@ -324,7 +324,7 @@ V1 stores `(L, 512)` float16 per-residue embeddings + `(2048,)` protein vector. 
 
 Use V1 when you need: zero setup, no codebook distribution, simplest possible receiver.
 
-## The Journey: 232 Methods in 37 Experiments
+## The Journey: 232 Methods in 31 Experiments
 
 ### Phase 1-4: Trained Compression (Experiments 1-10)
 
@@ -351,7 +351,7 @@ ABTT3 (remove top-3 PCs) discovered as a free retrieval boost (+0.006 Ret@1). in
 Re-tested all compression on ABTT3+RP512 (decorrelated, isotropic). Results dramatically better:
 
 - **Binary (1-bit) beats int4 for retrieval** (0.787 vs 0.784) -- RaBitQ effect
-- **PQ M=128 matches V1 quality at 40% less storage** (26 vs 48 KB payload)
+- **PQ M=128 matches V1 quality at 50% less storage** (26 vs 52 KB payload)
 - **Pure VQ fails in 512d** -- even K=16384 caps at 0.621 Ret@1
 - **RVQ fails in 512d** -- residual norms barely decrease between levels
 - **OPQ doesn't help** -- RP already decorrelates

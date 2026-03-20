@@ -845,7 +845,7 @@ def fig_phylo_monophyly(data):
 
     ax.set_ylabel("Monophyletic Families (out of 12)")
     ax.set_title("Phylogenetic Tree Quality: Embedding vs Sequence Methods\n"
-                 "ToxFam v2 — 84 conotoxin proteins, 12 families")
+                 "ToxFam v2 — 84 proteins from 12 venom protein families")
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=9)
     ax.set_ylim(0, 13.5)
