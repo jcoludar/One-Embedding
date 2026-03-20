@@ -711,16 +711,17 @@ def fig_storage_comparison(data):
     # ProtT5: D=1024, float32 = 4 bytes/value
     D = 1024
     B = 4  # bytes per float32
+    pv = 2048 * 2  # protein_vec (2048,) fp16 = 4096 bytes
 
     codecs = [
-        ("Raw (L x 1024)",       mean_L * D * B),
-        ("rp512 (L x 512)",      mean_L * 512 * B),
-        ("fh512 (L x 512)",      mean_L * 512 * B),
-        ("Trained CC (L x 256)", mean_L * 256 * B),
-        ("rp512 + dct K4\n(L x 512) + (2048,)",
-                                  mean_L * 512 * B + 2048 * B),
-        ("[mean|max] (2048,)",    2048 * B),
-        ("mean pool (1024,)",     D * B),
+        ("Raw ProtT5\n(L x 1024) fp32",      mean_L * D * B),
+        ("V1 codec\n(L x 512) fp16 + vec",    mean_L * 512 * 2 + pv),
+        ("V2 full\nint4 + vec",               mean_L * 256 + 2048 + 2048 + pv),
+        ("V2 balanced\nPQ M=128 + vec",       mean_L * 128 + pv),
+        ("V2 binary\n1-bit + vec",            mean_L * 64 + 2048 + 2048 + pv),
+        ("V2 compact\nPQ M=64 + vec",         mean_L * 64 + pv),
+        ("V2 micro\nPQ M=32 + vec",           mean_L * 32 + pv),
+        ("protein_vec only\n(2048,) fp16",     pv),
     ]
 
     labels = [c[0] for c in codecs]
@@ -728,17 +729,20 @@ def fig_storage_comparison(data):
     pct_of_raw = [c[1] / codecs[0][1] * 100 for c in codecs]
 
     # Color by category
+    V2_COLOR = "#7C3AED"   # purple for V2
+    V2_LIGHT = "#A78BFA"   # lighter purple for V2 non-default
     bar_colors = [
         "#E5E7EB",                        # Raw (grey)
-        CATEGORY_COLORS["D-compression"], # rp512
-        "#10B981",                        # fh512
-        CODEC_COLORS["trained_cc"],       # Trained CC
-        CATEGORY_COLORS["Chained"],       # rp512+dct_K4
-        CATEGORY_COLORS["Pooling-only"],  # [mean|max]
-        CODEC_COLORS["ground_zero"],      # mean pool
+        CATEGORY_COLORS["Chained"],       # V1 codec
+        V2_LIGHT,                         # V2 full
+        V2_COLOR,                         # V2 balanced (recommended)
+        V2_LIGHT,                         # V2 binary
+        V2_LIGHT,                         # V2 compact
+        V2_LIGHT,                         # V2 micro
+        CATEGORY_COLORS["Pooling-only"],  # protein_vec only
     ]
 
-    fig, ax = plt.subplots(figsize=(9, 4.5))
+    fig, ax = plt.subplots(figsize=(9, 5.5))
 
     y = np.arange(len(labels))
     bars = ax.barh(y, sizes_kb, color=bar_colors, edgecolor="white",
@@ -763,8 +767,8 @@ def fig_storage_comparison(data):
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 
-    ax.text(0.5, -0.18,
-            "Float32 storage, uncompressed. Gzip typically reduces by 30-50%.",
+    ax.text(0.5, -0.15,
+            "V2 payload sizes: PQ codes (uint8) + protein_vec (fp16). V1: (L,512) fp16 + vec.",
             transform=ax.transAxes, fontsize=8, ha="center", color="#6B7280")
 
     out = FIG_DIR / "pub_storage_comparison.png"

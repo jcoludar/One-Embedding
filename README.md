@@ -1,32 +1,213 @@
 # One Embedding: Universal Compression for PLM Protein Embeddings
 
-A training-free codec that compresses any protein language model's per-residue output into a single fixed-size **(512, 512) matrix** — the **One Embedding**. One file per protein, serves both protein-level retrieval (Ret@1=0.784) and residue-level structure prediction (96% SS3 retention). No training, no labels, no fitting — like JPEG for protein embeddings.
+A universal codec that compresses any protein language model's per-residue output into a compact, fixed-schema representation -- the **One Embedding**. The recommended V2 codec (`balanced` mode) achieves **26 KB/protein** (27x compression) while preserving 99.7% retrieval quality and 97% per-residue task retention. Five selectable quality tiers from 10--52 KB. Works with any PLM (ProtT5, ESM2, ESM-C). Receiver needs only `h5py`, `numpy`, and a shared codebook.
 
 ## TL;DR
 
-Protein language models produce large variable-length per-residue embedding matrices `(L, D)`. We compress each to a **fixed (512, 512) matrix** at ~50 KB per protein (15x compression) using a fully deterministic, training-free pipeline: remove top-3 corpus PCs (All-but-the-Top) → random projection to 512d → int4 quantization → transpose + zero-pad to fixed size. To use:
+Protein language models produce large variable-length per-residue embedding matrices `(L, D)`. The V2 codec compresses each to **26 KB** using: All-but-the-Top (remove top-3 corpus PCs) -> random projection to 512d -> Product Quantization (M=128 sub-spaces, K=256 centroids). A protein-level vector `(2048,)` is computed via DCT K=4 for retrieval/clustering. All five quality tiers share identical retrieval quality (Ret@1=0.786); the storage/size trade-off is purely in per-residue fidelity.
 
-- **Retrieval/clustering**: `dct_summary(matrix[:, :L].T, K=4)` → (2048,) vector. One matmul.
-- **Per-residue (SS3, disorder)**: `matrix[:, :L].T` → (L, 512) embeddings. Unpad + transpose.
+- **Retrieval/clustering**: `protein_vec` -> (2048,) vector. Cosine similarity.
+- **Per-residue (SS3, disorder)**: decode PQ codes with shared codebook -> (L, 512) embeddings.
 
-Works with any PLM (ProtT5, ESM2, ESM-C). Receiver needs only `h5py` and `numpy`.
+232 compression methods benchmarked across 37 experiments to arrive at this design.
 
-## Key Results: Training-Free Universal Codec
+## Quick Start
+
+### Python API
+
+```python
+from src.one_embedding.codec_v2 import OneEmbeddingCodecV2
+
+# One-time: fit codebook on training corpus
+codec = OneEmbeddingCodecV2(mode='balanced')
+codec.fit(training_embeddings)      # dict of {id: (L, 1024) ndarray}
+codec.save_codebook('codebook.h5')  # ~512 KB shared file
+
+# Encode (sender side)
+codec = OneEmbeddingCodecV2(mode='balanced', codebook_path='codebook.h5')
+codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.h5")
+
+# Decode (receiver side -- h5py + numpy + shared codebook)
+data = OneEmbeddingCodecV2.load("compressed.h5", codebook_path="codebook.h5")
+data['per_residue']   # (L, 512) for per-residue tasks
+data['protein_vec']   # (2048,) for retrieval / clustering / UMAP
+```
+
+### Pre-fitted Codebooks
+
+```python
+from src.one_embedding.core.codec import Codec
+
+# V1 codec with pre-fitted ABTT for ProtT5 or ESM2 (no codebook needed)
+codec = Codec.for_plm('prot_t5')
+codec.encode_h5_to_h5("raw_prot_t5.h5", "compressed.h5")
+```
+
+### CLI
+
+```bash
+# Extract PLM embeddings from FASTA
+one-embedding extract sequences.fasta embeddings.h5 --model prot_t5
+
+# Compress to .oemb format (V1 codec)
+one-embedding encode embeddings.h5 compressed.oemb
+
+# Inspect contents
+one-embedding inspect compressed.oemb
+
+# Built-in tools
+one-embedding disorder compressed.oemb
+one-embedding search query.oemb database/ --top-k 10
+one-embedding align protein_a.oemb protein_b.oemb
+```
+
+### Running Experiments
+
+```bash
+# Setup (requires Python 3.12, uv package manager)
+uv sync
+
+# Extract embeddings (prerequisite for all experiments)
+uv run python experiments/01_extract_residue_embeddings.py
+
+# V2 codec benchmarks
+uv run python experiments/32_pq_on_rp512.py              # PQ sweep on preprocessed space
+uv run python experiments/34_progressive_codec.py          # V2 tiers benchmark
+
+# Retention benchmarks
+uv run python experiments/36_toolkit_benchmark.py          # Disorder + SS3 retention
+uv run python experiments/37_structural_retention.py       # lDDT + contact precision
+
+# Generate figures
+uv run python experiments/make_benchmark_barplots.py       # Per-benchmark + V2 + Pareto
+uv run python experiments/make_publication_figures.py       # Publication figures
+```
+
+## V2 Codec: Five Quality Tiers
+
+![V2 Pareto](docs/figures/pub_v2_pareto.png)
+
+The V2 codec pipeline: **ABTT k=3** (remove top-3 corpus PCs for isotropy) -> **RP to 512d** (seeded random projection, deterministic) -> **quantize** (PQ, int4, or binary) -> **DCT K=4** for protein-level vector.
+
+All tiers share the same preprocessing and protein vector. The only difference is per-residue quantization:
+
+| Mode | Quantization | Payload Size | Compression | Ret@1 | SS3 Q3 | SS8 Q8 | Disorder rho | TM F1 |
+|------|-------------|:------------:|:-----------:|:-----:|:------:|:------:|:------------:|:-----:|
+| **`balanced`** | **PQ M=128** | **26 KB** | **27x** | **0.786** | **0.807** | **0.670** | **0.584** | **0.731** |
+| `full` | int4 scalar | 52 KB | 13x | 0.786 | 0.816 | 0.681 | 0.597 | 0.752 |
+| `compact` | PQ M=64 | 15 KB | 47x | 0.786 | 0.778 | 0.637 | 0.549 | 0.701 |
+| `binary` | 1-bit sign | 19 KB | 37x | 0.786 | 0.776 | 0.636 | 0.597 | 0.750 |
+| `micro` | PQ M=32 | 10 KB | 70x | 0.786 | 0.739 | 0.594 | 0.495 | 0.579 |
+
+Payload size formula: PQ modes store `L x M + 4096` bytes (uint8 PQ codes + protein_vec fp16). int4 and binary modes add 4 KB per-protein overhead for per-channel scales/zero-points. Mean L=175 residues, raw ProtT5 = 700 KB/protein.
+
+Shared codebook: ~512 KB per mode, fitted once on a training corpus and reused for all proteins.
+
+### Per-Residue Quality Across Tiers
+
+| | |
+|:---:|:---:|
+| ![V2 SS3](docs/figures/pub_v2_ss3.png) | ![V2 Disorder](docs/figures/pub_v2_disorder.png) |
+| ![V2 TM](docs/figures/pub_v2_tm.png) | |
+
+### When to Use Which Tier
+
+| Use Case | Tier | Why |
+|----------|------|-----|
+| **General purpose** | `balanced` | Best quality/size trade-off (26 KB, 96% SS3) |
+| **Maximum per-residue fidelity** | `full` | Highest SS3/disorder retention (52 KB) |
+| **Storage-constrained** | `compact` | Good quality at 15 KB (93% SS3) |
+| **Retrieval-only** | `binary` | Same retrieval, good per-residue at 19 KB |
+| **Extreme compression** | `micro` | 10 KB, still 88% SS3 retention |
+
+## Retention Benchmarks
+
+How much task performance does the V2 `balanced` codec preserve compared to raw ProtT5-XL 1024d embeddings?
+
+### Toolkit Retention (Experiment 36)
+
+| Task | Metric | Raw 1024d | Compressed 512d | Retention |
+|------|--------|:---------:|:---------------:|:---------:|
+| SS3 (secondary structure) | Q3 accuracy | 0.426 | 0.433 | **101.7%** |
+| Family retrieval | Ret@1 | 0.731 | 0.729 | **99.7%** |
+| Conservation | Pairwise distance rho | -- | -- | **98.3%** |
+| Alignment overlap | Mean overlap | -- | -- | **96.1%** |
+| Disorder (Ridge) | Global Spearman rho | 0.692 | 0.630 | **90.9%** |
+| Disorder (CNN) | Global Spearman rho | -- | -- | **99.0%** |
+| TM-score | Spearman rho | 0.093 | 0.082 | **89.0%** |
+
+### Structural Retention (Experiment 37)
+
+| Metric | Retention | Dataset |
+|--------|:---------:|---------|
+| Local distance difference (lDDT) | **100.7%** | 50 SCOPe domains |
+| Contact precision | **106.5%** | 50 SCOPe domains |
+
+The codec preserves (and sometimes improves) structural information. Contact precision exceeds raw because PQ quantization acts as a denoiser, sharpening local spatial signals.
+
+## The Pipeline
+
+```
+Raw PLM output (L, 1024)            -- any PLM, any protein
+  -> All-but-the-Top k=3            -- remove 3 corpus PCs (isotropy transform)
+  -> Random project to 512d         -- fixed seed=42, norm-preserving (JL lemma)
+  -> Product Quantize (M=128)       -- 128 sub-spaces x 256 centroids each
+  -> Store PQ codes (L, 128) uint8  -- per-residue: 128 bytes/residue
+  + DCT K=4 on projected embeddings -- protein vector: (2048,) fp16
+```
+
+**Why each step matters:**
+
+- **ABTT k=3**: Removes the dominant protein-identity PCs that dominate cosine similarity. Exposes discriminative family-level directions. +0.006 Ret@1 for free. From Mu & Viswanath (2018), validated for PLM protein embeddings.
+- **RP 512d**: Johnson-Lindenstrauss dimensionality reduction. Preserves pairwise distances with high probability. Deterministic (fixed seed). ProtT5 has intrinsic dimensionality ~374, so 512d captures ~85% of variance.
+- **PQ M=128**: Splits 512d into 128 sub-spaces of 4d each. Each sub-vector is replaced by the index of its nearest centroid (256 centroids per sub-space). Balanced codebook utilization: 7.81/8.00 bits entropy -- incompressible by design.
+- **DCT K=4**: Discrete Cosine Transform on the sequence dimension, keeping the first 4 coefficients per channel. Creates a fixed-size (2048,) protein-level vector from variable-length per-residue embeddings. DCT K=1 === mean pooling (mathematically).
+
+## Storage Comparison
+
+![Storage Comparison](docs/figures/pub_storage_comparison.png)
+
+| Representation | Size/protein | Compression | Retrieval | Per-Residue |
+|----------------|:------------:|:-----------:|:---------:|:-----------:|
+| Raw ProtT5 (L, 1024) fp32 | 700 KB | 1x | Baseline | Baseline |
+| **V2 `balanced` PQ M=128** | **26 KB** | **27x** | **0.786** | **(L, 512)** |
+| V2 `full` int4 | 52 KB | 13x | 0.786 | (L, 512) |
+| V2 `compact` PQ M=64 | 15 KB | 47x | 0.786 | (L, 512) |
+| V1 codec (ABTT3+RP512) fp16 | 179 KB | 4x | 0.780 | (L, 512) |
+| protein_vec only (2048,) fp16 | 4 KB | 175x | 0.786 | No |
+| mean pool only (1024,) fp32 | 4 KB | 175x | 0.734 | No |
+
+Mean L=175 residues. V2 sizes are data payload; on-disk H5 files add ~7 KB.
+
+## Built-in Tools
+
+The package includes 7 tools that work directly on compressed `.oemb` embeddings:
+
+| Tool | Description | Method |
+|------|-------------|--------|
+| **disorder** | Intrinsic disorder prediction | Trained CNN probe (SETH-style), rho=0.707 |
+| **ss3** | Secondary structure (3-class: H/E/C) | Trained CNN probe, Q3=0.432 |
+| **search** | Similarity search / k-NN retrieval | Cosine similarity on protein_vec |
+| **classify** | Family classification | k-NN against reference database |
+| **align** | Pairwise residue alignment | Per-residue embedding alignment |
+| **conserve** | Conservation scoring | Embedding norm heuristic |
+| **mutate** | Mutation sensitivity scanning | Local context sensitivity |
+
+CNN probes (disorder, ss3) are trained on 512d compressed embeddings and ship as pre-trained weights (~460 KB each). Conservation and mutation tools use untrained heuristics.
+
+## Key Results: Training-Free Codec
 
 ![Codec Retrieval Benchmark](docs/figures/pub_codec_retrieval.png)
 
 | Codec | Ret@1 | SS3 Q3 | Dim | Per-Residue? |
 |-------|:-----:|:------:|:---:|:------------:|
-| rp512+dct K4 | **0.780** | 0.815 | 2048 | rp512 (512d) |
-| fh512+dct K4 | 0.778 | 0.805 | 2048 | fh512 (512d) |
+| **V2 balanced (PQ M=128)** | **0.786** | **0.807** | 2048+512 | Yes (L, 512) |
+| V1 ABTT3+rp512+dct K4 | 0.786 | 0.811 | 2048 | Yes (L, 512) fp16 |
 | [mean\|max] euc | 0.786 | -- | 2048 | No |
-| dct K=4 | 0.776 | -- | 4096 | Lossy (0.498) |
 | mean pool (ground zero) | 0.734 | 0.840 | 1024 | Yes (raw) |
-| *Trained CC d256* | *0.795* | *0.834** | *256* | *Yes (256d)* |
+| *Trained CC d256* | *0.795* | *0.834* | *256* | *Yes (256d)* |
 
-ProtT5-XL on SCOPe 5K (n=850 queries). *Trained CC SS3 on CB513. Error bars: 95% CI, normal approximation.
-
-**Best training-free codec for both tasks: `rp512+dct_K4`** -- random projection to 512d preserves per-residue embeddings, then DCT K=4 smart pooling creates a 2048d protein-level vector for retrieval.
+ProtT5-XL on SCOPe 5K (n=850 queries). Error bars: 95% CI, normal approximation.
 
 ## The Fundamental Trade-off
 
@@ -37,54 +218,13 @@ There is a fundamental tension between retrieval and per-residue quality:
 - **L-compression** (collapsing the sequence dimension via pooling) boosts retrieval but destroys per-residue information
 - **D-compression** (reducing embedding dimension via projection) preserves per-residue structure but barely helps retrieval
 
-**Chained codecs solve this**: D-compress first (rp512 or fh512 for per-residue), then smart-pool the compressed matrix (dct K=4 for retrieval). Both tasks are served from a single stored representation.
+**Chained codecs solve this**: D-compress first (RP to 512d for per-residue), then smart-pool (DCT K=4 for retrieval). Both tasks are served from a single stored representation.
 
 ## Per-Residue Task Retention
 
 ![Per-Residue Retention](docs/figures/pub_per_residue_retention.png)
 
-D-compression codecs (rp512, fh512) retain 93-97% of raw per-residue task performance across secondary structure, disorder, and membrane topology prediction. Chained codecs inherit the D-compressor's per-residue performance -- the smart pool stage only adds a protein-level vector, it doesn't modify the stored residue embeddings.
-
-## When to Use What
-
-| Goal | Codec | Output | Storage |
-|------|-------|--------|---------|
-| Per-residue only | rp512 or fh512 | (L, 512) | 50% fp32 / 25% fp16 |
-| Retrieval only | [mean\|max] + Euclidean | (2048,) | ~8 KB/protein |
-| Both tasks | rp512 + dct K4 | (L, 512) + (2048,) | 51% fp32 / 26% fp16 |
-| Max retrieval (willing to train) | Trained CC d256 | (L, 256) | 25% fp32 |
-
-## Float16: Half the Storage, Zero Quality Loss
-
-![Float16 Benchmark](docs/figures/pub_float16_benchmark.png)
-
-The codec defaults to float16 storage. Benchmarked head-to-head on real ProtT5-XL embeddings:
-
-| Metric | Float32 (51% raw) | Float16 (26% raw) | Delta |
-|--------|:--:|:--:|:--:|
-| Ret@1 | 0.780 | 0.780 | 0.000 |
-| MRR | 0.853 | 0.853 | 0.000 |
-| SS3 Q3 | 0.815 | 0.815 | 0.000 |
-| SS8 Q8 | 0.669 | 0.669 | 0.000 |
-| Storage | 358 KB | **179 KB** | **-50%** |
-
-Max quantization error: 0.001 (cosine similarity 1.000000). Float16 is lossless in practice for both retrieval and linear per-residue probes. All codec output defaults to float16; pass `dtype="float32"` for full precision.
-
-## Storage Comparison
-
-![Storage Comparison](docs/figures/pub_storage_comparison.png)
-
-| Representation | Shape | KB/protein | % of raw |
-|----------------|-------|:----------:|:--------:|
-| Raw ProtT5 | (L, 1024) | 700 | 100% |
-| **rp512 + dct K4 (fp16)** | **(L, 512) + (2048,)** | **179** | **26%** |
-| rp512 + dct K4 (fp32) | (L, 512) + (2048,) | 358 | 51% |
-| rp512 / fh512 (fp32) | (L, 512) | 350 | 50% |
-| Trained CC d256 (fp32) | (L, 256) | 175 | 25% |
-| [mean\|max] only | (2048,) | 8 | 1% |
-| mean pool only | (1024,) | 4 | <1% |
-
-Mean L=175 residues. The default float16 codec achieves 4x compression (26% of raw) while preserving both per-residue and protein-level task performance. Per-protein-only representations (mean pool, [mean|max]) are tiny but lose all per-residue information.
+D-compression codecs (rp512, fh512) retain 93-97% of raw per-residue task performance across secondary structure, disorder, and membrane topology prediction. Product Quantization on the preprocessed space adds negligible further degradation for the `balanced` and `full` tiers.
 
 ## Cross-PLM Results
 
@@ -92,11 +232,13 @@ Mean L=175 residues. The default float16 codec achieves 4x compression (26% of r
 
 The choice of PLM matters far more than the choice of codec. ProtT5-XL outperforms ESM2-650M by ~0.12 Ret@1 across all codecs, and ESM2-650M outperforms ESM-C 300M by another ~0.23. The relative ranking of codecs is consistent across PLMs.
 
+ABTT k=3 on ESM2 gives a massive +0.072 Ret@1 improvement (0.684 -> 0.755), because ESM2 has very concentrated PCs (intrinsic dimensionality = 41 vs ProtT5 = 374).
+
 ## Biology and Hierarchy Validation
 
 ![Biology & Hierarchy](docs/figures/pub_biology_hierarchy.png)
 
-Codec performance was validated on enzyme classification (EC numbers), Pfam domain retrieval, Gene Ontology semantic similarity, and SCOPe hierarchy separation. DCT K=4 and [mean|max] lead on EC/Pfam retrieval. Mean pool, rp512, fh512, and cosine deviation best preserve GO semantic similarity and hierarchy structure.
+Codec performance validated on enzyme classification (EC numbers), Pfam domain retrieval, Gene Ontology semantic similarity, and SCOPe hierarchy separation.
 
 ## Evaluation Suite
 
@@ -110,150 +252,168 @@ Every codec is benchmarked against a comprehensive suite spanning retrieval, str
 | SF Ret@1 | Superfamily-level retrieval | SCOPe 5K |
 | Fold Ret@1 | Fold-level retrieval | SCOPe 5K |
 | MRR | Mean reciprocal rank | SCOPe 5K |
-| MAP | Mean average precision | SCOPe 5K |
-| Hierarchy separation | Distance ratio: unrelated / within-family | SCOPe 5K |
 
 ### Biological Annotation Correlation
 
 | Metric | What it measures | Source |
 |--------|-----------------|--------|
 | GO Spearman rho | Embedding similarity vs Gene Ontology Jaccard | UniProt GO terms |
-| EC Ret@1 (4 levels) | Enzyme classification retrieval at each EC hierarchy | UniProt EC numbers |
+| EC Ret@1 (4 levels) | Enzyme classification retrieval | UniProt EC numbers |
 | Pfam Ret@1 | Protein domain family retrieval | UniProt Pfam |
-| Taxonomy Spearman rho | Embedding similarity vs taxonomic distance | NCBI taxonomy |
 
-### Per-Residue Probes (LogisticRegression, random_state=42)
+### Per-Residue Probes
 
-| Task | Metric | Dataset | Size |
-|------|--------|---------|------|
-| Secondary structure (3-class) | Q3 accuracy | CB513 | 513 proteins |
-| Secondary structure (8-class) | Q8 accuracy | CB513 | 513 proteins |
-| Intrinsic disorder | Spearman rho | CheZOD/SETH | 1,291 proteins |
-| Transmembrane topology | Macro F1 | TMbed | ~500 proteins |
-| Signal peptide | Signal F1 | SignalP6 | ~10K proteins |
-| PPI interface | Interface F1 | ProteinGLUE | ~2K proteins |
-| Epitope prediction | Epitope F1 | ProteinGLUE | ~2K proteins |
+| Task | Metric | Dataset |
+|------|--------|---------|
+| Secondary structure (3/8-class) | Q3 / Q8 accuracy | CB513 |
+| Intrinsic disorder | Spearman rho | CheZOD |
+| Transmembrane topology | Macro F1 | TMbed |
 
-### Reconstruction & Compression Quality
-
-| Metric | What it measures |
-|--------|-----------------|
-| CosSim | Mean cosine similarity between original and reconstructed per-residue embeddings |
-| MSE | Mean squared reconstruction error |
-| Size (bytes/protein) | Actual serialized byte count (mean protein L=175) |
-| Compression ratio | Raw size / compressed size |
-| Encode speed | ms/protein (CPU, 100-protein average after 10 warm-up) |
-| Decode speed | ms/protein (CPU, 100-protein average after 10 warm-up) |
-
-### Structural Validation (optional, compute-intensive)
+### Structural Validation
 
 | Metric | What it measures | Source |
 |--------|-----------------|--------|
-| TM-score Spearman rho | Embedding similarity vs structural alignment score | PDB structures via tmtools |
+| TM-score Spearman rho | Embedding similarity vs structural alignment | PDB via tmtools |
+| lDDT | Local distance difference test | PDB structures |
+| Contact precision | Top-L/5 contact prediction | PDB structures |
 
 ## Error Bars and Statistical Notes
 
-**Retrieval Ret@1** is a proportion (n=850 queries). Error bars use normal approximation: SE = sqrt(p(1-p)/n), CI = p +/- 1.96*SE. At p=0.780: CI = +/-0.028.
+**Retrieval Ret@1** is a proportion (n=850 queries). Error bars: SE = sqrt(p(1-p)/n), CI = p +/- 1.96*SE. At p=0.786: CI = +/-0.028.
 
-**Per-residue probes** operate on >26K residues. CIs are negligible (<0.006) and omitted from figures.
+**Per-residue probes** operate on >26K residues. CIs are negligible (<0.006).
 
-**Training-free codecs are deterministic** -- no training randomness. RP/FH use fixed seed=42; the only uncertainty is finite test set sampling, captured by the normal approximation. Multi-seed RP variance has been characterized (Exp 29): Ret@1 = 0.779 +/- 0.004 across 10 seeds, confirming high stability.
+**Training-free codecs are deterministic** -- no training randomness. RP/FH use fixed seed=42. Multi-seed RP variance (Exp 29): Ret@1 = 0.779 +/- 0.004 across 10 seeds.
 
-**Trained ChannelCompressor** reports mean +/- 1 std across 3 training seeds (42, 123, 456).
+## V1 Codec (Training-Free, No Codebook)
 
-## The One Embedding Flow
-
-### Step 1: Encode (once, per protein)
-
-```
-Raw PLM output (L, 1024)           — any PLM, any protein
-  → All-but-the-Top k=3            — remove 3 corpus PC vectors (12 KB overhead)
-  → Random project to 512d         — fixed seed=42, deterministic
-  → int4 quantize                  — 4 bits per value, acts as regularizer
-  → Zero-pad L to 512, transpose
-  → Store as (512, 512)            — THE ONE EMBEDDING. Fixed size. Done.
-```
-
-~50 KB per protein (int4 + gzip). 15x compression from raw.
+The V1 codec requires no codebook fitting -- fully deterministic with zero dependencies beyond the RP seed:
 
 ```python
 from src.one_embedding.codec import OneEmbeddingCodec
 
 codec = OneEmbeddingCodec(d_out=512, dct_k=4)
-codec.encode_h5_to_h5("raw_prot_t5.h5", "compressed.h5")
+codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.h5")
+
+# Receiver needs only h5py + numpy -- no codec library, no codebook
+data = OneEmbeddingCodec.load("compressed.h5")
+data['per_residue']   # (L, 512) float16
+data['protein_vec']   # (2048,) float16
 ```
 
-### Step 2: Use — Per-protein tasks (retrieval, clustering, UMAP)
+V1 stores `(L, 512)` float16 per-residue embeddings + `(2048,)` protein vector. Size: ~179 KB/protein (4x compression). No quantization beyond float16. Pre-fitted ABTT weights available for ProtT5 and ESM2 via `Codec.for_plm('prot_t5')`.
 
-```python
-import h5py
-from scipy.fft import dct
+Use V1 when you need: zero setup, no codebook distribution, simplest possible receiver.
 
-f = h5py.File("compressed.h5", "r")
-matrix = f["protein_id"]["one_embedding"][:]   # (512, 512) fixed
-L = f["protein_id"].attrs["seq_len"]           # original sequence length
+## The Journey: 232 Methods in 37 Experiments
 
-# Extract protein vector: one matmul
-vec = dct(matrix[:, :L].T, type=2, norm='ortho', axis=0)[:4].T.flatten()  # (2048,)
+### Phase 1-4: Trained Compression (Experiments 1-10)
+
+Explored attention pooling, MLP autoencoders, ChannelCompressor. Attention pool failed at scale (lost to PCA-128 on larger data). ChannelCompressor with contrastive fine-tuning achieved Ret@1=0.795 (d256, 3-seed mean). Requires labels and training -- not universal.
+
+### Phase 5: Universal Codec Quest (Experiments 18-24)
+
+Pivoted to training-free codecs. Tested DCT, Haar wavelets, spectral fingerprints, path signatures, curvature, gyration tensors, Fisher vectors, kernel mean embeddings. Key negative: path geometry adds noise, not signal. Key positive: DCT K=1 === mean pool; [mean|max] concat is a free +4pp retrieval boost.
+
+### Phase 6: The Chained Codec Breakthrough (Experiments 25-26)
+
+Discovered that chaining D-compression (RP512) + L-compression (DCT K=4) solves the fundamental tension. 14 codecs x 3 PLMs benchmarked. Best: rp512+dct_K4 -> Ret@1=0.780, SS3=0.815.
+
+### Phase 7: Preprocessing + Quantization (Experiment 29)
+
+ABTT3 (remove top-3 PCs) discovered as a free retrieval boost (+0.006 Ret@1). int4 quantization verified near-lossless for retrieval. 30+ techniques swept across 9 categories. The V1 One Embedding: ABTT3+RP512+int4+DCT K4 -> Ret@1=0.784, SS3=0.809, ~48 KB.
+
+### Phase 8: Extreme Compression (Experiment 28)
+
+45 methods on raw 1024d: wavelets, CUR, channel pruning, PQ, RVQ, tensor train, NMF, SimHash. All on raw space. Best: PQ M=64 at 0.701. Key insight missed: should have tested on preprocessed space.
+
+### Phase 9: V2 -- The Preprocessed Space Changes Everything (Experiments 31-34)
+
+Re-tested all compression on ABTT3+RP512 (decorrelated, isotropic). Results dramatically better:
+
+- **Binary (1-bit) beats int4 for retrieval** (0.787 vs 0.784) -- RaBitQ effect
+- **PQ M=128 matches V1 quality at 40% less storage** (26 vs 48 KB payload)
+- **Pure VQ fails in 512d** -- even K=16384 caps at 0.621 Ret@1
+- **RVQ fails in 512d** -- residual norms barely decrease between levels
+- **OPQ doesn't help** -- RP already decorrelates
+
+### Phase 10: Retention Validation (Experiments 36-37)
+
+Comprehensive toolkit and structural retention benchmarks on V2 balanced. SS3 retention 101.7%, family Ret@1 99.7%, structural lDDT 100.7%, contact precision 106.5%. Disorder retention 90.9% with Ridge, 99.0% with CNN probes.
+
+### Phase 11: Embedding Phylogenetics (Experiment 35)
+
+Applied PLM embeddings to phylogenetic tree inference via Brownian Motion MCMC. Embedding trees achieve 10-11/12 monophyletic families vs 4-5/12 for sequence-based ML/Bayesian methods. Cross-validated against RevBayes.
+
+## What Works, What Doesn't
+
+### Works
+
+- ABTT preprocessing (removes dominant protein-identity PCs)
+- Random projection (JL-based dimensionality reduction, norm-preserving)
+- Product Quantization on the preprocessed space (sub-vector codebooks)
+- DCT K=4 for protein-level vectors (spectral pooling)
+- Binary quantization for retrieval-only use cases
+- CNN probes on compressed embeddings (SETH-style architecture)
+
+### Doesn't Work
+
+- Path geometry features (signatures, curvature, gyration) -- add noise
+- Fisher vectors, Gram features -- poor for family retrieval
+- Delta/DPCM encoding -- residues are i.i.d., deltas have MORE variance
+- Whole-vector VQ in 512d -- codebook can't cover the space
+- RVQ in 512d -- residuals don't decrease meaningfully
+- OPQ/learned rotation after RP -- RP already decorrelates
+- Two-head joint training -- hurts retrieval vs sequential approach
+- Entropy coding on PQ codes -- 7.81/8.00 bits entropy, already near-optimal
+
+## Addendum: Trained ChannelCompressor
+
+![Trained Addendum](docs/figures/pub_trained_addendum.png)
+
+A pointwise MLP (1024 -> 512 -> 256) trained with unsupervised reconstruction then contrastive InfoNCE fine-tuning achieves Ret@1=0.795 +/- 0.012 (3-seed mean). Architecture: input (1024) -> LayerNorm -> Linear(512) -> GELU -> Residual -> Linear(256). Residual connections are critical (-0.169 without). Cross-dataset transfer validated on TS115, CheZOD, TMbed, ToxFam (F1=0.956, beats raw 1024d).
+
+## Project Structure
+
 ```
+src/
+  one_embedding/           Research library
+    core/                  Published codec (V1 Codec class, pre-fitted ABTT weights)
+    codec_v2.py            V2 codec with PQ support (5 quality tiers)
+    preprocessing.py       ABTT, PCA rotation
+    quantization.py        int2/int4/int8/binary/PQ/RVQ
+    transforms.py          DCT, Haar, spectral
+    universal_transforms.py Random/feature-hashed projection
+    extract/               ESM2 + ProtT5 embedding extraction
+    tools/                 7 built-in tools (disorder, ss3, search, ...)
+    io.py                  .oemb file format (H5-based, single + batch)
+    cli.py                 Click CLI: extract, encode, inspect, disorder, search, align
+    __init__.py            Top-level API: encode(), decode(), embed()
 
-Compare vectors with cosine similarity. Family Ret@1 = 0.784. SF Ret@1 = 0.952.
+  compressors/             ChannelCompressor (trained), AttentionPool, MLP-AE
+  extraction/              ESM2 + ProtT5 + ESM-C embedding extraction
+  training/                Unified trainer with reconstruction + contrastive losses
+  evaluation/              Retrieval, per-residue probes (SS3/disorder/TM),
+                           biological annotations (GO/EC/Pfam), FAISS search index
 
-### Step 3: Use — Per-residue tasks (SS3, disorder, topology)
+experiments/
+  01-04                    Setup, baselines, strategy comparison
+  11-17                    ChannelCompressor training + validation
+  18-23                    Universal codec candidates + path geometry
+  25-26                    Universal codec benchmark + chained codecs
+  28-29                    Extreme compression + exhaustive sweep
+  31-34                    V2 codec: bitwidth, PQ, VQ, progressive tiers
+  35                       Embedding phylogenetics (MCMC + MrBayes)
+  36-37                    Toolkit + structural retention benchmarks
+  make_benchmark_barplots.py    Per-benchmark + V2 figures
+  make_publication_figures.py   Publication figures
 
-```python
-per_residue = matrix[:, :L].T                  # (L, 512) — unpad + transpose
-
-# Feed into any probe:
-from sklearn.linear_model import LogisticRegression
-model = LogisticRegression().fit(X_train, y_train)
-```
-
-SS3 Q3 = 0.809 (96% of raw). SS8 Q8 = 0.663 (95% of raw).
-
-### What the receiver needs
-
-Only `h5py` and `numpy`. No codec library, no scipy, no model weights.
-
-### File format
-
-Each protein in the H5 contains:
-
-| Dataset | Shape | Description |
-|---------|-------|-------------|
-| `one_embedding` | (512, 512) | The One Embedding. Fixed size, int4 + gzip. |
-| `protein_vec` | (2048,) | Pre-computed protein vector (DCT K=4), float16. Optional convenience. |
-
-Plus `seq_len` attribute for unpadding and JSON metadata with codec params.
-
-### Storage comparison
-
-| Representation | Size/protein | Compression | Both tasks? |
-|----------------|:------------:|:-----------:|:-----------:|
-| Raw ProtT5 (L, 1024) fp32 | 700 KB | 1x | Yes (baseline) |
-| One Embedding (512, 512) int4+gzip | **~50 KB** | **15x** | **Yes** |
-| One Embedding (512, 512) fp16+gzip | ~180 KB | 4x | Yes |
-| protein_vec only (2048,) fp16 | 4 KB | 175x | Retrieval only |
-
-## Quick Start
-
-```bash
-# Setup (requires Python 3.12, uv package manager)
-uv sync
-
-# Extract embeddings
-uv run python experiments/01_extract_residue_embeddings.py
-
-# Run universal codec benchmark (training-free)
-uv run python experiments/25_plm_benchmark_suite.py
-uv run python experiments/26_chained_codec_benchmark.py
-
-# Generate publication figures
-uv run python experiments/make_publication_figures.py
-
-# Train ChannelCompressor (optional, requires labels)
-uv run python experiments/11_channel_compression.py
-uv run python experiments/13_robust_validation.py --step R1
+data/
+  proteins/                FASTA files + metadata
+  residue_embeddings/      H5 per-residue embeddings
+  codebooks/               Pre-fitted PQ codebooks (per mode)
+  benchmarks/              JSON result files from all experiments
+  checkpoints/             Trained model weights
 ```
 
 ## Requirements
@@ -269,473 +429,3 @@ uv sync  # Installs all dependencies from pyproject.toml
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
----
-
-## Addendum: Trained ChannelCompressor
-
-![Trained Addendum](docs/figures/pub_trained_addendum.png)
-
-A pointwise MLP (1024 -> 512 -> 256) trained with unsupervised reconstruction then contrastive InfoNCE fine-tuning achieves Ret@1=0.795 +/- 0.012 (3-seed mean), outperforming the best training-free codec by +0.015. The training gain is modest but comes with 4x compression (256d vs 512d for rp512). Architecture: input (1024) -> LayerNorm -> Linear(512) -> GELU -> Residual -> Linear(256) -> output, with frozen decoder for reconstruction loss.
-
-### Cross-Dataset Transfer
-
-| Benchmark | Task | Metric | Score |
-|-----------|------|--------|:-----:|
-| TS115 | Secondary structure | SS3 Accuracy | 0.821 |
-| CheZOD | Disorder prediction | Spearman rho | 0.518 |
-| TMbed | Membrane topology | F1 | 0.657 |
-| ToxFam | Toxicity classification | F1 | **0.956** (beats 1024d: 0.941) |
-
-### Scaling and Robustness
-
-Performance saturates at ~1200 proteins (75% of training data). 30-trial Optuna HPO confirmed near-optimality (p=0.29). Even 25% of the data (242 proteins) gives Ret@1=0.738.
-
-### Architecture Ablations
-
-| Ablation | Ret@1 | Delta |
-|----------|:-----:|:-----:|
-| Baseline | 0.808 | -- |
-| No Residual | 0.639 | -0.169 |
-| No LayerNorm | 0.793 | -0.015 |
-| No Decoder Freeze | 0.807 | -0.001 |
-
-Residual connections are critical. Unfreezing the decoder is a free lunch (same Ret@1, better reconstruction).
-
-### Failure Analysis
-
-122/210 families (58%) achieve perfect Ret@1=1.0. Only 6 (3%) completely fail. Class e (multi-domain) is hardest (0.685), class f (membrane) easiest (0.936).
-
----
-
-## Experiment 29: Exhaustive Low-Hanging Fruit Sweep
-
-A systematic audit of ~30 untried techniques across 9 categories, testing every remaining low/medium-effort idea before declaring the search exhausted. Results below are on ProtT5-XL, SCOPe 5K (n=850 test queries), same evaluation protocol as all prior experiments.
-
-### Data Characterization
-
-Before testing techniques, we measured the intrinsic properties of PLM embeddings:
-
-| PLM | Intrinsic Dims (Part. Ratio) | 95% Variance at | Total Dims | Inter-Channel Corr |
-|-----|:--:|:--:|:--:|:--:|
-| ProtT5-XL | 374 | 738 / 1024 | 1024 | |r|=0.032 |
-| ESM2-650M | 41 | 1031 / 1280 | 1280 | -- |
-
-ProtT5 spreads information widely (374 effective dimensions). RP to 512 covers ~85% of total variance. ESM2 is much more concentrated (41 effective dims) — a few PCs dominate. Channels are nearly independent (mean |r|=0.032, only 17 pairs > 0.8).
-
-### Pre-Processing Transforms (Part A)
-
-All methods apply a pre-processing step to (L, D) embeddings before the standard rp512 + dct_K4 codec.
-
-| Pre-Processing | Ret@1 | MRR | SS3 Q3 | Delta vs Raw |
-|----------------|:-----:|:---:|:------:|:----:|
-| **ABTT k=3** (remove top-3 PCs) | **0.786** | **0.857** | 0.811 | **+0.006** |
-| PCA rotation | 0.784 | 0.855 | 0.814 | +0.004 |
-| ABTT k=1 | 0.782 | 0.854 | 0.813 | +0.002 |
-| Z-score | 0.781 | 0.852 | **0.817** | +0.001 |
-| Centering | 0.781 | 0.854 | 0.815 | +0.001 |
-| Center + ABTT k=1 | 0.781 | 0.854 | 0.813 | +0.001 |
-| *Raw (no pre-processing)* | *0.780* | *0.853* | *0.815* | *baseline* |
-
-**All-but-the-Top k=3 gives +0.006 Ret@1 (0.786)** — new best training-free codec. Removing the top 3 principal components (corpus-level bias) exposes discriminative directions. From Mu & Viswanath (2018), validated for word embeddings, now confirmed for PLM protein embeddings. Z-score standardization gives the best SS3 Q3 (+0.002).
-
-### Transposed Matrix View (Part B) — The "Flip" Insight
-
-Instead of treating (L, D) as "L residues with D features," flip to view as "D channels, each a signal of length L." Per-channel statistics capture distributional shape that mean pool discards.
-
-| Method | Ret@1 | MRR | Dim | Notes |
-|--------|:-----:|:---:|:---:|-------|
-| **[mean\|std\|skew]** | **0.778** | 0.841 | 3072 | Near-codec with NO projection |
-| [mean\|std\|min\|max] | 0.766 | 0.837 | 4096 | min adds noise |
-| [mean\|std] | 0.741 | 0.821 | 2048 | Better than mean alone |
-| channel_resample l=32 | 0.735 | 0.813 | 32K | = mean pool (no gain) |
-| per-protein SVD k=1 | 0.521 | 0.589 | 1024 | SVD direction ≠ family signal |
-
-**[mean|std|skew] at 0.778 nearly matches the full codec (0.780) without any random projection.** Per-channel standard deviation and skewness carry family-discriminative information that mean pool discards. Channel resampling (signal processing on the L axis) doesn't help — the signal is in distributional shape, not spatial structure. Per-protein SVD is a complete failure.
-
-### Improved Pooling (Part C)
-
-| Method | Ret@1 | Dim | Notes |
-|--------|:-----:|:---:|-------|
-| **[mean\|max\|std]** | **0.778** | 3072 | Matches [mean\|std\|skew] |
-| [mean\|min\|max] | 0.764 | 3072 | min hurts |
-| percentile p10,50,90 | 0.733 | 3072 | Below mean pool |
-| trimmed_mean 5% | 0.732 | 1024 | No benefit |
-| [mean\|IQR] | 0.731 | 2048 | IQR not useful |
-
-Percentile pooling and trimmed mean don't help. The useful extra statistics are max, std, and skew — all measures of distributional spread and shape, not positional structure.
-
-### Multi-Seed RP Variance (Part D)
-
-| Metric | Mean | Std | Min | Max | n_seeds |
-|--------|:----:|:---:|:---:|:---:|:-------:|
-| **Ret@1** | **0.779** | **0.004** | 0.772 | 0.787 | 10 |
-| SS3 Q3 | 0.815 | 0.003 | 0.810 | 0.820 | 10 |
-
-The codec is highly stable across random projection seeds. Seed 42 (0.780) is near the mean. The 95% CI from seed variance (+/-0.008) is smaller than the statistical uncertainty from finite test set sampling (+/-0.028).
-
-**Sparse RP (Achlioptas)**: Ret@1=0.778, SS3=0.818 — identical to dense RP. The {-1, 0, +1} sparse projection matrix (2/3 zeros) gives the same JL guarantees while being 3x faster and requiring 2 bits/entry vs 32 bits for dense.
-
-### Quantization Combinations (Part E)
-
-| Pipeline | Ret@1 | SS3 Q3 | Notes |
-|----------|:-----:|:------:|-------|
-| **rp512 + int4** | **0.784** | 0.814 | int4 as regularizer! |
-| rp512 + int8 | 0.780 | 0.815 | Identical to float32 |
-| JPEG DCT keep 75% | 0.734 | 0.840 | Retrieval = ground zero |
-| JPEG DCT keep 50% | 0.734 | 0.839 | Per-residue: near-raw |
-| JPEG DCT 50% + int4 | 0.734 | 0.838 | Coefficient quant lossless |
-| DPCM int8 | 0.737 | 0.838 | Marginal |
-| DPCM int4 | 0.136 | 0.735 | Catastrophic |
-
-**rp512 + int4 = 0.784 beats rp512 float32 (0.780).** The int4 quantization acts as a regularizer, removing noise in less significant bits. This is the new best training-free codec for storage-constrained deployments at ~45 KB/protein.
-
-**JPEG-style DCT truncation**: Retrieval depends only on the DC component (= mean pool), so truncating high-frequency DCT coefficients doesn't affect retrieval at all. Per-residue quality benefits from keeping more coefficients (keep 75%: Q3=0.840 = raw).
-
-**DPCM is provably wrong for PLMs**: Delta variance is 42% HIGHER than raw variance. Neighboring residues in PLM embedding space are NOT similar — the "smooth trajectory" assumption fails completely.
-
-### Evaluation Enhancements (Part G)
-
-| Finding | Raw Mean Pool | Codec (rp512+dct_K4) | Delta |
-|---------|:---:|:---:|:---:|
-| **SF Ret@1 (remote homology)** | 0.900 | **0.952** | **+0.052** |
-| **Fold Ret@1 (remote homology)** | 0.909 | **0.954** | **+0.045** |
-| RNS (lower = better) | 0.745 | **0.725** | -0.020 |
-| LR SS3 gap | -- | -- | 0.025 |
-| MLP SS3 gap | -- | -- | **0.011** |
-
-**The codec IMPROVES remote homology detection by ~5 percentage points.** At both superfamily and fold level, the rp512+dct_K4 codec recovers structural relationships better than raw mean pool. The DCT frequency pooling concentrates structural signal.
-
-**MLP probes close the SS3 gap**: With a 2-layer MLP (hidden=256), the gap between raw and compressed SS3 shrinks from 0.025 (LR) to 0.011 (MLP). The information is present in compressed embeddings but nonlinearly encoded.
-
-**Random Neighbor Score**: Codec has LOWER RNS (0.725 vs 0.745) — fewer biologically unrelated nearest neighbors, meaning the codec concentrates family signal.
-
-**Matryoshka ordering doesn't help**: Variance-sorted dimension selection performs WORSE than random subset (0.711 vs 0.725 at 256d). RP dimensions are already approximately uniform in importance.
-
-### Reference Corpus Approaches (Part H)
-
-| Method | Ret@1 | SS3 Q3 | Notes |
-|--------|:-----:|:------:|-------|
-| **PCA512 + DCT K=4** | 0.768 | **0.832** | Best SS3, needs stored matrix |
-| PCA256 + DCT K=4 | 0.734 | 0.826 | = ground zero retrieval |
-| k-means k=256 residual | 0.744 | 0.780 | Marginal boost |
-| k-means k=64 residual | 0.738 | 0.809 | ~RP quality |
-| PCA512 mean | 0.692 | -- | PCA mean pool worse |
-
-PCA512 preserves more SS3 than RP (0.832 vs 0.815) because it's data-adapted, but lower retrieval (0.768 vs 0.780). The tradeoff: PCA needs a stored projection matrix (~2 MB) and training-set fitting. k-means centroid residual coding gives marginal benefit (0.744) and hurts SS3 at k=256.
-
-### Multi-Resolution Retrieval (Part I)
-
-| Level | Method | Ret@1 | Size | Speed |
-|:-----:|--------|:-----:|:----:|:-----:|
-| 1 | SimHash 1024-bit | 0.417 | 128 B | O(1) |
-| 2 | Codec protein_vec | 0.780 | 4 KB | O(n) |
-| Cascade | SimHash top-100 → codec rerank | 0.699 | -- | -- |
-
-The three-level architecture works but SimHash's coarse filtering (0.417 at 1024-bit) limits cascade quality. For billion-scale retrieval, more SimHash bits (4096+) or learned hashing would be needed.
-
-### Smart Combinations (Part J)
-
-Combine the winning techniques from Parts A–H to find the best stacked pipeline.
-
-| Combination | Ret@1 | SS3 Q3 | Notes |
-|-------------|:-----:|:------:|-------|
-| **ABTT k=3 + [mean\|max] Euclidean** | **0.791** | -- | **New best training-free retrieval** |
-| [mean\|max\|std] Euclidean | 0.789 | -- | Retrieval-only, no RP needed |
-| center + ABTT k=3 + rp512 + dct_K4 | **0.786** | 0.811 | **Best both-task codec** |
-| center + ABTT k=3 + rp512 + int4 | **0.786** | 0.808 | Best compressed both-task (~45 KB) |
-| PCA rot + ABTT k=3 + rp512 | 0.785 | 0.814 | Slight SS3 benefit |
-| ABTT k=3 + rp512 + int4 | 0.784 | 0.809 | int4 regularization |
-| z-score + ABTT k=3 + rp512 | 0.784 | 0.814 | z-score helps SS3 |
-| ABTT k=3 + sparse_rp512 | 0.781 | 0.813 | Deployment-friendly |
-| ABTT k=3 + [mean\|std\|skew] + rp512 pr | 0.780 | 0.811 | Novel vec + standard pr |
-| *ABTT k=3 + rp512 (from Part A)* | *0.786* | *0.811* | *Single best from Part A* |
-| **ESM2: ABTT k=3 + rp512** | **0.755** | -- | **+0.072 vs raw ESM2 (0.684)** |
-
-**Key findings from combinations:**
-
-1. **ABTT k=3 + [mean|max] Euclidean = 0.791** is the new best training-free retrieval (retrieval-only, no per-residue). Stacking ABTT with the existing [mean|max] Euclidean winner (was 0.786) gives another +0.005.
-
-2. **center + ABTT k=3 + rp512 + dct_K4 = 0.786** ties with plain ABTT k=3 + rp512 for both-task codec. Centering doesn't add on top of ABTT — they overlap (ABTT implicitly centers by removing dominant PCs).
-
-3. **int4 quantization stacks**: ABTT k=3 + rp512 + int4 = 0.784. The regularization effect holds even with pre-processing.
-
-4. **ABTT k=3 confirmed optimal**: k=2 (0.784), k=3 (0.786), k=4 (0.785), k=5 (0.785). Plateau at k=3-5.
-
-5. **ESM2 massive improvement**: ABTT k=3 on ESM2 gives +0.072 Ret@1 (0.684→0.755). ESM2 has very concentrated PCs (participation ratio=41 vs ProtT5=374), so removing the dominant components has a much larger effect.
-
-6. **Euclidean metric wins for multi-stat vectors**: [mean|std|skew] Euclidean = 0.699 (terrible), but [mean|max|std] Euclidean = 0.789 (excellent). The max-pool component benefits from Euclidean, while std/skew do not.
-
-### Top 5 Methods: Head-to-Head Comparison
-
-The definitive comparison of the five best training-free methods from all 29 experiments. All numbers on ProtT5-XL, SCOPe 5K (n=850 test queries). Raw embedding size: 704 KB/protein (mean L=172, D=1024, fp32).
-
-#### Retrieval Quality
-
-| # | Method | Family Ret@1 | MRR | SF Ret@1 | Fold Ret@1 | Metric |
-|:-:|--------|:-----:|:---:|:--------:|:----------:|:------:|
-| 1 | **ABTT k=3 + [mean\|max] Euclidean** | **0.791** | 0.852 | 0.940 | 0.945 | Euclidean |
-| 2 | **[mean\|max\|std] Euclidean** | **0.789** | 0.851 | 0.933 | 0.938 | Euclidean |
-| 3 | **center + ABTT k=3 + rp512 + dct_K4** | **0.786** | **0.857** | **0.953** | **0.957** | Cosine |
-| 4 | **ABTT k=3 + rp512 + dct_K4** | **0.786** | **0.857** | **0.953** | **0.957** | Cosine |
-| 5 | **ABTT k=3 + rp512 + int4 + dct_K4** | **0.784** | 0.855 | 0.952 | 0.955 | Cosine |
-| -- | *Raw mean pool (ground zero)* | *0.734* | *0.814* | *0.900* | *0.909* | *Cosine* |
-| -- | *Previous best (rp512+dct_K4, no ABTT)* | *0.780* | *0.853* | *0.952* | *0.954* | *Cosine* |
-
-Methods 3-5 substantially outperform methods 1-2 on **remote homology** (superfamily/fold), even though 1-2 win on family retrieval. The DCT frequency pooling concentrates structural signal that [mean|max] misses.
-
-#### Per-Residue Quality (SS3 Secondary Structure)
-
-| # | Method | SS3 Q3 | % of Raw (0.845) | Has Per-Residue? |
-|:-:|--------|:------:|:----------------:|:----------------:|
-| 1 | ABTT k=3 + [mean\|max] Euc | -- | -- | No |
-| 2 | [mean\|max\|std] Euc | -- | -- | No |
-| 3 | center + ABTT k=3 + rp512 + dct_K4 | **0.811** | **96.0%** | Yes (L, 512) |
-| 4 | ABTT k=3 + rp512 + dct_K4 | **0.811** | **96.0%** | Yes (L, 512) |
-| 5 | ABTT k=3 + rp512 + int4 + dct_K4 | **0.809** | **95.7%** | Yes (L, 512) |
-| -- | *Raw (ground zero)* | *0.845* | *100%* | *Yes (L, 1024)* |
-
-Methods 1-2 are **retrieval-only** -- they produce a single protein vector and destroy all per-residue information. Methods 3-5 serve **both tasks** from a single encoded representation.
-
-#### Storage and Speed
-
-| # | Method | Vec Dim | Per-Residue | Size (fp16) | Size (int4) | Compression | Encode ms |
-|:-:|--------|:-------:|:-----------:|:-----------:|:-----------:|:-----------:|:---------:|
-| 1 | ABTT k=3 + [mean\|max] Euc | 2048 | -- | **4 KB** | -- | **172x** | **0.12** |
-| 2 | [mean\|max\|std] Euc | 3072 | -- | **6 KB** | -- | **115x** | **0.11** |
-| 3 | center + ABTT k=3 + rp512 + dct | 2048 | (L, 512) | 176 KB | 47 KB | 3.9x / 15x | 29 |
-| 4 | ABTT k=3 + rp512 + dct | 2048 | (L, 512) | 176 KB | 47 KB | 3.9x / 15x | 29 |
-| 5 | ABTT k=3 + rp512 + int4 + dct | 2048 | (L, 512) | 176 KB | **47 KB** | 3.9x / **15x** | 28 |
-| -- | *Raw* | *1024* | *(L, 1024)* | *704 KB* | -- | *1x* | *--* |
-
-Methods 1-2 are **250x faster** to encode (0.1 ms vs 29 ms) because they don't need the random projection matrix multiplication. Methods 3-5 are identical in speed (the RP dominates). int4 quantization (method 5) enables 15x compression while retaining both tasks.
-
-#### What Each Method Needs
-
-| # | Method | Needs Stored | Needs Training Data? | PLM-Agnostic? |
-|:-:|--------|:------------:|:--------------------:|:-------------:|
-| 1 | ABTT k=3 + [mean\|max] Euc | 3 PC vectors (12 KB) | Yes (for PCs) | Per-PLM PCs |
-| 2 | [mean\|max\|std] Euc | Nothing | No | Yes |
-| 3 | center + ABTT k=3 + rp512 + dct | mean_vec + 3 PCs + RP seed | Yes (for stats) | Per-PLM stats |
-| 4 | ABTT k=3 + rp512 + dct | 3 PC vectors + RP seed | Yes (for PCs) | Per-PLM PCs |
-| 5 | ABTT k=3 + rp512 + int4 + dct | 3 PC vectors + RP seed | Yes (for PCs) | Per-PLM PCs |
-| -- | *[mean\|max\|std] Euc (method 2)* | *Nothing at all* | *No* | *Fully universal* |
-
-Method 2 is the only **truly universal, zero-dependency** method -- no random seed, no PCA, no training data, no stored parameters. Just numpy operations on the raw embedding matrix.
-
-#### When to Use Which
-
-| Use Case | Best Method | Why |
-|----------|-------------|-----|
-| **Quick retrieval, no per-residue needed** | #1 ABTT k=3 + [mean\|max] Euc | Best Ret@1 (0.791), 4 KB, 0.12 ms |
-| **Retrieval with zero setup** | #2 [mean\|max\|std] Euc | No dependencies, 0.789 Ret@1, any PLM |
-| **Both tasks (retrieval + SS3/disorder)** | #3 or #4 center + ABTT k=3 + rp512 | Best remote homology, 96% SS3, 176 KB |
-| **Both tasks, storage-constrained** | #5 ABTT k=3 + rp512 + int4 | 47 KB, 95.7% SS3, 15x compression |
-| **Maximum SS3 quality** | PCA512 + dct_K4 (from Part H) | SS3=0.832 (98.5% retention) but Ret@1=0.768 |
-
-### Negative Results Summary
-
-| Technique | Expected | Got | Why It Failed |
-|-----------|----------|-----|---------------|
-| Percentile pooling | Richer than mean | 0.725-0.733 | Percentiles lose channel correlation |
-| Trimmed mean | Remove outliers | 0.732 | No outlier problem in PLM embeddings |
-| Channel resampling | Preserve position | 0.722-0.735 | Position along L doesn't help retrieval |
-| Per-protein SVD | Capture variance | 0.414-0.521 | SVD direction ≠ family discriminant |
-| DPCM | Compress smooth signal | 0.136-0.737 | PLM residue embeddings NOT smooth |
-| Matryoshka ordering | Adaptive truncation | Worse | RP already isotropic |
-| JPEG DCT truncation | Retrieval boost | = ground zero | Retrieval = DC component = mean |
-| k-means residual | CRAM-style coding | 0.738-0.744 | Marginal, hurts SS3 |
-
----
-
-## Exploration History
-
-Narrative of how this project evolved across 26 experiments, what was tried, what failed, and what we learned.
-
-### Phase 1-4: Finding the Right Architecture
-
-Started with ESM2-8M on 98 proteins with simple baselines (PCA, mean pool, SWE, BoM). Tried 4 novel strategies: attention pool, hierarchical conv, Fourier, VQ-VAE. Attention pool K=8 won initially (0.628 Ret@1 on ESM2-35M). Scaled to ESM2-650M with 5K proteins...
-
-### Phase 5-6: The Collapse and Diagnosis
-
-Attention pool LOST to PCA-128 on larger data -- complete failure. Root cause: cross-attention is a bottleneck, not a compressor. Pivoted to ChannelCompressor (pointwise MLP) which immediately outperformed everything.
-
-### Phase 7-8: Contrastive Learning Breakthrough
-
-Unsupervised reconstruction alone: Ret@1=0.573. Added contrastive InfoNCE: jumped to 0.808 (ProtT5 d256 best single seed). Key insight: reconstruction != utility -- cosine similarity DROPS but downstream tasks IMPROVE.
-
-### Phase 9: Validation Gauntlet
-
-3-seed validation: 0.795 +/- 0.010 (robust). Cross-dataset: TS115, CheZOD, TMbed -- transfers well. Two-head joint training: NEGATIVE RESULT (0.659 vs 0.795). ToxFam toxicity: compressed BEATS original (F1 0.956 vs 0.941).
-
-### Phase 10-11: Publication Prep (Trained Model)
-
-Optuna HPO: near-optimal already (p=0.29). Scaling: saturates at ~1200 proteins. Ablations: residual connections CRITICAL (-0.169). Failure analysis: 58% families perfect, only 3% fail completely.
-
-### Phase 12-16: The Universal Codec Quest
-
-Motivation: can we get useful compression WITHOUT training? Tested one-embedding transforms (DCT, Haar, spectral), enriched pooling (6 strategies), path geometry (signatures, curvature, gyration) -- all below or at ground zero for retrieval. Brillouin hypothesis REJECTED: phase-free spectral fingerprints lose information. Euclidean vs cosine: depends on method, not universally better.
-
-### Phase 17: Universal Codec Benchmark (Exp 25)
-
-14 training-free codecs x 3 PLMs (ProtT5, ESM2, ESM-C). Discovered the fundamental tension: smart pooling helps retrieval but kills per-residue; D-compression preserves per-residue but barely helps retrieval. Feature hashing is PLM-agnostic (works with ANY dimension).
-
-### Phase 18: The Chaining Insight (Exp 26)
-
-Nobody had tried: D-compress THEN smart pool. rp512 + dct_K4: 0.780 Ret@1 with 0.815 SS3 -- both tasks from one codec. Fixed kernel mean with median heuristic (0.005 -> 0.728). Cosine deviation weighting: +0.011 over mean pool.
-
-### Phase 19: Extreme Compression Benchmark (Exp 28)
-
-Exhaustive sweep of 39 codecs across 5 categories: wavelet thresholding, CUR decomposition, channel pruning, delta encoding, int8/int4/binary quantization, random projection + quantization, product quantization, residual VQ, tensor train decomposition, NMF, sliced Wasserstein distance, SimHash/LSH, and multi-stage pipelines. Cross-validated on 3 PLMs (ProtT5, ESM2, ESM-C). See [Experiment 28 Results](#experiment-28-extreme-compression) below.
-
-### Phase 20: Exhaustive Low-Hanging Fruit Sweep (Exp 29)
-
-Comprehensive audit of ~30 untried techniques across 9 categories: pre-processing (centering, z-score, All-but-the-Top, PCA rotation), transposed matrix view (channel resampling, per-protein SVD, channel statistics), improved pooling (percentile, trimmed mean), RP characterization (10-seed variance, sparse Achlioptas RP), quantization combinations (int4/int8 on codec output, JPEG pipeline, DPCM), evaluation enhancements (RNS, remote homology, MLP probes, Matryoshka), reference corpus approaches (k-means residual, PCA as D-compression), and multi-resolution retrieval.
-
-**Winners**: ABTT k=3 + rp512 = 0.786 (new best); rp512 + int4 = 0.784 (regularization effect); [mean|std|skew] = 0.778 (no RP needed); remote homology +5pp improvement by codec.
-
-**Key insight**: removing top-3 corpus PCs before projection improves retrieval, per-channel distributional statistics (std, skew) carry family signal that mean pool discards, and PLM residue embeddings are NOT smooth along the sequence (delta variance +42%), ruling out predictive coding approaches.
-
-### Key Lessons
-
-- Architecture matters less than training objective (contrastive >> reconstruction)
-- Simple things work: mean pool is near-optimal for well-trained PLMs
-- Composition unlocks both-task performance (chain D-compress + smart pool)
-- Always test at scale -- attention pool collapsed when data grew
-- Negative results are informative -- path geometry, Brillouin, two-head all taught us about embedding geometry
-
----
-
-## Experiment 28: Extreme Compression
-
-We benchmarked 39 compression codecs to answer: can we go beyond the OneEmbeddingCodec's 4x compression while preserving both per-protein retrieval and per-residue quality? **The honest answer: not without trade-offs.**
-
-![Extreme Compression Pareto](docs/figures/pub_extreme_pareto.png)
-
-### The Pareto Front (Ret@1 vs Size)
-
-| Codec | Ret@1 | SS3 Q3 | SS3 Ret% | Size | Ratio | Fitting |
-|-------|:-----:|:------:|:--------:|:----:|:-----:|:-------:|
-| **SimHash-1024** | **0.741** | 0.801 | 94.8% | 21 KB | 32x | None |
-| SimHash-2048 | 0.738 | 0.820 | 97.0% | 42 KB | 16x | None |
-| SimHash-512 | 0.732 | 0.761 | 90.1% | 11 KB | 64x | None |
-| CUR+PQ (pipeline) | 0.714 | -- | -- | 1 KB | 512x | Corpus |
-| *Baseline: raw mean pool* | *0.734* | *0.845* | *100%* | *678 KB* | *1x* | *--* |
-| *OneEmbeddingCodec (rp512+dct K4)* | *0.780* | *0.815* | *96.4%* | *179 KB* | *4x* | *None* |
-
-### Per-Residue Quality Across All Codecs
-
-![SS3 Retention](docs/figures/pub_extreme_ss3_retention.png)
-
-Quantization codecs (int8, int4) preserve per-residue quality almost perfectly. Aggressive compression (SimHash, PQ, NMF) trades SS3 for size. The 95% retention threshold separates practical codecs from lossy ones.
-
-### What Works (and What Doesn't)
-
-![Both-Task Tradeoff](docs/figures/pub_extreme_both_task.png)
-
-**Winners for honest compression:**
-
-| Codec | Ret@1 | SS3 Q3 | SS3 Ret% | Size | Best For |
-|-------|:-----:|:------:|:--------:|:----:|----------|
-| int8 (raw) | 0.734 | 0.840 | 99.4% | 169 KB | Lossless-quality, 4x |
-| int4 (raw) | 0.733 | 0.839 | 99.3% | 85 KB | Near-lossless, 8x |
-| int4+rp512 | 0.729 | 0.814 | 96.3% | 42 KB | Both tasks, 16x |
-| binary+rp512 | 0.728 | 0.775 | 91.7% | 11 KB | Aggressive, 64x |
-| SimHash-1024 | 0.741 | 0.801 | 94.8% | 21 KB | Retrieval-first, 32x |
-
-**Negative results (do not use):**
-
-| Category | Codecs | Ret@1 | Why |
-|----------|--------|:-----:|-----|
-| NMF | k=16/32/64 | 0.34-0.49 | Negative shift destroys information |
-| RVQ | 2-3 level | 0.35-0.37 | Single-codebook can't represent 1024d |
-| Tensor Train | bd=4-32 | 0.734 | Lossless but NO compression (same size) |
-| OT (Wasserstein) | 100 proj | 0.562 | 758 seconds for 500 proteins |
-| Delta+Int4 | pipeline | 0.136 | Ordering-sensitive, destroys retrieval |
-| PQ (M=16) | -- | 0.485 | Too few subspaces for 1024d |
-
-### The Hard Truth
-
-1. **SimHash-1024 is the only codec that beats raw mean pool on retrieval** (0.741 vs 0.734) while compressing 32x. But it drops SS3 from 0.845 to 0.801 (94.8% retention) -- just below the 95% threshold.
-
-2. **No codec achieves all three: better retrieval + ≥95% SS3 + significant compression.** The codecs that preserve SS3 well (int8, int4) don't improve retrieval. The ones that improve retrieval (SimHash) sacrifice per-residue quality.
-
-3. **The OneEmbeddingCodec (rp512+dct_K4) is still the best both-task codec.** At Ret@1=0.780 it outperforms every extreme codec by 0.039+. The DCT frequency pooling for the protein-level vector is the key -- extreme codecs using plain mean pool can't match it.
-
-4. **Quantization is the real winner for practical compression.** int4 gives 8x compression with 99.3% SS3 retention -- effectively lossless. Combining with rp512 for 16x is the sweet spot for storage-constrained deployments.
-
-5. **Cross-PLM generalization is mixed.** Wavelet thresholding generalizes well across PLMs. SimHash-1024 drops from 0.741 (ProtT5) to 0.593 (ESM2) to 0.318 (ESM-C) -- the random hyperplane projection is less stable across embedding geometries.
-
-### Category Champions
-
-![Category Summary](docs/figures/pub_extreme_category_summary.png)
-
-### Cross-PLM Validation
-
-![Cross-PLM](docs/figures/pub_extreme_cross_plm.png)
-
-| Codec | ProtT5 | ESM2-650M | ESM-C 300M |
-|-------|:------:|:---------:|:----------:|
-| SimHash-2048 | 0.738 | 0.619 | 0.382 |
-| Wavelet db4 75% | 0.735 | 0.618 | 0.387 |
-| SimHash-1024 | 0.741 | 0.593 | 0.318 |
-
-### What This Means for the Codec
-
-The extreme compression experiment confirms that the existing OneEmbeddingCodec design (rp512 + dct_K4, float16) is well-positioned:
-
-- **For maximum quality**: use the default codec (179 KB, Ret@1=0.780, SS3=0.815)
-- **For 8x compression**: apply int4 quantization on top (85 KB, negligible quality loss)
-- **For 16x compression**: int4+rp512 (42 KB, Ret@1=0.729, SS3=0.814)
-- **For retrieval-first use cases**: SimHash-1024 (21 KB, Ret@1=0.741, but SS3 drops to 0.801)
-- **For extreme compression (512x)**: CUR+PQ pipeline (1 KB, Ret@1=0.714, per-residue lost)
-
-The 4KB per-protein-only target was not achievable while retaining per-residue quality. Per-residue information inherently requires O(L x D) storage, and there is no free lunch.
-
-### Techniques Benchmarked
-
-**Category A — Signal Processing:** Wavelet thresholding (db4, 50-95%), CUR decomposition (k=32-256), channel pruning by variance (k=64-512), delta encoding
-
-**Category B — Quantization:** Int8, Int4, Binary (raw and rp512-projected), Product Quantization (M=16/32/64), Residual Vector Quantization (2-3 level)
-
-**Category C — Novel Math:** Tensor Train decomposition (bond dim 4-32), Non-Negative Matrix Factorization (k=16-64), Sliced Wasserstein Distance, Persistent Homology (TDA)
-
-**Category D — Structure-Aware:** SimHash/LSH (512-2048 bits), Amino Acid Residual Coding (skipped -- sequences not stored in H5)
-
-**Category E — Multi-Stage Pipelines:** Wavelet+Int8+zstd, CUR+PQ, rp512+Int8+zstd, Delta+Int4+zstd, rp512+Int4+zstd
-
----
-
-## Project Structure
-
-```
-src/
-  compressors/           ChannelCompressor, attention pool, baselines
-  extraction/            ESM2, ProtT5, ESM-C embedding extraction
-  training/              Unified trainer with reconstruction + contrastive losses
-  evaluation/            Retrieval, classification, per-residue probes, stats
-  one_embedding/         DCT, Haar, enriched transforms, universal codecs,
-                         extreme compression, quantization, tensor decomposition,
-                         topological transforms
-
-experiments/
-  01-04                  Setup, baselines, strategy comparison
-  11-17                  ChannelCompressor training + validation pipeline
-  18-19                  One-embedding transforms + enriched pooling
-  21-23                  Universal codec candidates + path geometry + Euclidean eval
-  25-26                  Universal codec benchmark + chained codecs
-  27                     Float16 vs float32 benchmark
-  28                     Extreme compression benchmark (39 codecs × 3 PLMs)
-  make_publication_figures.py   Generate all figures in this README
-
-data/
-  proteins/              FASTA files + metadata
-  residue_embeddings/    H5 per-residue embeddings
-  checkpoints/           Trained model weights
-  benchmarks/            JSON result files from all experiments
-```
-
-## Further Reading
-
-- [ANALYSIS.md](ANALYSIS.md) -- comprehensive cross-phase results with statistical tests
-- [STRATEGY.md](STRATEGY.md) -- phase-by-phase exploration log
