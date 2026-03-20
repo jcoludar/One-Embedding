@@ -9,7 +9,7 @@ Protein language models produce large variable-length per-residue embedding matr
 - **Retrieval/clustering**: `protein_vec` -> (2048,) vector. Cosine similarity.
 - **Per-residue (SS3, disorder)**: decode PQ codes with shared codebook -> (L, 512) embeddings.
 
-232 compression methods benchmarked across 31 experiments (experiments 01--04, 11--37) to arrive at this design.
+232 compression methods benchmarked across 37 experiments to arrive at this design.
 
 ## Quick Start
 
@@ -324,7 +324,7 @@ V1 stores `(L, 512)` float16 per-residue embeddings + `(2048,)` protein vector. 
 
 Use V1 when you need: zero setup, no codebook distribution, simplest possible receiver.
 
-## The Journey: 232 Methods in 31 Experiments
+## The Journey: 232 Methods in 37 Experiments
 
 ### Phase 1-4: Trained Compression (Experiments 1-10)
 
@@ -417,6 +417,7 @@ src/
 
 experiments/
   01-04                    Setup, baselines, strategy comparison
+  archive/05-10            Scale-up, collapse diagnosis, Track A/B (archived)
   11-17                    ChannelCompressor training + validation
   18-23                    Universal codec candidates + path geometry
   25-26                    Universal codec benchmark + chained codecs
