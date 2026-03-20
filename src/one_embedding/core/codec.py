@@ -35,14 +35,14 @@ class Codec:
         - protein_vec (dct_k * d_out,) — for retrieval, clustering, UMAP
 
     Args:
-        d_out: Per-residue output dimensionality (default 512).
+        d_out: Per-residue output dimensionality (default 768).
         dct_k: Number of DCT coefficients for the protein vector (default 4).
         seed: Projection matrix seed (default 42). Acts as the "codec key".
     """
 
     def __init__(
         self,
-        d_out: int = 512,
+        d_out: int = 768,
         dct_k: int = 4,
         seed: int = 42,
     ) -> None:

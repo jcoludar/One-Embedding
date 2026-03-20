@@ -203,8 +203,8 @@ class TestCodec:
         codec = Codec()
         raw = _make_protein(L=20, D=1024)
         result = codec.encode(raw)
-        assert result["per_residue"].shape == (20, 512)
-        assert result["protein_vec"].shape == (2048,)
+        assert result["per_residue"].shape == (20, 768)
+        assert result["protein_vec"].shape == (3072,)
 
     def test_encode_edge_case_L1(self):
         """Single-residue protein: L=1."""
@@ -320,3 +320,17 @@ class TestCodec:
         assert codec2.d_out == 64
         assert codec2.dct_k == 2
         assert codec2.seed == 99
+
+    def test_encode_explicit_512d(self):
+        codec = Codec(d_out=512)
+        raw = _make_protein(L=50, D=1024)
+        result = codec.encode(raw)
+        assert result["per_residue"].shape == (50, 512)
+        assert result["protein_vec"].shape == (2048,)
+
+    def test_encode_explicit_768d(self):
+        codec = Codec(d_out=768)
+        raw = _make_protein(L=50, D=1024)
+        result = codec.encode(raw)
+        assert result["per_residue"].shape == (50, 768)
+        assert result["protein_vec"].shape == (3072,)
