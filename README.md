@@ -156,11 +156,11 @@ PLM embeddings encode enough evolutionary signal to reconstruct phylogenetic tre
 | FastTree (ML) | AA sequence | 4 / 12 |
 | IQ-TREE WAG+I+G4 (ML) | AA sequence | 5 / 12 |
 | Embedding NJ | per-protein 512d | 9 / 12 |
-| **Embedding BM MCMC** | **per-protein 512d** | **10 / 12** |
-| Embedding NJ | per-residue 320Kd | **11 / 12** |
-| Embedding MCMC (50K gen) | per-residue 320Kd | 10 / 12 |
+| Embedding BM MCMC (200K gen) | per-protein 512d | 10 / 12 |
+| **BM MCMC warm-start from NJ** | **per-residue 320Kd** | **11 / 12** |
+| BM MCMC (50K gen) | per-residue 320Kd | 10 / 12 |
 
-ToxFam v2 benchmark: 84 conotoxin proteins across 12 families. Embedding trees recover 2x more monophyletic families than sequence-based maximum likelihood methods. The Brownian motion model treats each of the 512 compressed dimensions as an independent continuous trait evolving along the tree -- justified by the decorrelation from ABTT3 + random projection preprocessing.
+ToxFam v2 benchmark: 84 conotoxin proteins across 12 families. Embedding trees recover 2x more monophyletic families than sequence-based maximum likelihood methods. The best result (11/12) comes from a per-residue BM MCMC warm-started from a neighbor-joining tree. The Brownian motion model treats each of the 512 compressed dimensions as an independent continuous trait evolving along the tree -- justified by the decorrelation from ABTT3 + random projection preprocessing.
 
 **Implementation:** ExaBayes-style MCMC with vectorized Felsenstein pruning O(N*D), partial likelihood caching, extended SPR proposals, MC3 heated chains, and convergence diagnostics (ASDSF, ESS, PSRF). Cross-validated against RevBayes (sigma-squared CIs overlap). 71 tests.
 

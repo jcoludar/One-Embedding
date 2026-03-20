@@ -825,8 +825,8 @@ def fig_phylo_monophyly(data):
         ("IQ-TREE\n(sequence)", 5, "#9CA3AF"),
         ("Embed NJ\n(per-protein)", 9, "#10B981"),
         ("Embed BM MCMC\n(per-protein)", 10, "#059669"),
-        ("Embed NJ\n(per-residue)", 11, "#7C3AED"),
-        ("Embed MCMC\n(per-residue)", 10, "#A78BFA"),
+        ("BM warm-start\n(per-residue)", 11, "#7C3AED"),
+        ("BM MCMC 50K\n(per-residue)", 10, "#A78BFA"),
     ]
 
     labels = [m[0] for m in methods]
