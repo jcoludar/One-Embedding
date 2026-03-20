@@ -145,16 +145,16 @@ __all__ = [
 ]
 
 # ── Production API ──────────────────────────────────────────────────
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 from src.one_embedding.core import Codec
 
 
-def encode(input_path, output_path, d_out=512, dct_k=4, seed=42):
-    """Compress per-residue embeddings H5 to .oemb format."""
+def encode(input_path, output_path, d_out=768, dct_k=4, seed=42):
+    """Compress per-residue embeddings H5 to .one.h5 format."""
     import h5py
     import numpy as np
-    from src.one_embedding.io import OEMB_VERSION
+    from src.one_embedding.io import ONE_H5_FORMAT, ONE_H5_VERSION
 
     codec = Codec(d_out=d_out, dct_k=dct_k, seed=seed)
 
@@ -178,27 +178,76 @@ def encode(input_path, output_path, d_out=512, dct_k=4, seed=42):
     from src.one_embedding.core.preprocessing import fit_abtt
     codec._abtt_params = fit_abtt(stacked, k=3, seed=seed)
 
+    # Tags for the .one.h5 file
+    tags = {
+        "source_model": "unknown",
+        "d_out": d_out,
+        "compression": f"abtt3_rp{d_out}_dct{dct_k}",
+        "seed": seed,
+    }
+
     # Encode proteins incrementally — write each protein directly to H5
     # to avoid accumulating all encoded data in memory.
+    from pathlib import Path
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+
     with h5py.File(output_path, "w") as out_f:
-        out_f.attrs["oemb_version"] = OEMB_VERSION
+        # Root attributes for .one.h5 format
+        out_f.attrs["format"] = ONE_H5_FORMAT
+        out_f.attrs["version"] = ONE_H5_VERSION
         out_f.attrs["n_proteins"] = len(keys)
+        for k, v in tags.items():
+            out_f.attrs[k] = v
+
         with h5py.File(input_path, "r") as in_f:
             for key in in_f.keys():
                 encoded = codec.encode(in_f[key][:])
-                g = out_f.create_group(key)
-                g.create_dataset("per_residue", data=encoded["per_residue"], compression="gzip")
-                g.create_dataset("protein_vec", data=encoded["protein_vec"])
+                per_residue = np.asarray(encoded["per_residue"])
+                protein_vec = np.asarray(encoded["protein_vec"], dtype=np.float16)
+                grp = out_f.create_group(key)
+                grp.create_dataset(
+                    "per_residue", data=per_residue,
+                    compression="gzip", compression_opts=4,
+                )
+                grp.create_dataset("protein_vec", data=protein_vec)
+                grp.attrs["seq_len"] = per_residue.shape[0]
 
 
 def decode(path, protein_id=None):
-    """Read .oemb file into arrays."""
+    """Read .one.h5 or .oemb file into arrays.
+
+    Auto-detects format: tries .one.h5 (format="one_embedding") first,
+    then falls back to legacy .oemb reading.
+    """
     import numpy as np
     import h5py
-    from src.one_embedding.io import read_oemb_batch
+    from src.one_embedding.io import (
+        read_one_h5, read_one_h5_batch,
+        read_oemb, read_oemb_batch, ONE_H5_FORMAT,
+    )
+
     with h5py.File(str(path), "r") as f:
-        if "per_residue" in f:
-            # Single protein file
+        fmt = str(f.attrs.get("format", ""))
+        is_one_h5 = (fmt == ONE_H5_FORMAT)
+        n_proteins = int(f.attrs.get("n_proteins", 0))
+        has_root_per_residue = "per_residue" in f
+
+    if is_one_h5:
+        # New .one.h5 format
+        if protein_id:
+            batch = read_one_h5_batch(str(path), protein_ids=[protein_id])
+            if protein_id not in batch:
+                raise KeyError(f"Protein '{protein_id}' not found")
+            return batch[protein_id]
+        elif n_proteins == 1:
+            return read_one_h5(str(path))
+        else:
+            return read_one_h5_batch(str(path))
+
+    # Legacy .oemb format
+    if has_root_per_residue:
+        # Single protein file
+        with h5py.File(str(path), "r") as f:
             result = {
                 "per_residue": np.array(f["per_residue"]),
                 "protein_vec": np.array(f["protein_vec"]),
@@ -207,8 +256,9 @@ def decode(path, protein_id=None):
                 if attr in f.attrs:
                     result[attr] = str(f.attrs[attr])
             return result
-        elif protein_id:
-            # Specific protein from batch file
+    elif protein_id:
+        # Specific protein from batch file
+        with h5py.File(str(path), "r") as f:
             if protein_id not in f:
                 raise KeyError(f"Protein '{protein_id}' not found")
             g = f[protein_id]
@@ -219,9 +269,9 @@ def decode(path, protein_id=None):
             if "sequence" in g.attrs:
                 entry["sequence"] = str(g.attrs["sequence"])
             return entry
-        else:
-            # Full batch — delegate to read_oemb_batch
-            return read_oemb_batch(str(path))
+    else:
+        # Full batch — delegate to read_oemb_batch
+        return read_oemb_batch(str(path))
 
 
 def embed(input_path, output_path, model="prot_t5"):
