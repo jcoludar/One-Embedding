@@ -1,0 +1,76 @@
+{
+  "experiment": "42_udonpred_comparison",
+  "description": "Disorder prediction comparison: our ProtT5 probes vs UdonPred (ProstT5) on CheZOD117 test set",
+  "test_set": "CheZOD117 (117 proteins)",
+  "train_set": "CheZOD1174 (1174 proteins)",
+  "methods": {
+    "udonpred_chezod": {
+      "spearman_rho": 0.684,
+      "model": "ProstT5",
+      "training_data": "CheZOD",
+      "source": "biorxiv 2026.01.26.701679v2",
+      "notes": "published"
+    },
+    "udonpred_trizod": {
+      "spearman_rho": 0.702,
+      "model": "ProstT5",
+      "training_data": "TriZOD",
+      "source": "biorxiv 2026.01.26.701679v2",
+      "notes": "published, cross-dataset"
+    },
+    "ridge_raw_1024d": {
+      "spearman_rho": 0.6632,
+      "model": "ProtT5-XL",
+      "embedding_dim": 1024,
+      "compression": "none",
+      "probe": "Ridge(alpha=1.0)",
+      "n_test_residues": 12516
+    },
+    "ridge_compressed_768d": {
+      "spearman_rho": 0.6291,
+      "model": "ProtT5-XL",
+      "embedding_dim": 768,
+      "compression": "ABTT3+RP768",
+      "probe": "Ridge(alpha=1.0)",
+      "n_test_residues": 12516
+    },
+    "cnn_raw_1024d": {
+      "spearman_rho": 0.6769,
+      "model": "ProtT5-XL",
+      "embedding_dim": 1024,
+      "compression": "none",
+      "probe": "SETH-style CNN (Conv1d(1024,32,7)+Tanh+Conv1d(32,1,7))",
+      "n_test_residues": 12516,
+      "training": {
+        "epochs_max": 100,
+        "lr": 0.001,
+        "patience": 10,
+        "grad_accum": 8,
+        "loss": "MSE",
+        "seed": 42
+      }
+    },
+    "cnn_compressed_768d": {
+      "spearman_rho": 0.6863,
+      "model": "ProtT5-XL",
+      "embedding_dim": 768,
+      "compression": "ABTT3+RP768",
+      "probe": "SETH-style CNN (Conv1d(768,32,7)+Tanh+Conv1d(32,1,7))",
+      "n_test_residues": 12516,
+      "training": {
+        "epochs_max": 100,
+        "lr": 0.001,
+        "patience": 10,
+        "grad_accum": 8,
+        "loss": "MSE",
+        "seed": 42
+      }
+    }
+  },
+  "retention": {
+    "ridge_768d_vs_1024d": 94.8,
+    "cnn_768d_vs_1024d": 101.4
+  },
+  "best_ours": 0.6863,
+  "delta_vs_udonpred": 0.0023
+}
