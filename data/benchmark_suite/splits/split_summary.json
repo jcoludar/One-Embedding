@@ -1,0 +1,26 @@
+{
+  "chezod": {
+    "method": "SETH predefined (Dass et al. 2020)",
+    "train": 1174,
+    "test": 117,
+    "identity_threshold": "predefined, non-redundant"
+  },
+  "cb513": {
+    "method": "80/20 random (seed=42). CB513 is <25% identity by construction.",
+    "train": 408,
+    "test": 103,
+    "identity_threshold": "<25% (dataset property)"
+  },
+  "trizod": {
+    "method": "TriZOD348 predefined test set (Haak 2025)",
+    "train": 5438,
+    "test": 348,
+    "identity_threshold": "predefined, cluster-based"
+  },
+  "scope_5k": {
+    "method": "Existing family-stratified split",
+    "train": 1643,
+    "test": 850,
+    "identity_threshold": "family-stratified"
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "steps_done": [
+    "A",
+    "B",
+    "C",
+    "E",
+    "D",
+    "F"
+  ],
+  "A": {
+    "dirs_created": 14,
+    "symlinks_created": 7
+  },
+  "B": {
+    "total_diversity_proteins": 2311,
+    "sources": {
+      "3FTx": 300,
+      "Kunitz": 140,
+      "PLA2": 300,
+      "conotoxin": 300,
+      "snake_venom": 300,
+      "ant_venom": 248,
+      "bee_venom": 123,
+      "casein": 300,
+      "mrjp_yellow": 300
+    }
+  },
+  "C": {
+    "total_before": 2311,
+    "total_after": 524,
+    "n_clusters": 524,
+    "reduction_pct": 77.3
+  },
+  "E": {
+    "d_out": 768,
+    "codec": "abtt3_rp768_dct4",
+    "compressed_files": [
+      "data/benchmark_suite/compressed/prot_t5_768d/cb513.one.h5",
+      "data/benchmark_suite/compressed/prot_t5_768d/chezod.one.h5",
+      "data/benchmark_suite/compressed/prot_t5_768d/scope_5k.one.h5",
+      "data/benchmark_suite/compressed/prot_t5_768d/trizod.one.h5",
+      "data/benchmark_suite/compressed/prot_t5_768d/validation.one.h5"
+    ]
+  },
+  "D": {
+    "chezod": {
+      "method": "SETH predefined (Dass et al. 2020)",
+      "train": 1174,
+      "test": 117,
+      "identity_threshold": "predefined, non-redundant"
+    },
+    "cb513": {
+      "method": "80/20 random (seed=42). CB513 is <25% identity by construction.",
+      "train": 408,
+      "test": 103,
+      "identity_threshold": "<25% (dataset property)"
+    },
+    "trizod": {
+      "method": "TriZOD348 predefined test set (Haak 2025)",
+      "train": 5438,
+      "test": 348,
+      "identity_threshold": "predefined, cluster-based"
+    },
+    "scope_5k": {
+      "method": "Existing family-stratified split",
+      "train": 1643,
+      "test": 850,
+      "identity_threshold": "family-stratified"
+    }
+  },
+  "F": {
+    "metadata_path": "data/benchmark_suite/metadata.json"
+  }
+}

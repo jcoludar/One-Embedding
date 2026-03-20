@@ -1,0 +1,150 @@
+{
+  "name": "One Embedding Benchmark Suite",
+  "version": "1.0",
+  "created": "2026-03-20",
+  "description": "Collection of benchmark datasets for codec validation, probe training, and tool benchmarking.",
+  "subsets": {
+    "retrieval/scope_5k": {
+      "description": "SCOPe 5K family retrieval benchmark",
+      "n_proteins": 5000,
+      "split": "splits/esm2_650m_5k_split.json",
+      "tasks": [
+        "family_ret1",
+        "sf_ret1",
+        "fold_ret1"
+      ]
+    },
+    "retrieval/toxfam": {
+      "description": "ToxFam v2 -- 84 proteins from 12 venom families",
+      "n_proteins": 84,
+      "labels": "retrieval/toxfam/labels.csv",
+      "tasks": [
+        "monophyly",
+        "phylogenetics"
+      ]
+    },
+    "per_residue/cb513": {
+      "description": "CB513 -- secondary structure (<25% identity)",
+      "n_proteins": 513,
+      "split": "splits/cb513_80_20.json",
+      "tasks": [
+        "ss3",
+        "ss8"
+      ]
+    },
+    "per_residue/chezod": {
+      "description": "CheZOD -- disorder (SETH split)",
+      "n_proteins": 1291,
+      "split": "splits/chezod_seth.json",
+      "tasks": [
+        "disorder"
+      ]
+    },
+    "per_residue/trizod": {
+      "description": "TriZOD -- disorder (full, TriZOD348 test)",
+      "n_proteins": 5786,
+      "split": "splits/trizod_predefined.json",
+      "tasks": [
+        "disorder"
+      ]
+    },
+    "per_residue/tmbed": {
+      "description": "TMbed -- transmembrane topology",
+      "tasks": [
+        "tm_topology"
+      ]
+    },
+    "diversity": {
+      "description": "Handcrafted diversity set from SpeciesEmbedding",
+      "tasks": [
+        "retrieval",
+        "clustering",
+        "embedding_analysis"
+      ]
+    }
+  },
+  "plm_embeddings": {
+    "prot_t5_xl": "plm_embeddings/prot_t5_xl/",
+    "esm2_650m": "plm_embeddings/esm2_650m/"
+  },
+  "compressed": {
+    "prot_t5_768d": "compressed/prot_t5_768d/"
+  },
+  "redundancy_reduction": {
+    "method": "MMseqs2 cluster",
+    "identity_threshold": 0.3,
+    "coverage_threshold": 0.8,
+    "coverage_mode": 0,
+    "tool_version": "MMseqs2"
+  },
+  "assembly_results": {
+    "steps_done": [
+      "A",
+      "B",
+      "C",
+      "E",
+      "D"
+    ],
+    "A": {
+      "dirs_created": 14,
+      "symlinks_created": 7
+    },
+    "B": {
+      "total_diversity_proteins": 2311,
+      "sources": {
+        "3FTx": 300,
+        "Kunitz": 140,
+        "PLA2": 300,
+        "conotoxin": 300,
+        "snake_venom": 300,
+        "ant_venom": 248,
+        "bee_venom": 123,
+        "casein": 300,
+        "mrjp_yellow": 300
+      }
+    },
+    "C": {
+      "total_before": 2311,
+      "total_after": 524,
+      "n_clusters": 524,
+      "reduction_pct": 77.3
+    },
+    "E": {
+      "d_out": 768,
+      "codec": "abtt3_rp768_dct4",
+      "compressed_files": [
+        "data/benchmark_suite/compressed/prot_t5_768d/cb513.one.h5",
+        "data/benchmark_suite/compressed/prot_t5_768d/chezod.one.h5",
+        "data/benchmark_suite/compressed/prot_t5_768d/scope_5k.one.h5",
+        "data/benchmark_suite/compressed/prot_t5_768d/trizod.one.h5",
+        "data/benchmark_suite/compressed/prot_t5_768d/validation.one.h5"
+      ]
+    },
+    "D": {
+      "chezod": {
+        "method": "SETH predefined (Dass et al. 2020)",
+        "train": 1174,
+        "test": 117,
+        "identity_threshold": "predefined, non-redundant"
+      },
+      "cb513": {
+        "method": "80/20 random (seed=42). CB513 is <25% identity by construction.",
+        "train": 408,
+        "test": 103,
+        "identity_threshold": "<25% (dataset property)"
+      },
+      "trizod": {
+        "method": "TriZOD348 predefined test set (Haak 2025)",
+        "train": 5438,
+        "test": 348,
+        "identity_threshold": "predefined, cluster-based"
+      },
+      "scope_5k": {
+        "method": "Existing family-stratified split",
+        "train": 1643,
+        "test": 850,
+        "identity_threshold": "family-stratified"
+      }
+    }
+  }
+}
