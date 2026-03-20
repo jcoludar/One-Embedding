@@ -162,6 +162,13 @@ def load_all_data():
     ch = load_json("data/benchmarks/channel_compression_results.json")
     data["channel_comp"] = ch
 
+    # Exp 34: V2 progressive codec (PQ tiers)
+    try:
+        v2 = load_json("data/benchmarks/progressive_codec_results.json")
+        data["v2"] = v2.get("D1", {})
+    except FileNotFoundError:
+        data["v2"] = {}
+
     return data
 
 
@@ -188,6 +195,10 @@ def fig_codec_retrieval(data):
         ("rp512+[mean|max]", data["chained_retrieval"]["prot_t5_xl_rp512_mean_max"]["family_ret1"]),
     ]
 
+    # V2 balanced (from Exp 34)
+    if data.get("v2", {}).get("balanced"):
+        codecs.append(("V2 balanced", data["v2"]["balanced"]["family_ret1"]))
+
     # Sort descending
     codecs.sort(key=lambda x: x[1], reverse=True)
     labels = [c[0] for c in codecs]
@@ -196,6 +207,8 @@ def fig_codec_retrieval(data):
 
     # Assign colors by category
     def _color(label):
+        if label.startswith("V2"):
+            return "#DC2626"  # red for V2 (stands out)
         if "rp512+" in label or "fh512+" in label:
             return CATEGORY_COLORS["Chained"]
         if label in ("rp512", "fh512"):
@@ -295,10 +308,26 @@ def fig_per_residue_retention(data):
     cc_pr = _get_trained_cc_per_residue(data)
     trained_cc = [cc_pr["ss3_q3"], cc_pr["ss8_q8"], cc_pr["disorder_rho"], cc_pr["tm_f1"]]
 
-    methods = ["Raw (1024d)", "rp512", "fh512", "Trained CC*"]
-    all_vals = [raw, rp512, fh512, trained_cc]
+    # V2 balanced (from Exp 34)
+    v2_bal = data.get("v2", {}).get("balanced", {})
+    v2_balanced = [
+        v2_bal.get("ss3_q3", 0),
+        v2_bal.get("ss8_q8", 0),
+        v2_bal.get("disorder_rho", 0),
+        v2_bal.get("tm_f1", 0),
+    ] if v2_bal else None
+
+    methods = ["Raw (1024d)", "rp512", "fh512", "V2 balanced", "Trained CC*"]
+    all_vals = [raw, rp512, fh512, v2_balanced, trained_cc]
     method_colors = ["#E5E7EB", CODEC_COLORS["rp512"], CODEC_COLORS["fh512"],
-                     CODEC_COLORS["trained_cc"]]
+                     "#DC2626", CODEC_COLORS["trained_cc"]]
+
+    # Filter out V2 if data not available
+    if v2_balanced is None:
+        idx = methods.index("V2 balanced")
+        methods.pop(idx)
+        all_vals.pop(idx)
+        method_colors.pop(idx)
 
     x = np.arange(len(tasks))
     width = 0.18
@@ -391,14 +420,20 @@ def fig_tradeoff_scatter(data):
     points.append(("trained CC*", "Trained",
                    np.mean(cc_ret1_vals), cc_pr["ss3_q3"]))
 
+    # V2 balanced (from Exp 34)
+    v2_bal = data.get("v2", {}).get("balanced", {})
+    if v2_bal:
+        points.append(("V2 balanced", "V2",
+                       v2_bal["family_ret1"], v2_bal["ss3_q3"]))
+
     fig, ax = plt.subplots(figsize=(8, 6))
 
     # Plot by category
     for name, cat, ret1, ss3 in points:
-        color = CATEGORY_COLORS[cat]
-        marker = "*" if cat == "Trained" else "o"
-        size = 200 if cat == "Trained" else 80
-        zorder = 10 if cat == "Trained" else 5
+        color = CATEGORY_COLORS.get(cat, "#DC2626")  # red for V2
+        marker = "*" if cat in ("Trained", "V2") else "o"
+        size = 200 if cat in ("Trained", "V2") else 80
+        zorder = 10 if cat in ("Trained", "V2") else 5
         ax.scatter(ret1, ss3, c=color, s=size, marker=marker,
                    edgecolors="white", linewidths=0.8, zorder=zorder)
         # Label
@@ -410,6 +445,9 @@ def fig_tradeoff_scatter(data):
         elif "trained" in name:
             offset_x = 0.005
             offset_y = -0.015
+        elif "V2" in name:
+            offset_x = 0.005
+            offset_y = -0.020
         ax.annotate(name, (ret1, ss3),
                     xytext=(ret1 + offset_x, ss3 + offset_y),
                     fontsize=7.5, color="#374151")
@@ -435,7 +473,10 @@ def fig_tradeoff_scatter(data):
     ax.spines["right"].set_visible(False)
 
     # Legend
-    handles = [mpatches.Patch(color=c, label=l) for l, c in CATEGORY_COLORS.items()]
+    all_cats = dict(CATEGORY_COLORS)
+    if data.get("v2", {}).get("balanced"):
+        all_cats["V2"] = "#DC2626"
+    handles = [mpatches.Patch(color=c, label=l) for l, c in all_cats.items()]
     ax.legend(handles=handles, loc="lower left", fontsize=8, framealpha=0.9)
 
     ax.text(0.5, -0.12,

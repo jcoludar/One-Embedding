@@ -243,7 +243,7 @@ There is a fundamental tension between retrieval and per-residue quality:
 
 ![Per-Residue Retention](docs/figures/pub_per_residue_retention.png)
 
-D-compression codecs (rp512, fh512) retain 93-97% of raw per-residue task performance across secondary structure, disorder, and membrane topology prediction. Product Quantization on the preprocessed space adds negligible further degradation for the `balanced` and `full` tiers.
+D-compression codecs (rp512, fh512) retain 93-97% of raw per-residue task performance across secondary structure, disorder, and membrane topology prediction. V2 `balanced` (red) shows the effect of PQ quantization on top: SS3 and SS8 remain close to the RP baseline, while disorder and TM see modest drops. The `full` (int4) tier matches the RP baseline almost exactly.
 
 ## Cross-PLM Results
 
