@@ -24,3 +24,7 @@ def scan(oemb_path, **kwargs):
             sensitivity[i] = np.mean(dists)
         results[pid] = sensitivity
     return results
+
+
+# Alias for uniform tool API
+predict = scan

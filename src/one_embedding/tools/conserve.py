@@ -18,3 +18,7 @@ def score(oemb_path, **kwargs):
         scores = (norms - norms.min()) / (norms.max() - norms.min() + 1e-10)
         results[pid] = scores
     return results
+
+
+# Alias for uniform tool API
+predict = score
