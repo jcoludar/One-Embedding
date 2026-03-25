@@ -118,6 +118,7 @@ def predict(oemb_path, method="cnn", **kwargs):
     with torch.no_grad():
         for pid, emb in embeddings.items():
             x = torch.tensor(emb, dtype=torch.float32).unsqueeze(0)
-            pred = model(x).squeeze().numpy()
+            # squeeze(0) removes only the batch dim; avoids collapsing L=1 to 0-d
+            pred = model(x).squeeze(0).squeeze(-1).numpy()
             results[pid] = pred[:emb.shape[0]]
     return results
