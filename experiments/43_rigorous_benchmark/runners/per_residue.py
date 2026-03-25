@@ -446,8 +446,16 @@ def run_disorder_benchmark(
     median_idx = int(sorted_idx[len(sorted_idx) // 2])
     median_probe = seed_probe_results[median_idx]
 
+    # Also compute pooled residue-level rho (standard in literature, e.g. SETH)
+    # This pools all test residues and computes one global Spearman rho.
+    from scipy.stats import spearmanr as _spearmanr
+    pooled_preds = median_probe["predictions"]
+    pooled_rho, pooled_p = _spearmanr(y_test, pooled_preds)
+    pooled_rho = float(pooled_rho) if not np.isnan(pooled_rho) else 0.0
+
     return {
         "spearman_rho": spearman_rho,
+        "pooled_spearman_rho": pooled_rho,
         "best_alpha": median_probe["best_alpha"],
         "n_train_residues": int(len(y_train)),
         "n_test_residues": int(len(y_test)),

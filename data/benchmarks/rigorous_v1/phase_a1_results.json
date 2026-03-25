@@ -1,0 +1,310 @@
+{
+  "ss3": {
+    "raw": {
+      "q3": {
+        "value": 0.8402178716664075,
+        "ci_lower": 0.8255574857683193,
+        "ci_upper": 0.8535651511907035,
+        "n": 103,
+        "seeds_mean": 0.8402178716664075,
+        "seeds_std": 0.0
+      },
+      "per_class_acc": {
+        "0": 0.877015491621878,
+        "1": 0.7764464224580623,
+        "2": 0.8550055569804224
+      },
+      "class_balance": {
+        "imbalanced": "False",
+        "max_ratio": 2.002225265320096,
+        "class_counts": {
+          "0": 9489,
+          "1": 5842,
+          "2": 11697
+        },
+        "small_classes": []
+      },
+      "best_C": 0.1,
+      "n_train_residues": 107545,
+      "n_test_residues": 27028
+    },
+    "compressed": {
+      "q3": {
+        "value": 0.8328715990781927,
+        "ci_lower": 0.8188777052128885,
+        "ci_upper": 0.8460939040387007,
+        "n": 103,
+        "seeds_mean": 0.8328715990781927,
+        "seeds_std": 0.0
+      },
+      "per_class_acc": {
+        "0": 0.8684792918115712,
+        "1": 0.7553919890448476,
+        "2": 0.8536376848764641
+      },
+      "class_balance": {
+        "imbalanced": "False",
+        "max_ratio": 2.002225265320096,
+        "class_counts": {
+          "0": 9489,
+          "1": 5842,
+          "2": 11697
+        },
+        "small_classes": []
+      },
+      "best_C": 0.1,
+      "n_train_residues": 107545,
+      "n_test_residues": 27028
+    },
+    "retention_pct": 99.12567051523853
+  },
+  "ss8": {
+    "raw": {
+      "q8": {
+        "value": 0.7158267826797725,
+        "ci_lower": 0.6970729142003302,
+        "ci_upper": 0.7338144089719382,
+        "n": 103,
+        "seeds_mean": 0.7158267826797725,
+        "seeds_std": 0.0
+      },
+      "per_class_acc": {
+        "0": 0.9302353362800143,
+        "1": 0.04533333333333334,
+        "2": 0.8337296506310591,
+        "3": 0.20804710500490678,
+        "4": 0.24242424242424243,
+        "5": 0.5635340833884844,
+        "6": 0.2632582983594048,
+        "7": 0.7190287413280476
+      },
+      "class_balance": {
+        "imbalanced": "True",
+        "max_ratio": 84.55555555555556,
+        "class_counts": {
+          "0": 8371,
+          "1": 375,
+          "2": 5467,
+          "3": 1019,
+          "4": 99,
+          "5": 3022,
+          "6": 2621,
+          "7": 6054
+        },
+        "small_classes": [
+          "4"
+        ]
+      },
+      "best_C": 0.1,
+      "n_train_residues": 107545,
+      "n_test_residues": 27028
+    },
+    "compressed": {
+      "q8": {
+        "value": 0.7071842557643199,
+        "ci_lower": 0.688478299475043,
+        "ci_upper": 0.725214413604286,
+        "n": 103,
+        "seeds_mean": 0.7071842557643199,
+        "seeds_std": 0.0
+      },
+      "per_class_acc": {
+        "0": 0.923784494086728,
+        "1": 0.037333333333333336,
+        "2": 0.8152551673678434,
+        "3": 0.18940137389597644,
+        "4": 0.20202020202020202,
+        "5": 0.5476505625413634,
+        "6": 0.24227394124380008,
+        "7": 0.7208457218368021
+      },
+      "class_balance": {
+        "imbalanced": "True",
+        "max_ratio": 84.55555555555556,
+        "class_counts": {
+          "0": 8371,
+          "1": 375,
+          "2": 5467,
+          "3": 1019,
+          "4": 99,
+          "5": 3022,
+          "6": 2621,
+          "7": 6054
+        },
+        "small_classes": [
+          "4"
+        ]
+      },
+      "best_C": 0.1,
+      "n_train_residues": 107545,
+      "n_test_residues": 27028
+    },
+    "retention_pct": 98.79265108199802
+  },
+  "disorder": {
+    "raw": {
+      "spearman_rho": {
+        "value": 0.3325457291401447,
+        "ci_lower": 0.276895307057357,
+        "ci_upper": 0.3860820470504998,
+        "n": 117,
+        "seeds_mean": 0.3325457291401447,
+        "seeds_std": 0.0
+      },
+      "pooled_spearman_rho": 0.6626924697516321,
+      "best_alpha": 10.0,
+      "n_train_residues": 132545,
+      "n_test_residues": 12516
+    },
+    "compressed": {
+      "spearman_rho": {
+        "value": 0.3081963845688344,
+        "ci_lower": 0.2547595569351249,
+        "ci_upper": 0.3605740303818204,
+        "n": 117,
+        "seeds_mean": 0.3081963845688344,
+        "seeds_std": 0.0
+      },
+      "pooled_spearman_rho": 0.6290879459568949,
+      "best_alpha": 0.01,
+      "n_train_residues": 132545,
+      "n_test_residues": 12516
+    },
+    "retention_pct": 92.67789586885696
+  },
+  "retrieval": {
+    "baseline_A_raw_mean": {
+      "ret1_cosine": {
+        "value": 0.731247492980345,
+        "ci_lower": 0.7139991977537103,
+        "ci_upper": 0.7484957882069796,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "ret1_euclidean": {
+        "value": 0.7168070597673486,
+        "ci_lower": 0.6991576413959085,
+        "ci_upper": 0.7340553549939831,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "n_queries": 2493
+    },
+    "baseline_B_raw_dct4": {
+      "ret1_cosine": {
+        "value": 0.793822703569996,
+        "ci_lower": 0.7773766546329723,
+        "ci_upper": 0.8094665062174088,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "ret1_euclidean": {
+        "value": 0.7862013638186923,
+        "ci_lower": 0.7697553148816687,
+        "ci_upper": 0.8022462896109106,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "n_queries": 2493
+    },
+    "baseline_C_abtt3_dct4": {
+      "ret1_cosine": {
+        "value": 0.7994384275972723,
+        "ci_lower": 0.7833935018050542,
+        "ci_upper": 0.8146811070998796,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "ret1_euclidean": {
+        "value": 0.7853991175290814,
+        "ci_lower": 0.7689530685920578,
+        "ci_upper": 0.8014440433212996,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "n_queries": 2493
+    },
+    "compressed": {
+      "ret1_cosine": {
+        "value": 0.7978339350180506,
+        "ci_lower": 0.7817890092258323,
+        "ci_upper": 0.8134777376654633,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "ret1_euclidean": {
+        "value": 0.7862013638186923,
+        "ci_lower": 0.7697553148816687,
+        "ci_upper": 0.8022462896109106,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "n_queries": 2493
+    },
+    "retention_cosine_pct": 99.79929754139488,
+    "retention_euclidean_pct": 100.10214504596526
+  },
+  "summary": {
+    "tasks": [
+      {
+        "task": "SS3 Q3",
+        "retention_pct": 99.12567051523853,
+        "baseline": "vs raw 1024d"
+      },
+      {
+        "task": "SS8 Q8",
+        "retention_pct": 98.79265108199802,
+        "baseline": "vs raw 1024d"
+      },
+      {
+        "task": "Disorder rho",
+        "retention_pct": 92.67789586885696,
+        "baseline": "vs raw 1024d"
+      },
+      {
+        "task": "Ret@1 cosine",
+        "retention_pct": 99.79929754139488,
+        "baseline": "vs Baseline C"
+      },
+      {
+        "task": "Ret@1 euclidean",
+        "retention_pct": 100.10214504596526,
+        "baseline": "vs Baseline C"
+      }
+    ],
+    "mean_retention_pct": 98.09953201069072
+  },
+  "_meta": {
+    "script": "run_phase_a1.py",
+    "seeds": [
+      42,
+      123,
+      456
+    ],
+    "bootstrap_n": 10000,
+    "cv_folds": 3,
+    "C_grid": [
+      0.01,
+      0.1,
+      1.0,
+      10.0
+    ],
+    "alpha_grid": [
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0
+    ],
+    "codec": "ABTT3 + RP768 + DCT K=4 (seed=42)",
+    "elapsed_seconds": 559.8
+  }
+}

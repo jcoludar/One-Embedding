@@ -264,9 +264,16 @@ def main():
         print(f"  Best C: {ss3_raw['best_C']}")
 
         # --- Compressed 768d ---
-        print("  Fitting codec on CB513 corpus...")
+        # Fit ABTT on SCOPe 5K corpus (general-purpose, not CB513 itself)
+        scope_corpus_path = RAW_EMBEDDINGS["prot_t5"]
+        if scope_corpus_path.exists():
+            print("  Fitting codec on SCOPe 5K corpus (external)...")
+            abtt_corpus = load_h5_embeddings(scope_corpus_path)
+        else:
+            print("  WARNING: SCOPe corpus not found, fitting ABTT on CB513 (self-fit)...")
+            abtt_corpus = raw_cb513
         codec = Codec(d_out=768, dct_k=4, seed=42)
-        codec.fit(raw_cb513, k=3)
+        codec.fit(abtt_corpus, k=3)
 
         comp_cb513_per_res, _ = compress_embeddings(raw_cb513, codec)
 
@@ -377,13 +384,22 @@ def main():
             seeds=SEEDS,
             n_bootstrap=BOOTSTRAP_N,
         )
-        print(fmt_metric("Spearman rho (raw_1024d)", dis_raw["spearman_rho"]))
+        print(fmt_metric("Spearman rho (raw_1024d) [per-protein avg]", dis_raw["spearman_rho"]))
+        print(f"  Pooled residue-level rho (raw_1024d): {dis_raw['pooled_spearman_rho']:.4f}")
         print(f"  Best alpha: {dis_raw['best_alpha']}")
 
         # --- Compressed 768d ---
-        print("  Fitting codec on CheZOD corpus...")
+        # Fit ABTT on SCOPe 5K corpus (general-purpose, not CheZOD itself)
+        scope_corpus_path = RAW_EMBEDDINGS["prot_t5"]
+        if scope_corpus_path.exists():
+            print("  Fitting codec on SCOPe 5K corpus (external)...")
+            if "abtt_corpus" not in dir():
+                abtt_corpus = load_h5_embeddings(scope_corpus_path)
+        else:
+            print("  WARNING: SCOPe corpus not found, fitting ABTT on CheZOD (self-fit)...")
+            abtt_corpus = raw_chezod
         codec_cz = Codec(d_out=768, dct_k=4, seed=42)
-        codec_cz.fit(raw_chezod, k=3)
+        codec_cz.fit(abtt_corpus, k=3)
 
         comp_chezod_per_res, _ = compress_embeddings(raw_chezod, codec_cz)
 
@@ -398,8 +414,10 @@ def main():
             seeds=SEEDS,
             n_bootstrap=BOOTSTRAP_N,
         )
-        print(fmt_metric("Spearman rho (compressed_768d)", dis_comp["spearman_rho"]))
-        print(fmt_retention("Disorder retention", dis_comp["spearman_rho"].value, dis_raw["spearman_rho"].value))
+        print(fmt_metric("Spearman rho (compressed_768d) [per-protein avg]", dis_comp["spearman_rho"]))
+        print(f"  Pooled residue-level rho (compressed_768d): {dis_comp['pooled_spearman_rho']:.4f}")
+        print(fmt_retention("Disorder retention (per-protein)", dis_comp["spearman_rho"].value, dis_raw["spearman_rho"].value))
+        print(fmt_retention("Disorder retention (pooled)", dis_comp["pooled_spearman_rho"], dis_raw["pooled_spearman_rho"]))
 
         all_results["disorder"] = {
             "raw": dis_raw,
