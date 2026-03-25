@@ -136,7 +136,9 @@ def needleman_wunsch(
     while i > 0 or j > 0:
         if current == 0:  # M
             if i == 0 or j == 0:
-                break
+                # Can't match — switch to gap state for remaining positions
+                current = 1 if i > 0 else 2
+                continue
             align_a.append(i - 1)
             align_b.append(j - 1)
             current = trace_M[i, j]
