@@ -15,7 +15,7 @@ The current "100.1% mean retention" claim has methodological issues:
 5. **Fixed hyperparameters**: No CV-tuning of C or alpha
 6. **Narrow task coverage**: Only 5 tasks, no cross-dataset validation
 
-Corrected retention estimate: **~97.8-98.8%**, not 100.1%. Still excellent, but the claim must be honest.
+The honest number will emerge from this framework. We do not pre-commit to an estimate.
 
 This spec designs a comprehensive, rule-enforced benchmark framework that:
 - Fixes all known issues
@@ -32,19 +32,50 @@ This spec designs a comprehensive, rule-enforced benchmark framework that:
 Every benchmark must pass these rules before any metric is computed. Implemented as assertions in `rules.py`.
 
 ### Rule 1 -- Fair Comparison
-Raw and compressed must use identical preprocessing and pooling. If compressed uses DCT K=4, raw baseline must too. Enforced: a `ComparisonPair` dataclass that binds raw + compressed + method together and asserts matching configuration.
+Raw and compressed must use identical pooling and distance metric. Enforced via `ComparisonPair` (protein-level) and `ProbeComparison` (per-residue) dataclasses that assert matching configuration.
+
+Three baselines are computed for protein-level tasks:
+- **Baseline A** — Raw + mean pool (naive baseline, for context only)
+- **Baseline B** — Raw + DCT K=4 (fair pooling match)
+- **Baseline C** — Raw + ABTT3 + DCT K=4 (maximal fairness: full pipeline minus RP compression)
+
+The "headline retention" is Compressed / Baseline C (measures RP information loss only).
+Baseline A → B shows DCT K=4 benefit. Baseline B → C shows ABTT benefit. Compressed / Baseline B shows codec-minus-ABTT retention.
+
+For per-residue tasks, the comparison is simpler: same probe type, same hyperparameters (CV-tuned independently for each embedding dimensionality), same CV folds. Enforced via `ProbeComparison` dataclass.
 
 ### Rule 2 -- No Train/Test Leakage
 Zero protein overlap between train and test sets. Enforced: `assert len(set(train_ids) & set(test_ids)) == 0`.
 
 ### Rule 3 -- Redundancy Reduction
-Train-to-test sequence identity must be below a declared threshold (default <=30%). Datasets with published thresholds (CB513 <25%, CheZOD SETH split, CATHe <20%) pass automatically with citation. New splits must run MMseqs2 easy-search verification.
+Train-to-test sequence identity must be below a declared threshold. Each dataset must declare its threshold and verification method:
+
+| Dataset | Identity Threshold | Verified By |
+|---------|:-----------------:|-------------|
+| CB513 | <25% | Published (Cuff & Barton 1999) |
+| CheZOD (SETH split) | Non-redundant | Published (Dass et al. 2020) |
+| TriZOD348 | Cluster-based | Published (Haak 2025) |
+| SCOPe 5K | <40% | ASTRAL filtering |
+| CATHe | <20% | MMseqs2 + BLAST (Srivastava 2023) |
+| TMbed | Predefined CV | Published (Bernhofer & Rost 2022) |
+| DeepLoc (LA setDeepLoc) | <30% PIDE | Published (Stark et al. 2021) |
+| DeepLoc (LA setHARD) | <20% PIDE | Published (Stark et al. 2021) |
+| ConSurf10k | TBD | Verify with MMseqs2 before use |
+| BioLip (bindEmbed21) | TBD | Verify with MMseqs2 before use |
+| ProteinGLUE | TBD | Verify with MMseqs2 before use |
+| ProteinNet (TAPE) | TBD | Verify with MMseqs2 before use |
+| NetSurfP TS115 | Independent set | Published (Klausen et al. 2019) |
+| NetSurfP CASP12 | Independent set | Published (CASP12 targets) |
+
+Datasets marked "TBD" must be verified with `mmseqs easy-search` at 30% identity before first use. If threshold is violated, re-split or document the exception.
 
 ### Rule 4 -- Statistical Significance
 Every metric must report 95% bootstrap CI (10K iterations). No point estimates in final output. Implemented: every metric function returns `{"value": float, "ci_lower": float, "ci_upper": float, "n": int}`.
 
 ### Rule 5 -- Multiple Seeds
 Probe training runs >= 3 random seeds (42, 123, 456). Report mean +/- std.
+
+**Bootstrap + multi-seed interaction**: For each seed, compute the metric on the test set. Report mean +/- std across seeds. Bootstrap CIs (Rule 4) are computed on the test-set predictions from the **median-performing seed** (avoids cherry-picking best or worst). The seed-level std quantifies training variance; the bootstrap CI quantifies test-set sampling variance. Both are reported.
 
 ### Rule 6 -- Class Balance Reporting
 For imbalanced tasks (class ratio > 3:1), report both macro and weighted metrics. Per-class breakdown mandatory. Flag classes with < 100 test samples.
@@ -70,7 +101,16 @@ Each codec component (ABTT, RP, quantization) tested in isolation to measure ind
 No single dataset trusted alone. Every task type validated on >= 2 independent datasets where available. If results diverge by > 5pp between datasets, investigate and document why.
 
 ### Rule 12 -- Dual Metric
-All distance/similarity-based evaluations run both cosine and euclidean. Report both. Flag when they disagree by > 2pp.
+All retrieval, search, classification (kNN), alignment, and clustering evaluations run both cosine and euclidean distance. Report both. Flag when they disagree by > 2pp. Does NOT apply to per-residue probe tasks (SS3, disorder, etc.) where the probe is a linear model with no distance metric.
+
+### Rule 13 -- Lazy Loading for Large Datasets
+Datasets > 10K proteins must use lazy loading (H5 file path + on-demand access). The `BenchmarkDataset` interface stores `embeddings_path: Path` with a `load_embeddings(protein_ids)` method, not a full in-memory dict. This prevents OOM on 96 GB RAM when loading CATHe (1.7M proteins) or DeepLoc (14K proteins with per-residue).
+
+### Rule 14 -- Cross-Check Failure Tiers
+When cross-dataset results diverge:
+- **< 3pp**: Accept. Normal variation.
+- **3-5pp**: Investigate and document the likely cause (dataset bias, class distribution, sequence length distribution). Include in report.
+- **> 5pp**: Block the report until root cause is identified and resolved or explicitly justified.
 
 ---
 
@@ -80,7 +120,7 @@ All distance/similarity-based evaluations run both cosine and euclidean. Report 
 
 | Task | Dataset 1 (Primary) | Dataset 2 (Cross-check) | Dataset 3 (External) | Metric |
 |------|---------------------|------------------------|---------------------|--------|
-| **SS3** | CB513 (ours, 513 proteins) | TS115 (NetSurfP) | CASP12 (NetSurfP) | Q3, SOV, per-class acc |
+| **SS3** | CB513 (ours, 513 proteins) | TS115 (NetSurfP, 115 proteins) | CASP12 (NetSurfP, ~21 proteins) | Q3, SOV-refine, per-class acc |
 | **SS8** | CB513 | TS115 | CASP12 | Q8, per-class acc |
 | **Disorder** | CheZOD117 (SETH split) | TriZOD348 (predefined) | -- | Spearman rho, AUC-ROC (binary Z<8) |
 | **RSA** | NetSurfP CB513 | NetSurfP TS115 | NetSurfP CASP12 | Pearson r |
@@ -140,7 +180,7 @@ Each of the 7 shipped tools gets independent rigorous testing.
 - **Compare to SETH**: Run actual SETH pretrained weights on compressed embeddings
 - **Probe comparison**: Ridge vs CNN vs LogReg, 3 seeds, bootstrap CIs
 - **Residue-level error analysis**: Spearman rho by amino acid type, by disorder level (ordered/twilight/disordered)
-- **Length stress test**: Proteins >500, >1000, >2000 residues
+- **Length stress test**: Proteins >500, >1000, >2000 residues. Note: existing probes truncate at max_len=512. Stress tests target the codec (not the probe) — feed full-length embeddings through codec, verify reconstruction quality. Probe-based evaluation on long proteins requires removing the max_len truncation or reporting truncated vs full separately.
 - **Binary threshold**: AUC-ROC at Z-score < 8 (disordered)
 - **Dual metric**: Cosine + euclidean distance-based disorder (if applicable)
 
@@ -148,7 +188,7 @@ Each of the 7 shipped tools gets independent rigorous testing.
 
 - **Cross-dataset**: Train CB513 80%, test CB513 20% + TS115 + CASP12
 - **Per-class analysis**: H/E/C accuracy, confusion matrix
-- **SOV score**: Segment overlap measure (standard in SS prediction)
+- **SOV-refine score**: Segment overlap measure (Zemla et al. 2009, standard in SS prediction; ref implementation from DSSP or Biopython)
 - **Compare to ProtTrans pretrained probe**: Fixed weights, no retraining
 - **Compression confusion**: Where does compression cause misclassification? E->C? H->C?
 
@@ -179,7 +219,10 @@ Each of the 7 shipped tools gets independent rigorous testing.
 
 - **ConSurf10k ground truth**: Correlate norm-based scores with ConSurf 9-class labels
 - **Per-family analysis**: Does heuristic work for some families?
-- **Honest reporting**: If Spearman rho < 0.3, document as "experimental"
+- **Honest reporting**: Heuristic success criteria:
+  - Spearman rho >= 0.3: "usable proxy, interpret with caution"
+  - Spearman rho 0.15-0.3: "weak signal, experimental"
+  - Spearman rho < 0.15: "not recommended, remove from default tools or gate behind --experimental flag"
 
 *(Phase E: Train real VESPA-style probe on ConSurf10k)*
 
@@ -187,7 +230,7 @@ Each of the 7 shipped tools gets independent rigorous testing.
 
 - **ProteinGym DMS data**: Correlate sensitivity scores with measured fitness effects
 - **Per-protein Spearman**: Distribution of per-protein correlations (not aggregated)
-- **Honest reporting**: Document limitations clearly
+- **Honest reporting**: Same success criteria as conserve (rho >= 0.3 usable, < 0.15 remove/gate)
 
 *(Phase E: Train real probe on DMS data)*
 
@@ -275,29 +318,44 @@ tests/
    @dataclass
    class BenchmarkDataset:
        name: str
-       task_type: str           # "per_residue" | "protein_level" | "structural"
+       task_type: str              # "per_residue" | "protein_level" | "structural"
        train_ids: list[str]
        test_ids: list[str]
-       embeddings: dict[str, np.ndarray]  # {protein_id: (L, D)}
-       labels: dict[str, Any]   # {protein_id: labels}
-       metadata: dict           # source, identity_threshold, citation, etc.
+       embeddings_path: Path       # H5 file path (lazy loading, Rule 13)
+       labels: dict[str, Any]      # {protein_id: labels}
+       metadata: dict              # source, identity_threshold, citation, etc.
+
+       def load_embeddings(self, protein_ids: list[str]) -> dict[str, np.ndarray]:
+           """Load only requested proteins from H5 (on-demand)."""
+           ...
    ```
 
 3. **Probes are separate from datasets**: Any probe can run on any dataset. `linear.py` for headlines, `cnn.py` for ceiling, `fixed.py` for pretrained no-cheat baselines.
 
 4. **Statistics are mandatory**: `metrics/statistics.py` wraps every metric computation. The return type is always `MetricResult(value, ci_lower, ci_upper, n, seeds_mean, seeds_std)`. You cannot get a bare float.
 
-5. **ComparisonPair enforces fairness**:
+5. **Comparison dataclasses enforce fairness**:
    ```python
    @dataclass
-   class ComparisonPair:
-       raw_embeddings: dict[str, np.ndarray]
-       compressed_embeddings: dict[str, np.ndarray]
-       pooling_method: str      # must match
-       distance_metric: str     # "cosine" AND "euclidean" (runs both)
-       preprocessing: str       # must match
+   class ProteinLevelComparison:
+       """For retrieval, classification, localization tasks."""
+       raw_embeddings_path: Path
+       compressed_embeddings_path: Path
+       pooling_method: str         # must match (e.g., "dct_k4")
+       preprocessing: str          # documented (e.g., "abtt3" or "none")
+       # Runs both cosine and euclidean automatically (Rule 12)
+
+   @dataclass
+   class PerResidueComparison:
+       """For SS3, disorder, conservation, etc."""
+       raw_embeddings_path: Path
+       compressed_embeddings_path: Path
+       probe_type: str             # must match (e.g., "logistic_regression")
+       hp_grid: dict               # must match (e.g., {"C": [0.01, 0.1, 1.0, 10.0]})
+       cv_folds: int               # must match (e.g., 3)
+       seeds: list[int]            # must match (e.g., [42, 123, 456])
    ```
-   Assertion: `raw.pooling_method == compressed.pooling_method`.
+   Assertions: all corresponding fields must match between raw and compressed runs.
 
 6. **Auto-generated report**: `report.py` produces a comprehensive markdown document with:
    - Retention table with CIs for all tasks
@@ -312,20 +370,30 @@ tests/
 
 ## Phasing
 
-### Phase A -- Fix & Validate (our existing benchmarks)
+### Phase A1 -- Fix Existing Benchmarks
 
-**Goal**: Fix all known issues in existing 5-task benchmark.
+**Goal**: Fix all known methodological issues in the 5-task benchmark.
 
-1. Fix unfair retrieval baseline: compute DCT K=4 on raw 1024d ProtT5
-2. Add bootstrap CIs (10K iterations) to all existing metrics
-3. CV-tune hyperparameters (C grid, alpha grid) on training sets
-4. Add euclidean metric alongside cosine everywhere
-5. Run 3 seeds (42, 123, 456) for all probes
-6. Write unit tests for all 7 tools (`test_tool_*.py`)
+1. Build `rules.py` with all 14 golden rules as assertions
+2. Build `metrics/statistics.py` with bootstrap CI wrapper (mandatory return type)
+3. Fix unfair retrieval baseline: compute all 3 baselines (A: mean pool, B: DCT K=4, C: ABTT3 + DCT K=4)
+4. CV-tune hyperparameters (C grid, alpha grid) via 3-fold CV on training sets
+5. Add euclidean metric alongside cosine for retrieval tasks
+6. Run 3 seeds (42, 123, 456) for all probes
 7. Extract ESM2-650M embeddings for CB513, CheZOD, SCOPe 5K (if not already done)
-8. Re-run all 5 tasks with fixes, report corrected retention
+8. Re-run all 5 tasks with fixes, report corrected retention with CIs
 
-**Output**: Corrected retention table with CIs, tool unit tests passing.
+**Output**: Corrected retention table with CIs. Framework infrastructure (`rules.py`, `statistics.py`) ready for all subsequent phases.
+
+### Phase A2 -- Tool Unit Tests
+
+**Goal**: Every shipped tool has rigorous unit tests.
+
+1. Write `test_tool_{name}.py` for all 7 tools (extend existing `test_tools.py` and `test_tools_dimension.py`)
+2. Write `test_benchmark_rules.py` to verify rules themselves work
+3. Verify all 632 existing tests still pass alongside new ones
+
+**Output**: All tool unit tests passing, rules tested.
 
 ### Phase B -- Expand Per-Residue
 
@@ -366,7 +434,7 @@ tests/
 1. Ablation matrix: raw, ABTT-only, RP-only, ABTT+RP, ABTT+RP+fp16
 2. Length stress tests: proteins >500, >1000, >2000 residues
 3. Edge case tests: non-standard AA, very short proteins
-4. PFMBench run (independent external validation, 38 tasks)
+4. PFMBench run (independent external validation). Scope: run the subset of PFMBench tasks that overlap with our matrix (SS3, contact, fold classification — ~5-8 tasks) using their evaluation protocol. Purpose: verify our numbers agree with an independent framework. If PFMBench splits or protocols conflict with our golden rules, document the differences rather than forcing alignment. Full 38-task PFMBench is future work.
 5. Per-class and per-protein error analysis
 6. Generate final report with all results
 
@@ -387,21 +455,40 @@ tests/
 
 ## Disk Space Estimate
 
-| Dataset | Proteins | Raw embeddings (est.) | Compressed (768d) |
-|---------|:--------:|:---------------------:|:------------------:|
-| Existing (CB513, CheZOD, TriZOD, SCOPe, TMbed) | ~12K | 26 GB (already stored) | ~5 GB |
-| ConSurf10k (VESPA) | 10.5K | ~8 GB | ~2 GB |
-| BioLip (bindEmbed21) | ~3K | ~2 GB | ~0.5 GB |
-| NetSurfP (TS115, CASP12) | ~700 | ~0.5 GB (labels only, reuse CB513 embeddings) | -- |
-| ProteinGLUE | ~3K | ~2 GB | ~0.5 GB |
-| DeepLoc (Light Attention) | ~14K | ~10 GB | ~3 GB |
-| CATHe | 1M+ | ~4 GB (pooled vectors only) | ~1.5 GB |
-| DCTdomain CATH20 | 14.4K | ~10 GB (ESM2) | ~3 GB |
-| goPredSim / ProtTucker | -- | ~2.5 GB (pre-computed, download) | -- |
-| **Total new** | | **~39 GB** | **~10.5 GB** |
-| **Grand total** | | **~65 GB** | **~15.5 GB** |
+Estimates are **per PLM**. Rule 9 requires both ProtT5 and ESM2, so multiply raw embeddings by ~2x (ESM2 1280d is 25% larger than ProtT5 1024d).
 
-Current disk: 221 GB free. Fits comfortably.
+| Dataset | Proteins | Raw per PLM (est.) | x2 PLMs | Compressed (768d, per PLM) |
+|---------|:--------:|:------------------:|:-------:|:--------------------------:|
+| Existing (CB513, CheZOD, TriZOD, SCOPe, TMbed) | ~12K | 26 GB (stored) | ~50 GB | ~5 GB |
+| ConSurf10k (VESPA) | 10.5K | ~8 GB | ~16 GB | ~2 GB |
+| BioLip (bindEmbed21) | ~3K | ~2 GB | ~4 GB | ~0.5 GB |
+| NetSurfP (TS115, CASP12) | ~136 | Labels only (NPZ). New embeddings: ~0.1 GB | ~0.2 GB | -- |
+| ProteinGLUE | ~3K | ~2 GB | ~4 GB | ~0.5 GB |
+| DeepLoc (Light Attention) | ~14K | ~10 GB | ~20 GB | ~3 GB |
+| CATHe | 1.7M | **Pooled only**: ~7 GB (no per-residue) | ~14 GB | ~3 GB |
+| DCTdomain CATH20 | 14.4K | ~10 GB (ESM2) | ~20 GB | ~3 GB |
+| goPredSim / ProtTucker | -- | ~2.5 GB (pre-computed) | ~2.5 GB | -- |
+| **Total new** | | | **~81 GB** | **~17 GB** |
+| **Grand total** | | | **~131 GB** | **~22 GB** |
+
+Current disk: 221 GB free. Fits with ~90 GB headroom. CATHe uses pre-computed mean-pool vectors (NOT per-residue — 1.7M proteins per-residue would be ~3 TB).
+
+**Note**: TS115 has 115 proteins and CASP12 has ~21 proteins. These are independent test sets, NOT subsets of CB513. They require separate embedding extraction.
+
+### Embedding Extraction Compute Budget
+
+On Apple M3 Max (96 GB RAM, MPS):
+- ProtT5-XL: ~2-5 proteins/sec (typical L=100-500). Max sequence length ~2000 before MPS OOM.
+- ESM2-650M: ~5-10 proteins/sec. More memory-efficient than ProtT5.
+
+| Phase | New proteins | Est. time (ProtT5) | Est. time (ESM2) |
+|-------|:------------:|:------------------:|:----------------:|
+| A (existing + ESM2) | ~12K (ESM2 only) | -- | ~30 min |
+| B (per-residue expansion) | ~17K | ~2 hrs | ~1 hr |
+| C (protein-level expansion) | ~30K | ~3 hrs | ~2 hrs |
+| CATHe (pooled only) | 1.7M | ~5-8 hrs | ~3-4 hrs |
+
+Strategy: batch size 8, checkpoint every 1K proteins (resume on failure), max_len=2000 (skip longer, test separately in Phase D). For CATHe, use pre-computed embeddings from Zenodo where available.
 
 ---
 
@@ -409,7 +496,7 @@ Current disk: 221 GB free. Fits comfortably.
 
 The benchmark framework is complete when:
 
-1. All 12 golden rules are implemented and enforced in code
+1. All 14 golden rules are implemented and enforced in code
 2. All 18+ tasks run on both ProtT5 and ESM2 with bootstrap CIs
 3. Cross-dataset consistency verified (divergence < 5pp or documented)
 4. Fair retrieval baseline (DCT K=4 for both raw and compressed)
