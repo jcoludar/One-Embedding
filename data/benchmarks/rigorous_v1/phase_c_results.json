@@ -3,19 +3,21 @@
     "baseline_A_raw_mean": {
       "ret1_cosine": {
         "value": 0.7797856692582475,
-        "ci_lower": 0.7716957343979828,
-        "ci_upper": 0.7879806682076066,
+        "ci_lower": 0.7715906703088884,
+        "ci_upper": 0.7878756041185123,
         "n": 9518,
         "seeds_mean": null,
-        "seeds_std": null
+        "seeds_std": null,
+        "ci_method": "bca"
       },
       "ret1_euclidean": {
         "value": 0.7669678503887372,
-        "ci_lower": 0.7586677873502836,
-        "ci_upper": 0.7754780416053793,
+        "ci_lower": 0.7585627232611893,
+        "ci_upper": 0.7752679134271906,
         "n": 9518,
         "seeds_mean": null,
-        "seeds_std": null
+        "seeds_std": null,
+        "ci_method": "bca"
       },
       "n_queries": 9518
     },
@@ -23,29 +25,32 @@
       "ret1_cosine": {
         "value": 0.8370455978146669,
         "ci_lower": 0.8295860474889682,
-        "ci_upper": 0.8447152763185544,
+        "ci_upper": 0.84461021222946,
         "n": 9518,
         "seeds_mean": null,
-        "seeds_std": null
+        "seeds_std": null,
+        "ci_method": "bca"
       },
       "ret1_euclidean": {
         "value": 0.827379701617987,
         "ci_lower": 0.819815087203194,
-        "ci_upper": 0.83494431603278,
+        "ci_upper": 0.8348832759621947,
         "n": 9518,
         "seeds_mean": null,
-        "seeds_std": null
+        "seeds_std": null,
+        "ci_method": "bca"
       },
       "n_queries": 9518
     },
     "baseline_C_abtt3_dct4": {
       "ret1_cosine": {
         "value": 0.8411430972893466,
-        "ci_lower": 0.8338936751418365,
-        "ci_upper": 0.8486026476150452,
+        "ci_lower": 0.8337886110527422,
+        "ci_upper": 0.8484975835259508,
         "n": 9518,
         "seeds_mean": null,
-        "seeds_std": null
+        "seeds_std": null,
+        "ci_method": "bca"
       },
       "ret1_euclidean": {
         "value": 0.8289556629544022,
@@ -53,7 +58,8 @@
         "ci_upper": 0.8365202773691952,
         "n": 9518,
         "seeds_mean": null,
-        "seeds_std": null
+        "seeds_std": null,
+        "ci_method": "bca"
       },
       "n_queries": 9518
     },
@@ -64,33 +70,37 @@
         "ci_upper": 0.8486026476150452,
         "n": 9518,
         "seeds_mean": null,
-        "seeds_std": null
+        "seeds_std": null,
+        "ci_method": "bca"
       },
       "ret1_euclidean": {
         "value": 0.827379701617987,
-        "ci_lower": 0.8200252153813826,
-        "ci_upper": 0.8350493801218744,
+        "ci_lower": 0.8199201512922883,
+        "ci_upper": 0.8349443160327799,
         "n": 9518,
         "seeds_mean": null,
-        "seeds_std": null
+        "seeds_std": null,
+        "ci_method": "bca"
       },
       "n_queries": 9518
     },
     "retention_cosine_pct": {
       "value": 100.0,
-      "ci_lower": 99.76282537385002,
-      "ci_upper": 100.23696682464455,
+      "ci_lower": 99.76912939869115,
+      "ci_upper": 100.23806093295843,
       "n": 9518,
       "seeds_mean": null,
-      "seeds_std": null
+      "seeds_std": null,
+      "ci_method": "bca"
     },
     "retention_euclidean_pct": {
       "value": 99.80988593155895,
-      "ci_lower": 99.5827538247566,
-      "ci_upper": 100.03808556557065,
+      "ci_lower": 99.58269615661919,
+      "ci_upper": 100.03808021917955,
       "n": 9518,
       "seeds_mean": null,
-      "seeds_std": null
+      "seeds_std": null,
+      "ci_method": "bca"
     },
     "n_domains": 9518,
     "n_superfamilies": 888
@@ -124,11 +134,12 @@
     "test_n": 2768,
     "raw_q10": {
       "value": 0.809971098265896,
-      "ci_lower": 0.7951589595375722,
-      "ci_upper": 0.8244219653179191,
+      "ci_lower": 0.7947976878612717,
+      "ci_upper": 0.8240606936416185,
       "n": 2768,
       "seeds_mean": 0.809971098265896,
-      "seeds_std": 0.0
+      "seeds_std": 0.0,
+      "ci_method": "percentile"
     },
     "comp_q10": {
       "value": 0.8059971098265896,
@@ -136,15 +147,17 @@
       "ci_upper": 0.8204479768786127,
       "n": 2768,
       "seeds_mean": 0.8059971098265896,
-      "seeds_std": 0.0
+      "seeds_std": 0.0,
+      "ci_method": "percentile"
     },
     "retention": {
       "value": 99.5093666369313,
-      "ci_lower": 98.64800916674238,
-      "ci_upper": 100.3616677421703,
+      "ci_lower": 98.62283429586853,
+      "ci_upper": 100.3576218149307,
       "n": 2768,
       "seeds_mean": null,
-      "seeds_std": null
+      "seeds_std": null,
+      "ci_method": "bca"
     },
     "class_balance": {
       "imbalanced": "True",
@@ -181,7 +194,8 @@
       "ci_upper": 0.6510204081632653,
       "n": 490,
       "seeds_mean": 0.6081632653061224,
-      "seeds_std": 0.0
+      "seeds_std": 0.0,
+      "ci_method": "percentile"
     },
     "comp_q10": {
       "value": 0.6061224489795919,
@@ -189,15 +203,17 @@
       "ci_upper": 0.6510204081632653,
       "n": 490,
       "seeds_mean": 0.6061224489795919,
-      "seeds_std": 0.0
+      "seeds_std": 0.0,
+      "ci_method": "percentile"
     },
     "retention": {
       "value": 99.66442953020136,
-      "ci_lower": 96.52991368734666,
-      "ci_upper": 102.8268551236749,
+      "ci_lower": 96.52893920590736,
+      "ci_upper": 102.82269569092436,
       "n": 490,
       "seeds_mean": null,
-      "seeds_std": null
+      "seeds_std": null,
+      "ci_method": "bca"
     },
     "class_balance": {
       "imbalanced": "True",
@@ -286,6 +302,6 @@
     ],
     "codec": "ABTT3 + RP768 + DCT K=4 (seed=42)",
     "abtt_corpus": "SCOPe 5K (external, general-purpose)",
-    "elapsed_seconds": 1707.5
+    "elapsed_seconds": 1658.0
   }
 }
