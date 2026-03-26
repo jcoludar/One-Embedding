@@ -219,3 +219,14 @@ class TestAveragedMultiSeed:
         assert abs(result.seeds_std - expected_std) < 1e-10
         # The averaged per-item value should be 0.95 (each item averages to 0.95)
         assert abs(result.value - 0.95) < 1e-10
+
+
+class TestRetrievalBCa:
+    """Verify retrieval Ret@1 scores (binary 0/1) get BCa CI automatically."""
+
+    def test_retrieval_scores_get_bca(self):
+        rng = np.random.RandomState(42)
+        scores = {f"q{i}": float(rng.choice([0.0, 1.0])) for i in range(200)}
+        result = bootstrap_ci(scores, metric_fn=np.mean, n_bootstrap=2000, seed=42)
+        assert result.ci_method == "bca"
+        assert result.ci_lower <= result.value <= result.ci_upper
