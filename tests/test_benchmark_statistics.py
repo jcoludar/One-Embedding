@@ -38,6 +38,52 @@ class TestBootstrapCI:
         assert result.ci_upper - result.ci_lower > 0.05
 
 
+class TestBCaBootstrap:
+    """BCa (bias-corrected and accelerated) bootstrap CI tests."""
+
+    def test_bca_returns_metric_result(self):
+        """n=200 uniform data, verify ci_method=='bca'."""
+        rng = np.random.RandomState(42)
+        scores = {f"q{i}": float(rng.rand()) for i in range(200)}
+        result = bootstrap_ci(scores, metric_fn=np.mean, n_bootstrap=1000, seed=42)
+        assert isinstance(result, MetricResult)
+        assert result.ci_method == "bca"
+
+    def test_bca_ci_contains_observed(self):
+        """n=500, verify ci_lower <= value <= ci_upper."""
+        rng = np.random.RandomState(42)
+        scores = {f"q{i}": float(rng.rand()) for i in range(500)}
+        result = bootstrap_ci(scores, metric_fn=np.mean, n_bootstrap=5000, seed=42)
+        assert result.ci_lower <= result.value <= result.ci_upper
+
+    def test_bca_asymmetric_for_skewed_data(self):
+        """n=200 exponential data, BCa should produce asymmetric CI for right-skewed data."""
+        rng = np.random.RandomState(42)
+        scores = {f"q{i}": float(rng.exponential(scale=1.0)) for i in range(200)}
+        result = bootstrap_ci(scores, metric_fn=np.mean, n_bootstrap=10000, seed=42)
+        upper_dist = result.ci_upper - result.value
+        lower_dist = result.value - result.ci_lower
+        # BCa should produce asymmetric CIs for right-skewed data
+        assert upper_dist > lower_dist
+
+    def test_fallback_to_percentile_for_small_n(self):
+        """n=10, verify ci_method=='percentile' (fallback)."""
+        rng = np.random.RandomState(42)
+        scores = {f"q{i}": float(rng.rand()) for i in range(10)}
+        result = bootstrap_ci(scores, metric_fn=np.mean, n_bootstrap=1000, seed=42)
+        assert result.ci_method == "percentile"
+
+    def test_bca_deterministic_with_seed(self):
+        """Same scores + seed should produce identical CIs."""
+        rng = np.random.RandomState(42)
+        scores = {f"q{i}": float(rng.rand()) for i in range(100)}
+        r1 = bootstrap_ci(scores, metric_fn=np.mean, n_bootstrap=5000, seed=99)
+        r2 = bootstrap_ci(scores, metric_fn=np.mean, n_bootstrap=5000, seed=99)
+        assert r1.ci_lower == r2.ci_lower
+        assert r1.ci_upper == r2.ci_upper
+        assert r1.value == r2.value
+
+
 class TestMultiSeedSummary:
 
     def test_returns_metric_result_with_seeds(self):

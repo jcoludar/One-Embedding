@@ -2,16 +2,24 @@
 
 Every metric in the rigorous benchmark must go through bootstrap_ci() to get
 a MetricResult with confidence intervals. No bare floats allowed (Rule 4).
+
+Uses BCa (bias-corrected and accelerated) bootstrap for second-order accurate
+CIs (DiCiccio & Efron 1996). Falls back to percentile for n<25 where
+jackknife is unstable, or if BCa raises an exception.
 """
 
 from typing import Callable
 
 import numpy as np
+from scipy.stats import bootstrap as scipy_bootstrap
 
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from rules import MetricResult
+
+# Minimum sample size for BCa (jackknife is unstable below this)
+_BCA_MIN_N = 25
 
 
 def bootstrap_ci(
@@ -23,6 +31,9 @@ def bootstrap_ci(
 ) -> MetricResult:
     """Compute a metric with bootstrap 95% CI (Rule 4).
 
+    Uses BCa (bias-corrected and accelerated) method for n>=25, falling back
+    to percentile for small samples or if BCa raises an exception.
+
     Args:
         scores: {item_id: score} — per-query, per-protein, or per-residue.
         metric_fn: Aggregation function (default: np.mean).
@@ -31,7 +42,7 @@ def bootstrap_ci(
         alpha: Significance level (default 0.05 for 95% CI).
 
     Returns:
-        MetricResult with value, ci_lower, ci_upper, n.
+        MetricResult with value, ci_lower, ci_upper, n, ci_method.
     """
     ids = sorted(scores.keys())
     values = np.array([scores[k] for k in ids], dtype=np.float64)
@@ -39,20 +50,49 @@ def bootstrap_ci(
 
     observed = float(metric_fn(values))
 
-    rng = np.random.RandomState(seed)
-    # Vectorized bootstrap for speed
-    idx_matrix = rng.randint(0, n, size=(n_bootstrap, n))
-    boot_samples = values[idx_matrix]  # (n_bootstrap, n)
-    boot_values = np.apply_along_axis(metric_fn, 1, boot_samples)
+    # Choose method based on sample size
+    use_bca = n >= _BCA_MIN_N
+    method = "BCa" if use_bca else "percentile"
 
-    ci_lower = float(np.percentile(boot_values, 100 * alpha / 2))
-    ci_upper = float(np.percentile(boot_values, 100 * (1 - alpha / 2)))
+    def statistic(x, axis):
+        return np.apply_along_axis(metric_fn, axis, x)
+
+    try:
+        result = scipy_bootstrap(
+            (values,),
+            statistic=statistic,
+            n_resamples=n_bootstrap,
+            method=method,
+            confidence_level=1 - alpha,
+            random_state=np.random.RandomState(seed),
+        )
+        ci_lower = float(result.confidence_interval.low)
+        ci_upper = float(result.confidence_interval.high)
+        ci_method = "bca" if use_bca else "percentile"
+
+        # NaN fallback check
+        if np.isnan(ci_lower) or np.isnan(ci_upper):
+            raise ValueError("BCa returned NaN")
+    except Exception:
+        # Fallback to percentile if BCa fails
+        result = scipy_bootstrap(
+            (values,),
+            statistic=statistic,
+            n_resamples=n_bootstrap,
+            method="percentile",
+            confidence_level=1 - alpha,
+            random_state=np.random.RandomState(seed),
+        )
+        ci_lower = float(result.confidence_interval.low)
+        ci_upper = float(result.confidence_interval.high)
+        ci_method = "percentile"
 
     return MetricResult(
         value=observed,
         ci_lower=ci_lower,
         ci_upper=ci_upper,
         n=n,
+        ci_method=ci_method,
     )
 
 
@@ -66,8 +106,9 @@ def paired_bootstrap_retention(
 ) -> MetricResult:
     """Bootstrap CI on the retention ratio: metric(compressed) / metric(raw).
 
-    Uses paired resampling — the same items are drawn for both raw and
+    Uses paired BCa resampling — the same items are drawn for both raw and
     compressed in each bootstrap iteration, so correlated noise cancels.
+    Falls back to percentile for n<25 or if BCa raises an exception.
 
     Args:
         raw_scores: {item_id: score} for the raw (uncompressed) system.
@@ -79,7 +120,7 @@ def paired_bootstrap_retention(
 
     Returns:
         MetricResult where value is retention percentage (0-100+),
-        ci_lower/ci_upper are the bootstrap percentile bounds.
+        ci_lower/ci_upper are the BCa bootstrap bounds, ci_method is set.
     """
     # Align on common IDs
     common = sorted(set(raw_scores.keys()) & set(comp_scores.keys()))
@@ -94,28 +135,55 @@ def paired_bootstrap_retention(
     comp_obs = float(metric_fn(comp_arr))
     retention_obs = (comp_obs / raw_obs * 100) if raw_obs != 0 else 0.0
 
-    rng = np.random.RandomState(seed)
-    idx_matrix = rng.randint(0, n, size=(n_bootstrap, n))
+    use_bca = n >= _BCA_MIN_N
+    method = "BCa" if use_bca else "percentile"
 
-    raw_boot = np.apply_along_axis(metric_fn, 1, raw_arr[idx_matrix])
-    comp_boot = np.apply_along_axis(metric_fn, 1, comp_arr[idx_matrix])
+    def retention_statistic(raw, comp, axis):
+        raw_agg = np.apply_along_axis(metric_fn, axis, raw)
+        comp_agg = np.apply_along_axis(metric_fn, axis, comp)
+        # Avoid division by zero
+        with np.errstate(divide='ignore', invalid='ignore'):
+            ret = np.where(raw_agg != 0, comp_agg / raw_agg * 100, 0.0)
+        return ret
 
-    # Avoid division by zero in bootstrap samples
-    valid = raw_boot != 0
-    retention_boot = np.full(n_bootstrap, np.nan)
-    retention_boot[valid] = (comp_boot[valid] / raw_boot[valid]) * 100
+    try:
+        result = scipy_bootstrap(
+            (raw_arr, comp_arr),
+            statistic=retention_statistic,
+            paired=True,
+            n_resamples=n_bootstrap,
+            method=method,
+            confidence_level=1 - alpha,
+            random_state=np.random.RandomState(seed),
+        )
+        ci_lower = float(result.confidence_interval.low)
+        ci_upper = float(result.confidence_interval.high)
+        ci_method = "bca" if use_bca else "percentile"
 
-    # Drop NaN (from zero-denominator samples)
-    retention_boot = retention_boot[~np.isnan(retention_boot)]
-
-    ci_lower = float(np.percentile(retention_boot, 100 * alpha / 2))
-    ci_upper = float(np.percentile(retention_boot, 100 * (1 - alpha / 2)))
+        # NaN fallback check
+        if np.isnan(ci_lower) or np.isnan(ci_upper):
+            raise ValueError("BCa returned NaN")
+    except Exception:
+        # Fallback to percentile
+        result = scipy_bootstrap(
+            (raw_arr, comp_arr),
+            statistic=retention_statistic,
+            paired=True,
+            n_resamples=n_bootstrap,
+            method="percentile",
+            confidence_level=1 - alpha,
+            random_state=np.random.RandomState(seed),
+        )
+        ci_lower = float(result.confidence_interval.low)
+        ci_upper = float(result.confidence_interval.high)
+        ci_method = "percentile"
 
     return MetricResult(
         value=retention_obs,
         ci_lower=ci_lower,
         ci_upper=ci_upper,
         n=n,
+        ci_method=ci_method,
     )
 
 
@@ -127,14 +195,17 @@ def paired_bootstrap_metric(
     seed: int = 42,
     alpha: float = 0.05,
 ) -> tuple[MetricResult, MetricResult]:
-    """Bootstrap CIs on two paired systems simultaneously.
+    """Bootstrap CIs on two systems evaluated on the same items.
 
-    Same resampling for both — gives correlated CIs suitable for
-    paired comparison. Use for pooled metrics (e.g., Spearman rho on
-    pooled residues) where you need CIs on both raw and compressed.
+    Computes independent BCa bootstrap CIs for raw and compressed, using the
+    same seed for reproducibility. Each system gets its own CI (not paired
+    difference CIs). Use for pooled metrics (e.g., Spearman rho on pooled
+    residues) where you need CIs on both raw and compressed.
+
+    Falls back to percentile for n<25 or if BCa raises an exception.
 
     Returns:
-        (raw_metric, comp_metric) — both MetricResult with paired CIs.
+        (raw_metric, comp_metric) — both MetricResult with independent CIs.
     """
     common = sorted(set(raw_scores.keys()) & set(comp_scores.keys()))
     if len(common) == 0:
@@ -148,23 +219,59 @@ def paired_bootstrap_metric(
     raw_obs = float(metric_fn(raw_arr))
     comp_obs = float(metric_fn(comp_arr))
 
-    rng = np.random.RandomState(seed)
-    idx_matrix = rng.randint(0, n, size=(n_bootstrap, n))
+    use_bca = n >= _BCA_MIN_N
+    method = "BCa" if use_bca else "percentile"
 
-    raw_boot = np.apply_along_axis(metric_fn, 1, raw_arr[idx_matrix])
-    comp_boot = np.apply_along_axis(metric_fn, 1, comp_arr[idx_matrix])
+    def statistic(x, axis):
+        return np.apply_along_axis(metric_fn, axis, x)
+
+    def _compute_ci(arr, obs, rng_seed):
+        """Compute BCa CI for a single array, with percentile fallback."""
+        try:
+            result = scipy_bootstrap(
+                (arr,),
+                statistic=statistic,
+                n_resamples=n_bootstrap,
+                method=method,
+                confidence_level=1 - alpha,
+                random_state=np.random.RandomState(rng_seed),
+            )
+            ci_lo = float(result.confidence_interval.low)
+            ci_hi = float(result.confidence_interval.high)
+            ci_m = "bca" if use_bca else "percentile"
+
+            if np.isnan(ci_lo) or np.isnan(ci_hi):
+                raise ValueError("BCa returned NaN")
+        except Exception:
+            result = scipy_bootstrap(
+                (arr,),
+                statistic=statistic,
+                n_resamples=n_bootstrap,
+                method="percentile",
+                confidence_level=1 - alpha,
+                random_state=np.random.RandomState(rng_seed),
+            )
+            ci_lo = float(result.confidence_interval.low)
+            ci_hi = float(result.confidence_interval.high)
+            ci_m = "percentile"
+        return ci_lo, ci_hi, ci_m
+
+    raw_lo, raw_hi, raw_ci_m = _compute_ci(raw_arr, raw_obs, seed)
+    comp_lo, comp_hi, comp_ci_m = _compute_ci(comp_arr, comp_obs, seed)
 
     raw_result = MetricResult(
         value=raw_obs,
-        ci_lower=float(np.percentile(raw_boot, 100 * alpha / 2)),
-        ci_upper=float(np.percentile(raw_boot, 100 * (1 - alpha / 2))),
+        ci_lower=raw_lo,
+        ci_upper=raw_hi,
         n=n,
+        ci_method=raw_ci_m,
     )
     comp_result = MetricResult(
         value=comp_obs,
-        ci_lower=float(np.percentile(comp_boot, 100 * alpha / 2)),
-        ci_upper=float(np.percentile(comp_boot, 100 * (1 - alpha / 2))),
+        ci_lower=comp_lo,
+        ci_upper=comp_hi,
         n=n,
+        ci_method=comp_ci_m,
     )
     return raw_result, comp_result
 

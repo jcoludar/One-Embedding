@@ -63,10 +63,15 @@ class TestRule4StatisticalSignificance:
     def test_metric_result_has_ci(self):
         r = MetricResult(value=0.95, ci_lower=0.93, ci_upper=0.97, n=1000)
         assert r.ci_lower < r.value < r.ci_upper
+        assert r.ci_method == "percentile"
 
     def test_metric_result_rejects_no_ci(self):
         with pytest.raises(ValueError):
             MetricResult(value=0.95, ci_lower=None, ci_upper=None, n=1000)
+
+    def test_metric_result_bca(self):
+        r = MetricResult(value=0.95, ci_lower=0.93, ci_upper=0.97, n=1000, ci_method="bca")
+        assert r.ci_method == "bca"
 
 
 class TestRule6ClassBalance:

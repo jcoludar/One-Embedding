@@ -23,6 +23,7 @@ class MetricResult:
     n: int
     seeds_mean: Optional[float] = None
     seeds_std: Optional[float] = None
+    ci_method: str = "percentile"
 
     def __post_init__(self):
         if self.ci_lower is None or self.ci_upper is None:
