@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from rules import MetricResult
 from metrics.statistics import (
-    bootstrap_ci, multi_seed_summary,
+    bootstrap_ci, multi_seed_summary, averaged_multi_seed,
     paired_bootstrap_retention, paired_bootstrap_metric,
 )
 
@@ -161,3 +161,61 @@ class TestPairedBootstrapMetric:
         comp = {f"p{i}": float(i * 2) for i in range(50)}
         r_raw, r_comp = paired_bootstrap_metric(raw, comp, n_bootstrap=1000)
         assert r_raw.n == r_comp.n == 50
+
+
+class TestAveragedMultiSeed:
+    """Tests for averaged_multi_seed (Bouthillier et al. 2021)."""
+
+    def test_averaged_seed_returns_metric_result(self):
+        """3 seed dicts of 100 items, verify MetricResult with seeds_mean/seeds_std."""
+        rng = np.random.RandomState(42)
+        seed_scores = [
+            {f"p{i}": float(rng.rand()) for i in range(100)}
+            for _ in range(3)
+        ]
+        result = averaged_multi_seed(seed_scores, n_bootstrap=1000, seed=42)
+        assert isinstance(result, MetricResult)
+        assert result.seeds_mean is not None
+        assert result.seeds_std is not None
+        assert result.n == 100
+        assert result.ci_lower <= result.value <= result.ci_upper
+
+    def test_averaged_reduces_variance(self):
+        """3 noisy copies of base scores, averaged result close to base mean."""
+        rng = np.random.RandomState(42)
+        base = {f"p{i}": float(rng.rand()) for i in range(100)}
+        base_mean = np.mean(list(base.values()))
+        # Add noise to each seed
+        seed_scores = []
+        for s in range(3):
+            rng_s = np.random.RandomState(100 + s)
+            noisy = {k: v + rng_s.randn() * 0.05 for k, v in base.items()}
+            seed_scores.append(noisy)
+        result = averaged_multi_seed(seed_scores, n_bootstrap=1000, seed=42)
+        # Averaged across 3 noisy seeds should be close to base mean
+        assert abs(result.value - base_mean) < 0.05
+
+    def test_averaged_ci_is_bca(self):
+        """Verify ci_method == 'bca' for n=100."""
+        rng = np.random.RandomState(42)
+        seed_scores = [
+            {f"p{i}": float(rng.rand()) for i in range(100)}
+            for _ in range(3)
+        ]
+        result = averaged_multi_seed(seed_scores, n_bootstrap=1000, seed=42)
+        assert result.ci_method == "bca"
+
+    def test_averaged_reports_per_seed_values(self):
+        """3 dicts with known values (0.9, 0.95, 1.0), verify seeds_mean ~= 0.95."""
+        seed_scores = [
+            {f"p{i}": 0.9 for i in range(100)},
+            {f"p{i}": 0.95 for i in range(100)},
+            {f"p{i}": 1.0 for i in range(100)},
+        ]
+        result = averaged_multi_seed(seed_scores, n_bootstrap=1000, seed=42)
+        assert abs(result.seeds_mean - 0.95) < 1e-10
+        # seeds_std should be std of [0.9, 0.95, 1.0]
+        expected_std = float(np.std([0.9, 0.95, 1.0], ddof=1))
+        assert abs(result.seeds_std - expected_std) < 1e-10
+        # The averaged per-item value should be 0.95 (each item averages to 0.95)
+        assert abs(result.value - 0.95) < 1e-10

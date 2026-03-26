@@ -277,10 +277,14 @@ def paired_bootstrap_metric(
 
 
 def multi_seed_summary(seed_results: list[MetricResult]) -> MetricResult:
-    """Aggregate results across multiple seeds (Rule 5).
+    """Aggregate results across multiple seeds (Rule 5) -- DEPRECATED.
 
-    Selects the median-performing seed for the headline number and CI.
-    Reports mean +/- std across all seeds.
+    Prefer averaged_multi_seed() which averages per-item predictions
+    across seeds before bootstrapping, properly capturing both probe
+    training variance and sampling variance.
+
+    This function selects the median-performing seed's CI, which ignores
+    probe training variability (Bouthillier et al. 2021).
 
     Args:
         seed_results: List of MetricResult, one per seed.
@@ -304,4 +308,69 @@ def multi_seed_summary(seed_results: list[MetricResult]) -> MetricResult:
         n=median_result.n,
         seeds_mean=seeds_mean,
         seeds_std=seeds_std,
+    )
+
+
+def averaged_multi_seed(
+    seed_scores: list[dict[str, float]],
+    metric_fn: Callable[[np.ndarray], float] = np.mean,
+    n_bootstrap: int = 10_000,
+    seed: int = 42,
+    alpha: float = 0.05,
+) -> MetricResult:
+    """Average per-item scores across seeds, then bootstrap (Rule 5).
+
+    Instead of picking the median seed's CI (which ignores probe variance),
+    this averages predictions across seeds for each item, then computes
+    a single BCa bootstrap CI on the averaged scores.
+
+    Per-seed aggregate values are stored in seeds_mean/seeds_std for
+    transparency about probe training variability.
+
+    Args:
+        seed_scores: List of {item_id: score} dicts, one per seed.
+        metric_fn: Aggregation function (default: np.mean).
+        n_bootstrap: Bootstrap iterations.
+        seed: Random seed for bootstrap.
+        alpha: Significance level.
+
+    Returns:
+        MetricResult with CI from bootstrapping the averaged scores,
+        plus seeds_mean/seeds_std from per-seed aggregates.
+    """
+    if len(seed_scores) == 0:
+        raise ValueError("Need at least one seed's scores.")
+
+    # Find common items across all seeds
+    common = sorted(set.intersection(*[set(s.keys()) for s in seed_scores]))
+    if len(common) == 0:
+        raise ValueError("No common items across seeds.")
+
+    # Average per-item scores across seeds
+    averaged = {}
+    for item_id in common:
+        vals = [s[item_id] for s in seed_scores]
+        averaged[item_id] = float(np.mean(vals))
+
+    # Per-seed aggregate values (for transparency)
+    per_seed_aggregates = []
+    for s in seed_scores:
+        vals = np.array([s[k] for k in common], dtype=np.float64)
+        per_seed_aggregates.append(float(metric_fn(vals)))
+
+    seeds_mean = float(np.mean(per_seed_aggregates))
+    seeds_std = float(np.std(per_seed_aggregates, ddof=1)) if len(per_seed_aggregates) > 1 else 0.0
+
+    # Bootstrap CI on the averaged scores
+    result = bootstrap_ci(averaged, metric_fn=metric_fn, n_bootstrap=n_bootstrap,
+                          seed=seed, alpha=alpha)
+
+    return MetricResult(
+        value=result.value,
+        ci_lower=result.ci_lower,
+        ci_upper=result.ci_upper,
+        n=result.n,
+        seeds_mean=seeds_mean,
+        seeds_std=seeds_std,
+        ci_method=result.ci_method,
     )

@@ -13,7 +13,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from rules import MetricResult, check_no_leakage, check_class_balance
-from metrics.statistics import bootstrap_ci, multi_seed_summary
+from metrics.statistics import bootstrap_ci, multi_seed_summary, averaged_multi_seed
 from probes.linear import train_classification_probe, train_regression_probe
 
 
@@ -254,8 +254,8 @@ def run_ss3_benchmark(
     # Rule 6: class balance
     class_balance = check_class_balance(y_test)
 
-    seed_results = []
-    seed_probe_results = []  # raw probe dicts per seed
+    seed_per_protein_scores = []  # list of {pid: q3} dicts
+    seed_probe_results = []
 
     for seed in seeds:
         probe_result = train_classification_probe(
@@ -264,23 +264,22 @@ def run_ss3_benchmark(
         )
         seed_probe_results.append(probe_result)
 
-        # Per-protein Q3 scores for bootstrap
         fitted_probe = _get_fitted_logreg(
             X_train, y_train, probe_result["best_C"], seed
         )
         per_protein_scores = _per_protein_q3(
             embeddings, labels, test_ids, fitted_probe, max_len, SS3_MAP
         )
+        seed_per_protein_scores.append(per_protein_scores)
 
-        metric_result = bootstrap_ci(per_protein_scores, n_bootstrap=n_bootstrap, seed=seed)
-        seed_results.append(metric_result)
+    # Average across seeds, then bootstrap (Bouthillier et al. 2021)
+    q3 = averaged_multi_seed(
+        seed_per_protein_scores, n_bootstrap=n_bootstrap, seed=seeds[0]
+    )
 
-    # Multi-seed summary
-    q3 = multi_seed_summary(seed_results)
-
-    # Find median seed index (same logic as multi_seed_summary)
-    values = [r.value for r in seed_results]
-    sorted_idx = np.argsort(values)
+    # Select median-performing seed for per_class_acc and best_C reporting
+    per_seed_means = [np.mean(list(s.values())) for s in seed_per_protein_scores]
+    sorted_idx = np.argsort(per_seed_means)
     median_idx = int(sorted_idx[len(sorted_idx) // 2])
     median_probe = seed_probe_results[median_idx]
 
@@ -334,7 +333,7 @@ def run_ss8_benchmark(
 
     class_balance = check_class_balance(y_test)
 
-    seed_results = []
+    seed_per_protein_scores = []  # list of {pid: q8} dicts
     seed_probe_results = []
 
     for seed in seeds:
@@ -350,14 +349,16 @@ def run_ss8_benchmark(
         per_protein_scores = _per_protein_q3(
             embeddings, labels, test_ids, fitted_probe, max_len, SS8_MAP
         )
+        seed_per_protein_scores.append(per_protein_scores)
 
-        metric_result = bootstrap_ci(per_protein_scores, n_bootstrap=n_bootstrap, seed=seed)
-        seed_results.append(metric_result)
+    # Average across seeds, then bootstrap (Bouthillier et al. 2021)
+    q8 = averaged_multi_seed(
+        seed_per_protein_scores, n_bootstrap=n_bootstrap, seed=seeds[0]
+    )
 
-    q8 = multi_seed_summary(seed_results)
-
-    values = [r.value for r in seed_results]
-    sorted_idx = np.argsort(values)
+    # Select median-performing seed for per_class_acc and best_C reporting
+    per_seed_means = [np.mean(list(s.values())) for s in seed_per_protein_scores]
+    sorted_idx = np.argsort(per_seed_means)
     median_idx = int(sorted_idx[len(sorted_idx) // 2])
     median_probe = seed_probe_results[median_idx]
 
