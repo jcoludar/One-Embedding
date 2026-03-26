@@ -1,0 +1,291 @@
+{
+  "cath20_retrieval": {
+    "baseline_A_raw_mean": {
+      "ret1_cosine": {
+        "value": 0.7797856692582475,
+        "ci_lower": 0.7716957343979828,
+        "ci_upper": 0.7879806682076066,
+        "n": 9518,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "ret1_euclidean": {
+        "value": 0.7669678503887372,
+        "ci_lower": 0.7586677873502836,
+        "ci_upper": 0.7754780416053793,
+        "n": 9518,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "n_queries": 9518
+    },
+    "baseline_B_raw_dct4": {
+      "ret1_cosine": {
+        "value": 0.8370455978146669,
+        "ci_lower": 0.8295860474889682,
+        "ci_upper": 0.8447152763185544,
+        "n": 9518,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "ret1_euclidean": {
+        "value": 0.827379701617987,
+        "ci_lower": 0.819815087203194,
+        "ci_upper": 0.83494431603278,
+        "n": 9518,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "n_queries": 9518
+    },
+    "baseline_C_abtt3_dct4": {
+      "ret1_cosine": {
+        "value": 0.8411430972893466,
+        "ci_lower": 0.8338936751418365,
+        "ci_upper": 0.8486026476150452,
+        "n": 9518,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "ret1_euclidean": {
+        "value": 0.8289556629544022,
+        "ci_lower": 0.8214961126287035,
+        "ci_upper": 0.8365202773691952,
+        "n": 9518,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "n_queries": 9518
+    },
+    "compressed": {
+      "ret1_cosine": {
+        "value": 0.8411430972893466,
+        "ci_lower": 0.8337886110527422,
+        "ci_upper": 0.8486026476150452,
+        "n": 9518,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "ret1_euclidean": {
+        "value": 0.827379701617987,
+        "ci_lower": 0.8200252153813826,
+        "ci_upper": 0.8350493801218744,
+        "n": 9518,
+        "seeds_mean": null,
+        "seeds_std": null
+      },
+      "n_queries": 9518
+    },
+    "retention_cosine_pct": {
+      "value": 100.0,
+      "ci_lower": 99.76282537385002,
+      "ci_upper": 100.23696682464455,
+      "n": 9518,
+      "seeds_mean": null,
+      "seeds_std": null
+    },
+    "retention_euclidean_pct": {
+      "value": 99.80988593155895,
+      "ci_lower": 99.5827538247566,
+      "ci_upper": 100.03808556557065,
+      "n": 9518,
+      "seeds_mean": null,
+      "seeds_std": null
+    },
+    "n_domains": 9518,
+    "n_superfamilies": 888
+  },
+  "competitor_comparison": {
+    "published": {
+      "EAT (ProtTucker, ProtT5, CATH S40)": {
+        "reference": "Heinzinger et al., 2022 (EAT/ProtTucker)",
+        "plm": "ProtT5-XL",
+        "dataset": "CATH S40 (122K domains)",
+        "method": "CLS-token or mean pool, ProtTucker MLP fine-tuned",
+        "ret1_reported": "~0.70 (mean pool, no fine-tuning)",
+        "ret1_finetuned": "~0.86 (ProtTucker fine-tuned)",
+        "note": "Fine-tuned model uses supervised contrastive loss on CATH labels"
+      },
+      "DCTdomain (ESM2, 2D-DCT)": {
+        "reference": "Aziz et al., 2024 (DCTdomain)",
+        "plm": "ESM2-650M",
+        "dataset": "CATH v4.3 subset",
+        "method": "2D-DCT on per-residue embeddings -> 480d fingerprint",
+        "ret1_reported": "not directly reported as Ret@1",
+        "note": "Uses ESM2 (1280d), not ProtT5 (1024d). Not apples-to-apples."
+      }
+    },
+    "note": "Different PLMs, datasets, and protocols. Not directly comparable."
+  },
+  "localization_test": {
+    "status": "done",
+    "test_name": "deeploc_test",
+    "train_n": 9503,
+    "test_n": 2768,
+    "raw_q10": {
+      "value": 0.809971098265896,
+      "ci_lower": 0.7951589595375722,
+      "ci_upper": 0.8244219653179191,
+      "n": 2768,
+      "seeds_mean": 0.809971098265896,
+      "seeds_std": 0.0
+    },
+    "comp_q10": {
+      "value": 0.8059971098265896,
+      "ci_lower": 0.7908236994219653,
+      "ci_upper": 0.8204479768786127,
+      "n": 2768,
+      "seeds_mean": 0.8059971098265896,
+      "seeds_std": 0.0
+    },
+    "retention": {
+      "value": 99.5093666369313,
+      "ci_lower": 98.64800916674238,
+      "ci_upper": 100.3616677421703,
+      "n": 2768,
+      "seeds_mean": null,
+      "seeds_std": null
+    },
+    "class_balance": {
+      "imbalanced": "True",
+      "max_ratio": 26.866666666666667,
+      "class_counts": {
+        "Cell.membrane": 273,
+        "Cytoplasm": 505,
+        "Endoplasmic.reticulum": 173,
+        "Extracellular": 393,
+        "Golgi.apparatus": 70,
+        "Lysosome/Vacuole": 64,
+        "Mitochondrion": 302,
+        "Nucleus": 806,
+        "Peroxisome": 30,
+        "Plastid": 152
+      },
+      "small_classes": [
+        "Golgi.apparatus",
+        "Lysosome/Vacuole",
+        "Peroxisome"
+      ]
+    },
+    "best_C_raw": 10.0,
+    "best_C_comp": 10.0
+  },
+  "localization_hard": {
+    "status": "done",
+    "test_name": "setHARD",
+    "train_n": 9503,
+    "test_n": 490,
+    "raw_q10": {
+      "value": 0.6081632653061224,
+      "ci_lower": 0.563265306122449,
+      "ci_upper": 0.6510204081632653,
+      "n": 490,
+      "seeds_mean": 0.6081632653061224,
+      "seeds_std": 0.0
+    },
+    "comp_q10": {
+      "value": 0.6061224489795919,
+      "ci_lower": 0.563265306122449,
+      "ci_upper": 0.6510204081632653,
+      "n": 490,
+      "seeds_mean": 0.6061224489795919,
+      "seeds_std": 0.0
+    },
+    "retention": {
+      "value": 99.66442953020136,
+      "ci_lower": 96.52991368734666,
+      "ci_upper": 102.8268551236749,
+      "n": 490,
+      "seeds_mean": null,
+      "seeds_std": null
+    },
+    "class_balance": {
+      "imbalanced": "True",
+      "max_ratio": 39.0,
+      "class_counts": {
+        "Cell.membrane": 98,
+        "Cytoplasm": 117,
+        "Endoplasmic.reticulum": 34,
+        "Extracellular": 92,
+        "Golgi.apparatus": 13,
+        "Lysosome/Vacuole": 13,
+        "Mitochondrion": 10,
+        "Nucleus": 99,
+        "Peroxisome": 3,
+        "Plastid": 11
+      },
+      "small_classes": [
+        "Cell.membrane",
+        "Endoplasmic.reticulum",
+        "Extracellular",
+        "Golgi.apparatus",
+        "Lysosome/Vacuole",
+        "Mitochondrion",
+        "Nucleus",
+        "Peroxisome",
+        "Plastid"
+      ]
+    },
+    "best_C_raw": 10.0,
+    "best_C_comp": 10.0
+  },
+  "cross_check_retrieval": {
+    "scope_5k_retention_pct": 99.79929754139488,
+    "cath20_retention_pct": 100.0,
+    "consistency": {
+      "max_divergence": 0.2007024586051216,
+      "status": "ok",
+      "pairs": [
+        [
+          "SCOPe_5K",
+          "CATH20",
+          0.2007024586051216
+        ]
+      ]
+    }
+  },
+  "summary": {
+    "tasks": [
+      {
+        "task": "CATH20 Ret@1 cosine",
+        "retention_pct": 100.0,
+        "baseline": "vs Baseline C"
+      },
+      {
+        "task": "CATH20 Ret@1 euclidean",
+        "retention_pct": 99.80988593155895,
+        "baseline": "vs Baseline C"
+      },
+      {
+        "task": "DeepLoc Q10 (test)",
+        "retention_pct": 99.5093666369313,
+        "baseline": "vs raw 1024d"
+      },
+      {
+        "task": "DeepLoc Q10 (setHARD)",
+        "retention_pct": 99.66442953020136,
+        "baseline": "vs raw 1024d"
+      }
+    ],
+    "mean_retention_pct": 99.7459205246729
+  },
+  "_meta": {
+    "script": "run_phase_c.py",
+    "seeds": [
+      42,
+      123,
+      456
+    ],
+    "bootstrap_n": 10000,
+    "cv_folds": 3,
+    "C_grid": [
+      0.01,
+      0.1,
+      1.0,
+      10.0
+    ],
+    "codec": "ABTT3 + RP768 + DCT K=4 (seed=42)",
+    "abtt_corpus": "SCOPe 5K (external, general-purpose)",
+    "elapsed_seconds": 1707.5
+  }
+}
