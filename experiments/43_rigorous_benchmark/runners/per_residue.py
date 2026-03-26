@@ -13,7 +13,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from rules import MetricResult, check_no_leakage, check_class_balance
-from metrics.statistics import bootstrap_ci, multi_seed_summary, averaged_multi_seed
+from metrics.statistics import bootstrap_ci, multi_seed_summary, averaged_multi_seed, cluster_bootstrap_ci
 from probes.linear import train_classification_probe, train_regression_probe
 
 
@@ -203,6 +203,58 @@ def _per_protein_spearman(
 
 
 # ---------------------------------------------------------------------------
+# Per-protein prediction collector (for cluster bootstrap)
+# ---------------------------------------------------------------------------
+
+def _collect_per_protein_predictions(
+    embeddings: dict,
+    scores_dict: dict,
+    protein_ids: list,
+    probe,
+    max_len: int,
+    min_residues: int = 5,
+) -> dict:
+    """Collect per-protein (y_true, y_pred) arrays from a fitted probe.
+
+    Unlike _per_protein_spearman which computes rho per protein, this
+    returns the raw arrays needed for pooled metrics and cluster bootstrap.
+
+    Args:
+        embeddings: {pid: (L, D)}
+        scores_dict: {pid: (L,) float array}
+        protein_ids: IDs to score.
+        probe: Fitted sklearn estimator with .predict().
+        max_len: Maximum residues per protein.
+        min_residues: Minimum valid (non-NaN) residues required to include protein.
+
+    Returns:
+        {pid: {"y_true": ndarray, "y_pred": ndarray}} — only proteins with
+        >= min_residues valid residues.
+    """
+    results = {}
+    for pid in protein_ids:
+        emb = embeddings[pid][:max_len]
+        lab = np.asarray(scores_dict[pid], dtype=np.float64)[:max_len]
+        n = min(len(emb), len(lab))
+
+        X_p, y_p = [], []
+        for i in range(n):
+            if not np.isnan(lab[i]):
+                X_p.append(emb[i])
+                y_p.append(lab[i])
+
+        if len(X_p) < min_residues:
+            continue
+
+        X_p = np.stack(X_p).astype(np.float32)
+        y_p = np.array(y_p, dtype=np.float64)
+        preds = probe.predict(X_p)
+        results[pid] = {"y_true": y_p, "y_pred": preds}
+
+    return results
+
+
+# ---------------------------------------------------------------------------
 # SS3 benchmark
 # ---------------------------------------------------------------------------
 
@@ -386,8 +438,18 @@ def run_disorder_benchmark(
     seeds: list = None,
     n_bootstrap: int = 10_000,
     max_len: int = 512,
+    disorder_threshold: float = 8.0,
 ) -> dict:
-    """Run disorder (per-residue Spearman rho) regression benchmark.
+    """Run disorder regression benchmark with pooled Spearman rho + AUC-ROC.
+
+    Headline metric: POOLED residue-level Spearman rho (matching SETH,
+    ODiNPred, ADOPT, UdonPred literature standard). CI via cluster bootstrap
+    (resample proteins, recompute pooled rho) to respect the hierarchical
+    data structure (Davison & Hinkley 1997, Ch. 2.4).
+
+    Secondary metric: AUC-ROC on binary Z < threshold (CAID standard).
+
+    Supplementary: per-protein averaged Spearman rho (for transparency).
 
     Args:
         embeddings: {protein_id: (L, D) float32 array}
@@ -399,14 +461,24 @@ def run_disorder_benchmark(
         seeds: List of random seeds. Default: [42, 43, 44].
         n_bootstrap: Bootstrap iterations for CI.
         max_len: Maximum residues per protein.
+        disorder_threshold: Z-score threshold for binary disorder (default: 8.0).
+            Z < threshold = disordered (positive class).
 
     Returns:
         dict with:
-            "spearman_rho": MetricResult — headline rho with bootstrap CI (multi-seed).
+            "pooled_spearman_rho": MetricResult — headline (cluster bootstrap CI).
+            "auc_roc": MetricResult — AUC-ROC on binary Z<threshold (cluster bootstrap CI).
+            "per_protein_spearman_rho": MetricResult — supplementary (averaged multi-seed).
+            "spearman_rho": MetricResult — backward-compat alias for per_protein_spearman_rho.
             "best_alpha": float from median seed.
             "n_train_residues": int.
             "n_test_residues": int.
+            "n_test_proteins": int.
+            "disorder_threshold": float.
     """
+    from scipy.stats import spearmanr as _spearmanr
+    from sklearn.metrics import roc_auc_score
+
     if alpha_grid is None:
         alpha_grid = [0.01, 0.1, 1.0, 10.0, 100.0]
     if seeds is None:
@@ -417,8 +489,9 @@ def run_disorder_benchmark(
     X_train, y_train = _stack_residues(embeddings, scores, train_ids, max_len, label_map=None)
     X_test, y_test = _stack_residues(embeddings, scores, test_ids, max_len, label_map=None)
 
-    seed_results = []
+    # --- Phase 1: Train probes across seeds, collect per-protein predictions ---
     seed_probe_results = []
+    seed_per_protein_preds = []  # list of {pid: {"y_true": arr, "y_pred": arr}}
 
     for seed in seeds:
         probe_result = train_regression_probe(
@@ -427,39 +500,93 @@ def run_disorder_benchmark(
         )
         seed_probe_results.append(probe_result)
 
-        # Per-protein Spearman rho for bootstrap CI
+        # Collect per-protein predictions for this seed
         fitted_probe = _get_fitted_ridge(X_train, y_train, probe_result["best_alpha"])
-        per_protein_rhos = _per_protein_spearman(
+        per_protein_preds = _collect_per_protein_predictions(
             embeddings, scores, test_ids, fitted_probe, max_len, min_residues=5
         )
+        seed_per_protein_preds.append(per_protein_preds)
 
-        if len(per_protein_rhos) == 0:
-            # Fallback: use overall rho as single value
-            per_protein_rhos = {"_all": probe_result["spearman_rho"]}
+    # --- Phase 2: Average predictions across seeds per-protein per-residue ---
+    # Use intersection of proteins present in all seeds
+    common_pids = sorted(
+        set.intersection(*[set(sp.keys()) for sp in seed_per_protein_preds])
+    )
+    n_test_proteins = len(common_pids)
 
-        metric_result = bootstrap_ci(per_protein_rhos, n_bootstrap=n_bootstrap, seed=seed)
-        seed_results.append(metric_result)
+    averaged_clusters = {}  # {pid: {"y_true": arr, "y_pred": arr}}
+    for pid in common_pids:
+        y_true = seed_per_protein_preds[0][pid]["y_true"]  # same across seeds
+        # Average predicted Z-scores across seeds
+        y_pred_stacked = np.stack(
+            [seed_per_protein_preds[s][pid]["y_pred"] for s in range(len(seeds))],
+            axis=0,
+        )
+        y_pred_avg = np.mean(y_pred_stacked, axis=0)
+        averaged_clusters[pid] = {"y_true": y_true, "y_pred": y_pred_avg}
 
-    spearman_rho = multi_seed_summary(seed_results)
+    # --- Phase 3: POOLED Spearman rho with cluster bootstrap CI (headline) ---
+    def _pooled_spearman(cluster_data: list[dict]) -> float:
+        all_true = np.concatenate([d["y_true"] for d in cluster_data])
+        all_pred = np.concatenate([d["y_pred"] for d in cluster_data])
+        rho, _ = _spearmanr(all_true, all_pred)
+        return float(rho) if not np.isnan(rho) else 0.0
 
-    values = [r.value for r in seed_results]
-    sorted_idx = np.argsort(values)
+    pooled_rho_result = cluster_bootstrap_ci(
+        averaged_clusters, _pooled_spearman,
+        n_bootstrap=n_bootstrap, seed=seeds[0],
+    )
+
+    # --- Phase 4: AUC-ROC on binary Z<threshold with cluster bootstrap CI ---
+    def _pooled_auc_roc(cluster_data: list[dict]) -> float:
+        all_true = np.concatenate([d["y_true"] for d in cluster_data])
+        all_pred = np.concatenate([d["y_pred"] for d in cluster_data])
+        # Z < threshold = disordered (positive class)
+        binary_labels = (all_true < disorder_threshold).astype(int)
+        # Negate predicted Z-scores so higher = more disordered
+        pred_disorder = -all_pred
+        # AUC-ROC requires both classes present
+        if len(np.unique(binary_labels)) < 2:
+            return 0.5
+        return float(roc_auc_score(binary_labels, pred_disorder))
+
+    auc_result = cluster_bootstrap_ci(
+        averaged_clusters, _pooled_auc_roc,
+        n_bootstrap=n_bootstrap, seed=seeds[0],
+    )
+
+    # --- Phase 5: Per-protein Spearman rho (supplementary, backward compat) ---
+    seed_per_protein_rho_dicts = []
+    for sp_preds in seed_per_protein_preds:
+        rho_dict = {}
+        for pid, data in sp_preds.items():
+            rho, _ = _spearmanr(data["y_true"], data["y_pred"])
+            rho_dict[pid] = float(rho) if not np.isnan(rho) else 0.0
+        seed_per_protein_rho_dicts.append(rho_dict)
+
+    per_protein_rho_result = averaged_multi_seed(
+        seed_per_protein_rho_dicts, n_bootstrap=n_bootstrap, seed=seeds[0]
+    )
+
+    # --- Select median seed for best_alpha reporting ---
+    per_seed_pooled = []
+    for sp_preds in seed_per_protein_preds:
+        cluster_data = [sp_preds[pid] for pid in sorted(sp_preds.keys())]
+        per_seed_pooled.append(_pooled_spearman(cluster_data))
+    sorted_idx = np.argsort(per_seed_pooled)
     median_idx = int(sorted_idx[len(sorted_idx) // 2])
     median_probe = seed_probe_results[median_idx]
 
-    # Also compute pooled residue-level rho (standard in literature, e.g. SETH)
-    # This pools all test residues and computes one global Spearman rho.
-    from scipy.stats import spearmanr as _spearmanr
-    pooled_preds = median_probe["predictions"]
-    pooled_rho, pooled_p = _spearmanr(y_test, pooled_preds)
-    pooled_rho = float(pooled_rho) if not np.isnan(pooled_rho) else 0.0
-
     return {
-        "spearman_rho": spearman_rho,
-        "pooled_spearman_rho": pooled_rho,
+        "pooled_spearman_rho": pooled_rho_result,
+        "auc_roc": auc_result,
+        "per_protein_spearman_rho": per_protein_rho_result,
+        "spearman_rho": per_protein_rho_result,  # backward compat alias
         "best_alpha": median_probe["best_alpha"],
         "n_train_residues": int(len(y_train)),
         "n_test_residues": int(len(y_test)),
+        "n_test_proteins": n_test_proteins,
+        "disorder_threshold": disorder_threshold,
     }
 
 

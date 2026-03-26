@@ -704,7 +704,7 @@ def main():
             n_bootstrap=BOOTSTRAP_N,
         )
         print(fmt_metric("Spearman rho raw (CheZOD117)", dis_raw_chezod["spearman_rho"]))
-        print(f"  Pooled rho raw: {dis_raw_chezod['pooled_spearman_rho']:.4f}")
+        print(f"  Pooled rho raw: {dis_raw_chezod['pooled_spearman_rho'].value:.4f}")
 
         dis_comp_chezod = run_disorder_benchmark(
             embeddings=comp_chezod_per_res,
@@ -717,7 +717,7 @@ def main():
             n_bootstrap=BOOTSTRAP_N,
         )
         print(fmt_metric("Spearman rho comp (CheZOD117)", dis_comp_chezod["spearman_rho"]))
-        print(f"  Pooled rho comp: {dis_comp_chezod['pooled_spearman_rho']:.4f}")
+        print(f"  Pooled rho comp: {dis_comp_chezod['pooled_spearman_rho'].value:.4f}")
 
         chezod_retention = (
             dis_comp_chezod["spearman_rho"].value / dis_raw_chezod["spearman_rho"].value * 100
@@ -796,7 +796,7 @@ def main():
                     n_bootstrap=BOOTSTRAP_N,
                 )
                 print(fmt_metric("Spearman rho raw (TriZOD348)", dis_raw_trizod["spearman_rho"]))
-                print(f"  Pooled rho raw: {dis_raw_trizod['pooled_spearman_rho']:.4f}")
+                print(f"  Pooled rho raw: {dis_raw_trizod['pooled_spearman_rho'].value:.4f}")
 
                 dis_comp_trizod = run_disorder_benchmark(
                     embeddings=merged_comp_dis,
@@ -809,7 +809,7 @@ def main():
                     n_bootstrap=BOOTSTRAP_N,
                 )
                 print(fmt_metric("Spearman rho comp (TriZOD348)", dis_comp_trizod["spearman_rho"]))
-                print(f"  Pooled rho comp: {dis_comp_trizod['pooled_spearman_rho']:.4f}")
+                print(f"  Pooled rho comp: {dis_comp_trizod['pooled_spearman_rho'].value:.4f}")
 
                 trizod_retention = (
                     dis_comp_trizod["spearman_rho"].value / dis_raw_trizod["spearman_rho"].value * 100

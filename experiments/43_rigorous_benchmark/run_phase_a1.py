@@ -385,7 +385,7 @@ def main():
             n_bootstrap=BOOTSTRAP_N,
         )
         print(fmt_metric("Spearman rho (raw_1024d) [per-protein avg]", dis_raw["spearman_rho"]))
-        print(f"  Pooled residue-level rho (raw_1024d): {dis_raw['pooled_spearman_rho']:.4f}")
+        print(f"  Pooled residue-level rho (raw_1024d): {dis_raw['pooled_spearman_rho'].value:.4f}")
         print(f"  Best alpha: {dis_raw['best_alpha']}")
 
         # --- Compressed 768d ---
@@ -415,9 +415,9 @@ def main():
             n_bootstrap=BOOTSTRAP_N,
         )
         print(fmt_metric("Spearman rho (compressed_768d) [per-protein avg]", dis_comp["spearman_rho"]))
-        print(f"  Pooled residue-level rho (compressed_768d): {dis_comp['pooled_spearman_rho']:.4f}")
+        print(f"  Pooled residue-level rho (compressed_768d): {dis_comp['pooled_spearman_rho'].value:.4f}")
         print(fmt_retention("Disorder retention (per-protein)", dis_comp["spearman_rho"].value, dis_raw["spearman_rho"].value))
-        print(fmt_retention("Disorder retention (pooled)", dis_comp["pooled_spearman_rho"], dis_raw["pooled_spearman_rho"]))
+        print(fmt_retention("Disorder retention (pooled)", dis_comp["pooled_spearman_rho"].value, dis_raw["pooled_spearman_rho"].value))
 
         all_results["disorder"] = {
             "raw": dis_raw,
