@@ -98,20 +98,23 @@ codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.h5")
 
 ### Rigorous Retention Benchmarks (Exp 43, 768d vs raw ProtT5)
 
-All numbers include 95% bootstrap CIs. Probes are CV-tuned (not hardcoded C=1.0). Retrieval uses fair baselines (same DCT K=4 pooling for raw and compressed). ABTT fitted on external SCOPe 5K corpus.
+All numbers include 95% BCa bootstrap CIs (DiCiccio & Efron 1996, second-order accurate). Probes are CV-tuned (GridSearchCV on C/alpha, not hardcoded). Predictions averaged across 3 seeds before bootstrapping (Bouthillier et al. 2021). Retrieval uses fair baselines (same DCT K=4 pooling for raw and compressed). ABTT fitted on external SCOPe 5K corpus (cross-corpus stability verified: Ret@1 varies < 0.2pp across 4 fitting corpora).
 
-#### Per-Residue Tasks (linear probe, per-protein bootstrap CI)
+#### Per-Residue Tasks (linear probe, BCa bootstrap CI, 3-seed averaged)
 
 | Task | Level | Dataset (n) | Raw ProtT5 1024d | One Embedding 768d | Retention |
 |------|-------|-------------|:----------------:|:------------------:|:---------:|
-| SS3 (Q3) | per-residue | CB513 (103) | 0.840 [0.826, 0.854] | 0.833 [0.819, 0.846] | **99.1%** |
+| SS3 (Q3) | per-residue | CB513 (103) | 0.840 [0.823, 0.852] | 0.833 [0.818, 0.845] | **99.1%** |
 | SS3 (Q3) | per-residue | TS115 (115) | 0.841 [0.829, 0.853] | 0.828 [0.816, 0.839] | **98.4%** |
 | SS3 (Q3) | per-residue | CASP12 (20) | 0.781 [0.748, 0.810] | 0.765 [0.730, 0.797] | **98.0%** |
 | SS8 (Q8) | per-residue | CB513 (103) | 0.716 [0.697, 0.734] | 0.707 [0.689, 0.725] | **98.8%** |
 | SS8 (Q8) | per-residue | TS115 (115) | 0.732 [0.715, 0.748] | 0.717 [0.701, 0.733] | **98.0%** |
 | SS8 (Q8) | per-residue | CASP12 (20) | 0.662 [0.629, 0.695] | 0.647 [0.611, 0.682] | **97.6%** |
-| Disorder (ρ) | per-residue | CheZOD117 (117) | 0.663 | 0.629 | **94.9%** |
-| Disorder (ρ) | per-residue | TriZOD348 (348) | 0.506 | 0.471 | **93.0%** |
+| Disorder (pooled ρ) | per-residue | CheZOD117 (117) | 0.663 [0.636, 0.688] | 0.629 [0.601, 0.656] | **94.9%** |
+| Disorder (pooled ρ) | per-residue | TriZOD348 (348) | 0.506 [0.476, 0.536] | 0.471 [0.439, 0.502] | **93.0%** |
+| Disorder (AUC-ROC) | per-residue | CheZOD117 (117) | 0.864 [0.848, 0.878] | 0.848 [0.831, 0.864] | **98.1%** |
+
+Disorder uses **pooled residue-level** Spearman ρ (matching SETH/ODiNPred/ADOPT/UdonPred standard) with cluster bootstrap CIs (resample proteins, recompute pooled statistic — Davison & Hinkley 1997). AUC-ROC computed on binary Z<8 threshold (CAID standard).
 
 CIs on raw and compressed **overlap** for all tasks — no statistically significant difference detected.
 Cross-dataset consistency: SS3 max 1.1pp, SS8 max 1.2pp (both OK < 3pp threshold).
@@ -181,12 +184,21 @@ Re-tested all compression on ABTT3+RP512 (decorrelated, isotropic). Results dram
 ### Phase 10: Rigorous Validation (Experiment 43)
 Built a rule-enforced benchmark framework (14 golden rules) to honestly validate the 1.0 codec. Fixed methodological issues from Exp 41 (unfair retrieval baseline, no CIs, hardcoded hyperparameters). Key results:
 
-- **Phase A**: Fixed 5-task benchmark — corrected mean retention from "100.1%" to honest 98.1% with bootstrap CIs
+- **Phase A**: Fixed 5-task benchmark — corrected mean retention from "100.1%" to honest 98.1% with BCa bootstrap CIs
 - **Phase B**: Cross-validated SS3/SS8 on 3 independent test sets (CB513, TS115, CASP12) — max 1.2pp divergence. ESM2 multi-PLM validation (95.8% SS3 at 1280→768, retrieval lossless)
 - **Phase C**: CATH20 superfamily retrieval (9518 domains): **100.0% cosine retention** [99.8, 100.2]. DeepLoc localization: 99.5% retention. 27K+ protein embeddings extracted
 - **Phase D**: Ablation — ABTT contributes +0.6pp retrieval, RP costs −0.3pp SS3, fp16 is 0.0pp (lossless). No length-dependent degradation
+- **ABTT Stability**: Cross-corpus stability test — PCs differ across corpora (subspace similarity 0.18-0.71) but downstream Ret@1 varies by only 0.20pp. ABTT fitting corpus choice is irrelevant for performance.
 
-720 tests, 11+ tasks, 8+ datasets, 2 PLMs. CIs on everything.
+758 tests, 12+ tasks, 8+ datasets, 2 PLMs. BCa CIs on everything.
+
+**Methodology (Nature-level):**
+- Bootstrap: BCa (bias-corrected and accelerated, DiCiccio & Efron 1996), B=10,000, percentile fallback for n<25
+- Multi-seed: predictions averaged across 3 seeds before bootstrapping (Bouthillier et al. 2021)
+- Disorder: pooled residue-level Spearman ρ (SETH/CAID standard) with cluster bootstrap (Davison & Hinkley 1997)
+- Retrieval: 3 fair baselines (raw+mean, raw+DCT, raw+ABTT+DCT). Retention = compressed / baseline C
+- Probes: CV-tuned (GridSearchCV on train set, 3-fold, C/alpha grids)
+- ABTT leakage: formally tested via cross-corpus stability (4 corpora, principal angles)
 
 ## Idea Space: 232 Methods, What's Exhausted, What Remains
 
