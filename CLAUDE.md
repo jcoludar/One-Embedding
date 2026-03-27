@@ -66,15 +66,15 @@ Pipeline: ABTT k=3 (remove top-3 PCs) → RP to 768d (configurable) → float16 
 Protein vector (for retrieval): DCT K=4 of projected embeddings → (D*4,) fp16.
 No codebook needed for the base codec. Optional PQ tiers (on 512d) require codebook fitting.
 
-| Mode | Quantization | Size (L=175) | vs Mean Pool | Ret@1 | SS3 Q3 | SS8 Q8 | Disorder ρ | TM F1 |
-|------|-------------|-------------|-------------|-------|--------|--------|-----------|-------|
-| **`balanced`** | **PQ M=128** | **26 KB** | **13x** | **0.786** | **0.807** | **0.670** | **0.584** | **0.731** |
-| `compact` | PQ M=64 | 15 KB | 7.5x | 0.786 | 0.778 | 0.637 | 0.549 | 0.701 |
-| `binary` | 1-bit sign | 15 KB | 7.5x | 0.786 | 0.776 | 0.636 | 0.597 | 0.750 |
-| `micro` | PQ M=32 | 10 KB | 4.7x | 0.786 | 0.739 | 0.594 | 0.495 | 0.579 |
-| `full` | int4 scalar | 48 KB | 24x | 0.786 | 0.816 | 0.681 | 0.597 | 0.752 |
+| Mode | Quantization | Size (L=175) | Ret@1 | SS3 Q3 | SS8 Q8 | Disorder ρ | SS3 Ret | Dis Ret |
+|------|-------------|:----------:|:-----:|:------:|:------:|:----------:|:-------:|:-------:|
+| **`full`** | **int4 scalar** | **48 KB** | **0.795** | **0.812** | **0.682** | **0.597** | **96.6%** | **90.0%** |
+| **`balanced`** | **PQ M=128** | **26 KB** | **0.795** | **0.804** | **0.669** | **0.583** | **95.7%** | **88.0%** |
+| `binary` | 1-bit sign | 15 KB | 0.795 | 0.771 | 0.638 | 0.596 | 91.7% | 90.0% |
+| `compact` | PQ M=64 | 15 KB | 0.795 | 0.772 | 0.636 | 0.548 | 91.8% | 82.7% |
+| `micro` | PQ M=32 | 10 KB | 0.795 | 0.731 | 0.591 | 0.495 | 87.0% | 74.6% |
 
-Size formula: L × M + 4096 bytes (PQ codes + protein_vec fp16). PQ codes are incompressible (7.81/8.00 bits entropy — balanced codebook utilization). Shared codebook: ~512 KB per mode (downloaded once).
+All numbers rigorously benchmarked (BCa CIs, CV-tuned probes, pooled disorder ρ). Retrieval is **lossless across all modes** (100.2%). Binary matches full for disorder (90.0%) — RaBitQ effect. Size formula: L × M + 4096 bytes. Shared codebook: ~512 KB per mode.
 
 ```python
 # 1.0 codec: 768d float16 (default)
