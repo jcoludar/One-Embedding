@@ -25,18 +25,22 @@ Thumbs.db
 # Jupyter
 .ipynb_checkpoints/
 
-# Data (large files — tracked separately or not at all)
+# Data (large files — kept locally, not pushed)
 data/residue_embeddings/*.h5
 data/one_embeddings/*.h5
 data/checkpoints/**/*.pt
 data/checkpoints/**/history.json
 data/per_residue_benchmarks/
 data/external_validation/
+data/external/
 data/compressed/
 data/plots/
 data/proteins/*.fa
 data/proteins/*.fasta
 data/proteins/metadata*.csv
+
+# Large result files (MCMC tree samples — kept locally)
+results/embed_phylo/*_trees_run*.nwk
 
 # Environment files
 .env
