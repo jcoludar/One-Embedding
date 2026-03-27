@@ -1,18 +1,11 @@
 {
-  "n_taxa": 84,
-  "n_dims": 320512,
-  "mode": "per_residue",
-  "n_generations": 50000,
-  "n_runs": 2,
-  "n_chains": 4,
-  "mcmc_time_s": 25939.921158075333,
-  "asdsf": 0.06762068965517241,
-  "converged": false,
-  "n_monophyletic_consensus": 10,
-  "n_monophyletic_nj": 11,
-  "n_families": 12,
-  "clade_purity_consensus": 0.7035490605427975,
-  "clade_purity_nj": 0.6037099494097807,
-  "separation_ratio": 1.7936714832034315,
-  "silhouette_approx": 0.44248430698466773
+  "n_taxa": 77,
+  "n_dims": 512,
+  "mode": "per_protein",
+  "n_generations": 10000,
+  "n_runs": 1,
+  "n_chains": 2,
+  "mcmc_time_s": 12.089676141738892,
+  "asdsf": 0.0,
+  "converged": true
 }
