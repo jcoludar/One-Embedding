@@ -39,6 +39,19 @@ Built a rule-enforced benchmark framework (14 golden rules) to honestly validate
 
 758 tests, 12+ tasks, 8+ datasets, 2 PLMs. BCa CIs on everything.
 
+### V2 Extreme Compression — Rigorous Re-validation
+Replaced Exp 34 results (hardcoded C=1.0 probes) with Exp 43 framework (CV-tuned, BCa CIs, pooled disorder ρ). All 5 V2 modes benchmarked:
+
+| Mode | Size | SS3 Ret | SS8 Ret | Disorder Ret | Ret@1 Ret |
+|------|:----:|:-------:|:-------:|:------------:|:---------:|
+| full (int4) | 48 KB | 96.6% | 95.3% | 90.0% | **100.2%** |
+| balanced (PQ M=128) | 26 KB | 95.7% | 93.4% | 88.0% | **100.2%** |
+| binary (1-bit) | 15 KB | 91.7% | 89.1% | 90.0% | **100.2%** |
+| compact (PQ M=64) | 15 KB | 91.8% | 88.8% | 82.7% | **100.2%** |
+| micro (PQ M=32) | 10 KB | 87.0% | 82.6% | 74.6% | **100.2%** |
+
+Key findings: retrieval is **lossless across all modes** (100.2%). Binary matches full for disorder (90.0% both) — RaBitQ effect confirmed. Old hardcoded-probe numbers (e.g., SS3=0.807 for balanced) were slightly inflated vs CV-tuned (0.804).
+
 ---
 
 ## Idea Space: What's Exhausted, What Remains

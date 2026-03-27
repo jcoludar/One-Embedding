@@ -81,17 +81,15 @@ For storage-constrained applications, the V2 codec adds quantization on top of t
 
 All tiers share the same preprocessing and protein vector. The only difference is per-residue quantization:
 
-| Mode | Quantization | Payload Size | Compression | Ret@1 | SS3 Q3 | SS8 Q8 | Disorder rho | TM F1 |
-|------|-------------|:------------:|:-----------:|:-----:|:------:|:------:|:------------:|:-----:|
-| **`balanced`** | **PQ M=128** | **26 KB** | **27x** | **0.786** | **0.807** | **0.670** | **0.584** | **0.731** |
-| `full` | int4 scalar | 52 KB | 14x | 0.786 | 0.816 | 0.681 | 0.597 | 0.752 |
-| `compact` | PQ M=64 | 15 KB | 47x | 0.786 | 0.778 | 0.637 | 0.549 | 0.701 |
-| `binary` | 1-bit sign | 19 KB | 37x | 0.786 | 0.776 | 0.636 | 0.597 | 0.750 |
-| `micro` | PQ M=32 | 10 KB | 70x | 0.786 | 0.739 | 0.594 | 0.495 | 0.579 |
+| Mode | Quantization | Size | Ret@1 | SS3 Q3 | SS8 Q8 | Disorder ρ | SS3 Ret | Dis Ret |
+|------|-------------|:----:|:-----:|:------:|:------:|:----------:|:-------:|:-------:|
+| **`full`** | **int4 scalar** | **48 KB** | **0.795** | **0.812** | **0.682** | **0.597** | **96.6%** | **90.0%** |
+| **`balanced`** | **PQ M=128** | **26 KB** | **0.795** | **0.804** | **0.669** | **0.583** | **95.7%** | **88.0%** |
+| `binary` | 1-bit sign | 15 KB | 0.795 | 0.771 | 0.638 | 0.596 | 91.7% | 90.0% |
+| `compact` | PQ M=64 | 15 KB | 0.795 | 0.772 | 0.636 | 0.548 | 91.8% | 82.7% |
+| `micro` | PQ M=32 | 10 KB | 0.795 | 0.731 | 0.591 | 0.495 | 87.0% | 74.6% |
 
-Payload size formula: PQ modes store `L x M + 4096` bytes (uint8 PQ codes + protein_vec fp16). int4 and binary modes add 4 KB per-protein overhead for per-channel scales/zero-points. Mean L=175 residues, raw ProtT5 = 700 KB/protein.
-
-Shared codebook: ~512 KB per mode, fitted once on a training corpus and reused for all proteins.
+All numbers rigorously benchmarked (Exp 43: BCa bootstrap CIs, CV-tuned probes, pooled disorder ρ). Retrieval is **lossless across all modes** (100.2%). Binary matches full for disorder (90.0%) — RaBitQ effect. Payload size: PQ modes store `L x M + 4096` bytes. Shared codebook: ~512 KB per mode.
 
 ### Per-Residue Quality Across Tiers
 
@@ -104,11 +102,11 @@ Shared codebook: ~512 KB per mode, fitted once on a training corpus and reused f
 
 | Use Case | Tier | Why |
 |----------|------|-----|
-| **General purpose** | `balanced` | Best quality/size trade-off (26 KB, 96% SS3) |
-| **Maximum per-residue fidelity** | `full` | Highest SS3/disorder retention (52 KB) |
-| **Storage-constrained** | `compact` | Good quality at 15 KB (93% SS3) |
-| **Retrieval-only** | `binary` | Same retrieval, good per-residue at 19 KB |
-| **Extreme compression** | `micro` | 10 KB, still 88% SS3 retention |
+| **General purpose** | `balanced` | Best quality/size trade-off (26 KB, 95.7% SS3) |
+| **Maximum per-residue fidelity** | `full` | Highest SS3/disorder retention (48 KB, 96.6% SS3) |
+| **Storage-constrained** | `compact` | Good quality at 15 KB (91.8% SS3) |
+| **Retrieval-only** | `binary` | Lossless retrieval + 90% disorder at 15 KB |
+| **Extreme compression** | `micro` | 10 KB, still 87.0% SS3 retention |
 
 ## Retention Benchmarks
 
@@ -212,16 +210,16 @@ CNN probes (disorder, ss3) are trained on compressed embeddings and ship as pre-
 
 ![Codec Retrieval Benchmark](docs/figures/pub_codec_retrieval.png)
 
-| Codec | Ret@1 | SS3 Q3 | Dim | Per-Residue? |
-|-------|:-----:|:------:|:---:|:------------:|
-| **1.0 (RP768 fp16)** | **0.798** | **0.837** | 3072+768 | **Yes (L, 768)** |
-| V2 balanced (PQ M=128) | 0.786 | 0.807 | 2048+512 | Yes (L, 512) |
-| V1 rp512+dct K4 | 0.780 | 0.815 | 2048 | Yes (L, 512) fp16 |
-| [mean\|max] euc | 0.786 | -- | 2048 | No |
-| mean pool (ground zero) | 0.734 | 0.840 | 1024 | Yes (raw) |
-| *Trained CC d256* | *0.795* | *0.834* | *256* | *Yes (256d)* |
+| Codec | Ret@1 | SS3 Q3 | Size | Per-Residue? |
+|-------|:-----:|:------:|:----:|:------------:|
+| **1.0 (RP768 fp16)** | **0.798** | **0.833** | **275 KB** | **Yes (L, 768)** |
+| V2 full (int4) | 0.795 | 0.812 | 48 KB | Yes (L, 512) |
+| V2 balanced (PQ M=128) | 0.795 | 0.804 | 26 KB | Yes (L, 512) |
+| V2 binary (1-bit) | 0.795 | 0.771 | 15 KB | Yes (L, 512) |
+| mean pool (ground zero) | 0.734 | 0.840 | 4 KB | No |
+| *Trained CC d256* | *0.795* | *0.834* | *— (requires training)* | *Yes (256d)* |
 
-ProtT5-XL on SCOPe 5K (n=850 queries). Error bars: 95% CI, normal approximation.
+ProtT5-XL on SCOPe 5K (n=2493). All numbers from Exp 43 (BCa CIs, CV-tuned probes).
 
 ## The Fundamental Trade-off
 
