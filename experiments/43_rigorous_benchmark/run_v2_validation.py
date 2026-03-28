@@ -30,6 +30,7 @@ from config import (
 )
 from runners.per_residue import run_ss3_benchmark, run_ss8_benchmark, run_disorder_benchmark
 from runners.protein_level import compute_protein_vectors, run_retrieval_benchmark
+from metrics.statistics import paired_bootstrap_retention, paired_cluster_bootstrap_retention
 from rules import MetricResult
 
 from src.one_embedding.codec_v2 import OneEmbeddingCodecV2, MODES
@@ -72,6 +73,15 @@ def metric_to_dict(m):
             "ci_method": m.ci_method,
         }
     return m
+
+
+def _pooled_spearman(cluster_data):
+    """Compute pooled Spearman rho across all residues in cluster_data."""
+    from scipy.stats import spearmanr
+    all_true = np.concatenate([d["y_true"] for d in cluster_data])
+    all_pred = np.concatenate([d["y_pred"] for d in cluster_data])
+    rho, _ = spearmanr(all_true, all_pred)
+    return float(rho) if not np.isnan(rho) else 0.0
 
 
 def main():
@@ -184,8 +194,11 @@ def main():
             C_grid=C_GRID, cv_folds=CV_FOLDS, seeds=SEEDS,
             n_bootstrap=BOOTSTRAP_N,
         )
-        ss3_ret = v2_ss3["q3"].value / raw_ss3["q3"].value * 100
-        print(f"    Q3: {v2_ss3['q3'].value:.4f} (retention: {ss3_ret:.1f}%)")
+        ss3_ret_ci = paired_bootstrap_retention(
+            raw_ss3["per_protein_scores"], v2_ss3["per_protein_scores"],
+            n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+        )
+        print(f"    Q3: {v2_ss3['q3'].value:.4f} (retention: {ss3_ret_ci.value:.1f} ± {(ss3_ret_ci.ci_upper - ss3_ret_ci.ci_lower) / 2:.1f}%)")
 
         # ── SS8 ──
         print("  Running SS8...")
@@ -194,8 +207,11 @@ def main():
             C_grid=C_GRID, cv_folds=CV_FOLDS, seeds=SEEDS,
             n_bootstrap=BOOTSTRAP_N,
         )
-        ss8_ret = v2_ss8["q8"].value / raw_ss8["q8"].value * 100
-        print(f"    Q8: {v2_ss8['q8'].value:.4f} (retention: {ss8_ret:.1f}%)")
+        ss8_ret_ci = paired_bootstrap_retention(
+            raw_ss8["per_protein_scores"], v2_ss8["per_protein_scores"],
+            n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+        )
+        print(f"    Q8: {v2_ss8['q8'].value:.4f} (retention: {ss8_ret_ci.value:.1f} ± {(ss8_ret_ci.ci_upper - ss8_ret_ci.ci_lower) / 2:.1f}%)")
 
         # ── Disorder ──
         print("  Running disorder...")
@@ -204,29 +220,38 @@ def main():
             alpha_grid=ALPHA_GRID, cv_folds=CV_FOLDS, seeds=SEEDS,
             n_bootstrap=BOOTSTRAP_N,
         )
-        dis_ret = v2_dis["pooled_spearman_rho"].value / raw_dis["pooled_spearman_rho"].value * 100
-        print(f"    Pooled rho: {v2_dis['pooled_spearman_rho'].value:.4f} (retention: {dis_ret:.1f}%)")
+        print(f"    Pooled rho: {v2_dis['pooled_spearman_rho'].value:.4f}")
         print(f"    AUC-ROC: {v2_dis['auc_roc'].value:.4f}")
+
+        # Paired cluster bootstrap retention for disorder (pooled rho)
+        dis_ret_ci = paired_cluster_bootstrap_retention(
+            raw_dis["per_protein_predictions"], v2_dis["per_protein_predictions"],
+            _pooled_spearman, n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+        )
+        print(f"    Disorder retention: {dis_ret_ci.value:.1f} ± {(dis_ret_ci.ci_upper - dis_ret_ci.ci_lower) / 2:.1f}%")
 
         # ── Retrieval ──
         print("  Running retrieval...")
         v2_ret = run_retrieval_benchmark(scope_vecs, metadata, n_bootstrap=BOOTSTRAP_N)
-        ret_cos = v2_ret["ret1_cosine"].value / raw_ret["ret1_cosine"].value * 100
-        print(f"    Ret@1 cosine: {v2_ret['ret1_cosine'].value:.4f} (retention: {ret_cos:.1f}%)")
+        ret_ret_ci = paired_bootstrap_retention(
+            raw_ret["per_query_cosine"], v2_ret["per_query_cosine"],
+            n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+        )
+        print(f"    Ret@1 cosine: {v2_ret['ret1_cosine'].value:.4f} (retention: {ret_ret_ci.value:.1f} ± {(ret_ret_ci.ci_upper - ret_ret_ci.ci_lower) / 2:.1f}%)")
 
         elapsed = time.time() - t0
         print(f"  Mode {mode} took {elapsed:.1f}s")
 
         all_results[mode] = {
             "ss3_q3": metric_to_dict(v2_ss3["q3"]),
-            "ss3_retention_pct": ss3_ret,
+            "ss3_retention": metric_to_dict(ss3_ret_ci),
             "ss8_q8": metric_to_dict(v2_ss8["q8"]),
-            "ss8_retention_pct": ss8_ret,
+            "ss8_retention": metric_to_dict(ss8_ret_ci),
             "disorder_pooled_rho": metric_to_dict(v2_dis["pooled_spearman_rho"]),
             "disorder_auc_roc": metric_to_dict(v2_dis["auc_roc"]),
-            "disorder_retention_pct": dis_ret,
+            "disorder_retention": metric_to_dict(dis_ret_ci),
             "ret1_cosine": metric_to_dict(v2_ret["ret1_cosine"]),
-            "ret1_retention_pct": ret_cos,
+            "ret1_retention": metric_to_dict(ret_ret_ci),
             "best_C_ss3": v2_ss3["best_C"],
             "best_C_ss8": v2_ss8["best_C"],
             "best_alpha_disorder": v2_dis["best_alpha"],
@@ -235,11 +260,17 @@ def main():
         print()
 
     # ── Summary table ──
+    def fmt_ret(mr_dict):
+        """Format retention as XX.X±X.X%"""
+        v = mr_dict["value"]
+        hw = (mr_dict["ci_upper"] - mr_dict["ci_lower"]) / 2
+        return f"{v:.1f}±{hw:.1f}%"
+
     print("=" * 70)
     print("SUMMARY: V2 Modes — Rigorous Retention (vs raw ProtT5 1024d)")
     print("=" * 70)
-    print(f"{'Mode':>10s}  {'SS3 Q3':>8s}  {'SS8 Q8':>8s}  {'Dis ρ':>8s}  {'AUC':>6s}  {'Ret@1':>8s}  {'SS3%':>6s}  {'SS8%':>6s}  {'Dis%':>6s}  {'Ret%':>6s}")
-    print("-" * 100)
+    print(f"{'Mode':>10s}  {'SS3 Q3':>8s}  {'SS8 Q8':>8s}  {'Dis ρ':>8s}  {'AUC':>6s}  {'Ret@1':>8s}  {'SS3 Ret':>14s}  {'SS8 Ret':>14s}  {'Dis Ret':>14s}  {'Ret Ret':>14s}")
+    print("-" * 120)
 
     for mode in modes:
         r = all_results[mode]
@@ -249,10 +280,10 @@ def main():
               f"{r['disorder_pooled_rho']['value']:>8.4f}  "
               f"{r['disorder_auc_roc']['value']:>6.3f}  "
               f"{r['ret1_cosine']['value']:>8.4f}  "
-              f"{r['ss3_retention_pct']:>5.1f}%  "
-              f"{r['ss8_retention_pct']:>5.1f}%  "
-              f"{r['disorder_retention_pct']:>5.1f}%  "
-              f"{r['ret1_retention_pct']:>5.1f}%")
+              f"{fmt_ret(r['ss3_retention']):>14s}  "
+              f"{fmt_ret(r['ss8_retention']):>14s}  "
+              f"{fmt_ret(r['disorder_retention']):>14s}  "
+              f"{fmt_ret(r['ret1_retention']):>14s}")
 
     print()
     print(f"Raw baselines: SS3={raw_ss3['q3'].value:.4f}, SS8={raw_ss8['q8'].value:.4f}, "

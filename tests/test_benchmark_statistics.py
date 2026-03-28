@@ -10,6 +10,7 @@ from rules import MetricResult
 from metrics.statistics import (
     bootstrap_ci, multi_seed_summary, averaged_multi_seed,
     paired_bootstrap_retention, paired_bootstrap_metric,
+    paired_cluster_bootstrap_retention,
 )
 
 
@@ -219,6 +220,49 @@ class TestAveragedMultiSeed:
         assert abs(result.seeds_std - expected_std) < 1e-10
         # The averaged per-item value should be 0.95 (each item averages to 0.95)
         assert abs(result.value - 0.95) < 1e-10
+
+
+class TestPairedClusterBootstrapRetention:
+    """Retention CI for pooled metrics (e.g., pooled Spearman rho)."""
+
+    def test_perfect_retention(self):
+        """Identical clusters → 100% retention."""
+        clusters = {
+            f"p{i}": {"y_true": np.array([1.0, 2.0, 3.0]), "y_pred": np.array([1.1, 2.1, 3.1])}
+            for i in range(50)
+        }
+        def stat_fn(data):
+            return float(np.mean([np.mean(d["y_pred"]) for d in data]))
+        result = paired_cluster_bootstrap_retention(clusters, clusters, stat_fn, n_bootstrap=500, seed=42)
+        assert abs(result.value - 100.0) < 0.01
+        assert result.ci_upper - result.ci_lower < 1.0
+
+    def test_partial_retention(self):
+        """Compressed = 90% of raw → ~90% retention."""
+        rng = np.random.RandomState(42)
+        raw = {}
+        comp = {}
+        for i in range(50):
+            y_true = rng.rand(20)
+            y_pred_raw = y_true + rng.randn(20) * 0.1
+            y_pred_comp = y_true * 0.9 + rng.randn(20) * 0.1
+            raw[f"p{i}"] = {"y_true": y_true, "y_pred": y_pred_raw}
+            comp[f"p{i}"] = {"y_true": y_true, "y_pred": y_pred_comp}
+
+        def stat_fn(data):
+            return float(np.mean(np.concatenate([d["y_pred"] for d in data])))
+
+        result = paired_cluster_bootstrap_retention(raw, comp, stat_fn, n_bootstrap=1000, seed=42)
+        assert result.ci_lower <= result.value <= result.ci_upper
+        assert result.n == 50
+
+    def test_no_common_ids(self):
+        raw = {"a": {"y_true": np.array([1.0]), "y_pred": np.array([1.0])}}
+        comp = {"b": {"y_true": np.array([1.0]), "y_pred": np.array([1.0])}}
+        def stat_fn(data):
+            return 1.0
+        result = paired_cluster_bootstrap_retention(raw, comp, stat_fn)
+        assert result.n == 0
 
 
 class TestRetrievalBCa:

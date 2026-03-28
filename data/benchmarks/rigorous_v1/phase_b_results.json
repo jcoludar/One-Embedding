@@ -59,7 +59,16 @@
         "n_train_residues": 107545,
         "n_test_residues": 27028
       },
-      "retention_pct": 99.12567051523853
+      "retention_pct": 99.12567051523853,
+      "retention": {
+        "value": 99.12567051523853,
+        "ci_lower": 98.58290627101988,
+        "ci_upper": 99.71561421747083,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      }
     },
     "ts115": {
       "raw": {
@@ -120,7 +129,16 @@
         "n_train_residues": 107545,
         "n_test_residues": 28664
       },
-      "retention_pct": 98.40823358619964
+      "retention_pct": 98.40823358619964,
+      "retention": {
+        "value": 98.40823358619964,
+        "ci_lower": 97.89680062857155,
+        "ci_upper": 98.88027490253567,
+        "n": 115,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      }
     }
   },
   "ss8_ts115": {
@@ -207,7 +225,16 @@
         "n_train_residues": 107545,
         "n_test_residues": 27028
       },
-      "retention_pct": 98.79265108199802
+      "retention_pct": 98.79265108199802,
+      "retention": {
+        "value": 98.79265108199802,
+        "ci_lower": 98.18170964212732,
+        "ci_upper": 99.37133507963392,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      }
     },
     "ts115": {
       "raw": {
@@ -288,7 +315,16 @@
         "n_train_residues": 107545,
         "n_test_residues": 28664
       },
-      "retention_pct": 98.03524090219088
+      "retention_pct": 98.03524090219088,
+      "retention": {
+        "value": 98.03524090219088,
+        "ci_lower": 97.3241076238785,
+        "ci_upper": 98.66829000891764,
+        "n": 115,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      }
     }
   },
   "ss3_casp12": {
@@ -351,7 +387,16 @@
         "n_train_residues": 107545,
         "n_test_residues": 27028
       },
-      "retention_pct": 99.12567051523853
+      "retention_pct": 99.12567051523853,
+      "retention": {
+        "value": 99.12567051523853,
+        "ci_lower": 98.58290627101988,
+        "ci_upper": 99.71561421747083,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      }
     },
     "casp12": {
       "raw": {
@@ -412,7 +457,16 @@
         "n_train_residues": 107545,
         "n_test_residues": 5498
       },
-      "retention_pct": 98.03557887362221
+      "retention_pct": 98.03557887362221,
+      "retention": {
+        "value": 98.03557887362221,
+        "ci_lower": 96.7912378221375,
+        "ci_upper": 99.17280537822923,
+        "n": 20,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "percentile"
+      }
     }
   },
   "ss8_casp12": {
@@ -499,7 +553,16 @@
         "n_train_residues": 107545,
         "n_test_residues": 27028
       },
-      "retention_pct": 98.79265108199802
+      "retention_pct": 98.79265108199802,
+      "retention": {
+        "value": 98.79265108199802,
+        "ci_lower": 98.18170964212732,
+        "ci_upper": 99.37133507963392,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      }
     },
     "casp12": {
       "raw": {
@@ -586,7 +649,16 @@
         "n_train_residues": 107545,
         "n_test_residues": 5498
       },
-      "retention_pct": 97.6136924247918
+      "retention_pct": 97.6136924247918,
+      "retention": {
+        "value": 97.6136924247918,
+        "ci_lower": 95.7643996613291,
+        "ci_upper": 99.15634105940744,
+        "n": 20,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "percentile"
+      }
     }
   },
   "ss3_consistency": {
@@ -718,7 +790,16 @@
       "n_test_proteins": 117,
       "disorder_threshold": 8.0
     },
-    "retention_pct": 92.67789586885694
+    "retention_pct": 94.9290808176059,
+    "retention": {
+      "value": 94.9290808176059,
+      "ci_lower": 92.63254954471118,
+      "ci_upper": 96.73189431011869,
+      "n": 117,
+      "seeds_mean": null,
+      "seeds_std": null,
+      "ci_method": "bca"
+    }
   },
   "disorder_trizod": {
     "raw": {
@@ -807,16 +888,25 @@
       "n_test_proteins": 348,
       "disorder_threshold": 8.0
     },
-    "retention_pct": 89.15245571479728
+    "retention_pct": 92.92884198901014,
+    "retention": {
+      "value": 92.92884198901014,
+      "ci_lower": 90.3336433121188,
+      "ci_upper": 95.50926314970941,
+      "n": 348,
+      "seeds_mean": null,
+      "seeds_std": null,
+      "ci_method": "bca"
+    }
   },
   "disorder_consistency": {
-    "max_divergence": 3.525440154059652,
-    "status": "warn",
+    "max_divergence": 2.000238828595755,
+    "status": "ok",
     "pairs": [
       [
         "CheZOD117",
         "TriZOD348",
-        3.525440154059652
+        2.000238828595755
       ]
     ]
   },
@@ -880,6 +970,15 @@
       "n_test_residues": 27028
     },
     "retention_pct": 95.82981205539987,
+    "retention": {
+      "value": 95.82981205539987,
+      "ci_lower": 94.98036782273422,
+      "ci_upper": 96.97969597516655,
+      "n": 103,
+      "seeds_mean": null,
+      "seeds_std": null,
+      "ci_method": "bca"
+    },
     "esm2_dim": 1280
   },
   "esm2_ss8": {
@@ -966,6 +1065,15 @@
       "n_test_residues": 27028
     },
     "retention_pct": 95.6834487774046,
+    "retention": {
+      "value": 95.6834487774046,
+      "ci_lower": 94.7303433080303,
+      "ci_upper": 96.86319494296716,
+      "n": 103,
+      "seeds_mean": null,
+      "seeds_std": null,
+      "ci_method": "bca"
+    },
     "esm2_dim": 1280
   },
   "esm2_retrieval": {
@@ -1049,12 +1157,12 @@
       },
       {
         "task": "Disorder rho (CheZOD117)",
-        "retention_pct": 92.67789586885694,
+        "retention_pct": 94.9290808176059,
         "notes": "ProtT5, internal"
       },
       {
         "task": "Disorder rho (TriZOD348)",
-        "retention_pct": 89.15245571479728,
+        "retention_pct": 92.92884198901014,
         "notes": "ProtT5, cross-val"
       },
       {
@@ -1078,9 +1186,9 @@
         "notes": "ESM2"
       }
     ],
-    "mean_retention_pct": 96.90241358062077,
-    "std_retention_pct": 3.1704756741817954,
-    "prot_t5_mean": 96.48017737096191,
+    "mean_retention_pct": 97.40471118253426,
+    "std_retention_pct": 2.1174246365016227,
+    "prot_t5_mean": 97.23362377383214,
     "esm2_mean": 97.74688599993853
   },
   "multi_plm_agreement": {
@@ -1114,6 +1222,6 @@
     "codec": "ABTT3 + RP768 + DCT K=4 (seed=42)",
     "cross_check_warn_pp": 3.0,
     "cross_check_block_pp": 5.0,
-    "elapsed_seconds": 3471.8
+    "elapsed_seconds": 65664.9
   }
 }

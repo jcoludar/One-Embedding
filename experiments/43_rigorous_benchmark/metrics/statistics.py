@@ -355,6 +355,106 @@ def cluster_bootstrap_ci(
     )
 
 
+def paired_cluster_bootstrap_retention(
+    raw_clusters: dict[str, dict],
+    comp_clusters: dict[str, dict],
+    statistic_fn: Callable[[list[dict]], float],
+    n_bootstrap: int = 10_000,
+    seed: int = 42,
+    alpha: float = 0.05,
+) -> MetricResult:
+    """Paired cluster bootstrap CI on retention ratio for pooled metrics.
+
+    For metrics like pooled Spearman rho where the statistic is computed on
+    all residues pooled across proteins, this function:
+    1. Jointly resamples protein IDs (clusters) for both raw and compressed
+    2. Computes the pooled statistic for both
+    3. Returns the retention ratio (compressed/raw * 100) with BCa CI
+
+    Args:
+        raw_clusters: {pid: data_dict} for raw system.
+        comp_clusters: {pid: data_dict} for compressed system.
+        statistic_fn: Takes list[data_dict] → float (pooled statistic).
+        n_bootstrap: Number of bootstrap iterations.
+        seed: Random seed.
+        alpha: Significance level.
+
+    Returns:
+        MetricResult where value = retention %, with BCa CI.
+    """
+    from scipy.stats import norm
+
+    common = sorted(set(raw_clusters.keys()) & set(comp_clusters.keys()))
+    n = len(common)
+    if n == 0:
+        return MetricResult(value=0.0, ci_lower=0.0, ci_upper=0.0, n=0)
+
+    raw_data = [raw_clusters[pid] for pid in common]
+    comp_data = [comp_clusters[pid] for pid in common]
+
+    raw_obs = statistic_fn(raw_data)
+    comp_obs = statistic_fn(comp_data)
+    retention_obs = (comp_obs / raw_obs * 100) if raw_obs != 0 else 0.0
+
+    rng = np.random.RandomState(seed)
+    boot_values = np.empty(n_bootstrap, dtype=np.float64)
+
+    for b in range(n_bootstrap):
+        idx = rng.randint(0, n, size=n)
+        raw_boot = [raw_data[i] for i in idx]
+        comp_boot = [comp_data[i] for i in idx]
+        raw_val = statistic_fn(raw_boot)
+        comp_val = statistic_fn(comp_boot)
+        boot_values[b] = (comp_val / raw_val * 100) if raw_val != 0 else 0.0
+
+    use_bca = n >= _BCA_MIN_N
+
+    if use_bca:
+        try:
+            prop = np.mean(boot_values < retention_obs)
+            prop = np.clip(prop, 1e-10, 1 - 1e-10)
+            z0 = float(norm.ppf(prop))
+
+            jack_values = np.empty(n, dtype=np.float64)
+            for i in range(n):
+                raw_jack = [raw_data[j] for j in range(n) if j != i]
+                comp_jack = [comp_data[j] for j in range(n) if j != i]
+                raw_val = statistic_fn(raw_jack)
+                comp_val = statistic_fn(comp_jack)
+                jack_values[i] = (comp_val / raw_val * 100) if raw_val != 0 else 0.0
+
+            jack_mean = np.mean(jack_values)
+            num = np.sum((jack_mean - jack_values) ** 3)
+            denom = 6.0 * (np.sum((jack_mean - jack_values) ** 2) ** 1.5)
+            a_hat = num / denom if denom != 0 else 0.0
+
+            z_lo = float(norm.ppf(alpha / 2))
+            z_hi = float(norm.ppf(1 - alpha / 2))
+
+            p_lo = float(norm.cdf(z0 + (z0 + z_lo) / (1 - a_hat * (z0 + z_lo))))
+            p_hi = float(norm.cdf(z0 + (z0 + z_hi) / (1 - a_hat * (z0 + z_hi))))
+
+            ci_lower = float(np.percentile(boot_values, 100 * p_lo))
+            ci_upper = float(np.percentile(boot_values, 100 * p_hi))
+            ci_method = "bca"
+        except (ValueError, ZeroDivisionError, FloatingPointError):
+            ci_lower = float(np.percentile(boot_values, 100 * alpha / 2))
+            ci_upper = float(np.percentile(boot_values, 100 * (1 - alpha / 2)))
+            ci_method = "percentile"
+    else:
+        ci_lower = float(np.percentile(boot_values, 100 * alpha / 2))
+        ci_upper = float(np.percentile(boot_values, 100 * (1 - alpha / 2)))
+        ci_method = "percentile"
+
+    return MetricResult(
+        value=retention_obs,
+        ci_lower=ci_lower,
+        ci_upper=ci_upper,
+        n=n,
+        ci_method=ci_method,
+    )
+
+
 def multi_seed_summary(seed_results: list[MetricResult]) -> MetricResult:
     """Aggregate results across multiple seeds (Rule 5) -- DEPRECATED.
 

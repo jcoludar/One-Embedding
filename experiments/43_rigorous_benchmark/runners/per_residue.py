@@ -329,6 +329,12 @@ def run_ss3_benchmark(
         seed_per_protein_scores, n_bootstrap=n_bootstrap, seed=seeds[0]
     )
 
+    # Averaged per-protein scores for paired retention CI computation
+    common_pids = sorted(set.intersection(*[set(s.keys()) for s in seed_per_protein_scores]))
+    averaged_per_protein = {}
+    for pid in common_pids:
+        averaged_per_protein[pid] = float(np.mean([s[pid] for s in seed_per_protein_scores]))
+
     # Select median-performing seed for per_class_acc and best_C reporting
     per_seed_means = [np.mean(list(s.values())) for s in seed_per_protein_scores]
     sorted_idx = np.argsort(per_seed_means)
@@ -337,6 +343,7 @@ def run_ss3_benchmark(
 
     return {
         "q3": q3,
+        "per_protein_scores": averaged_per_protein,
         "per_class_acc": median_probe["per_class_acc"],
         "class_balance": class_balance,
         "best_C": median_probe["best_C"],
@@ -408,6 +415,12 @@ def run_ss8_benchmark(
         seed_per_protein_scores, n_bootstrap=n_bootstrap, seed=seeds[0]
     )
 
+    # Averaged per-protein scores for paired retention CI computation
+    common_pids = sorted(set.intersection(*[set(s.keys()) for s in seed_per_protein_scores]))
+    averaged_per_protein = {}
+    for pid in common_pids:
+        averaged_per_protein[pid] = float(np.mean([s[pid] for s in seed_per_protein_scores]))
+
     # Select median-performing seed for per_class_acc and best_C reporting
     per_seed_means = [np.mean(list(s.values())) for s in seed_per_protein_scores]
     sorted_idx = np.argsort(per_seed_means)
@@ -416,6 +429,7 @@ def run_ss8_benchmark(
 
     return {
         "q8": q8,
+        "per_protein_scores": averaged_per_protein,
         "per_class_acc": median_probe["per_class_acc"],
         "class_balance": class_balance,
         "best_C": median_probe["best_C"],
@@ -581,6 +595,7 @@ def run_disorder_benchmark(
         "pooled_spearman_rho": pooled_rho_result,
         "auc_roc": auc_result,
         "per_protein_spearman_rho": per_protein_rho_result,
+        "per_protein_predictions": averaged_clusters,
         "spearman_rho": per_protein_rho_result,  # backward compat alias
         "best_alpha": median_probe["best_alpha"],
         "n_train_residues": int(len(y_train)),

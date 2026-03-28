@@ -58,7 +58,16 @@
       "n_train_residues": 107545,
       "n_test_residues": 27028
     },
-    "retention_pct": 99.12567051523853
+    "retention_pct": 99.12567051523853,
+    "retention": {
+      "value": 99.12567051523853,
+      "ci_lower": 98.58290627101988,
+      "ci_upper": 99.71561421747083,
+      "n": 103,
+      "seeds_mean": null,
+      "seeds_std": null,
+      "ci_method": "bca"
+    }
   },
   "ss8": {
     "raw": {
@@ -143,7 +152,16 @@
       "n_train_residues": 107545,
       "n_test_residues": 27028
     },
-    "retention_pct": 98.79265108199802
+    "retention_pct": 98.79265108199802,
+    "retention": {
+      "value": 98.79265108199802,
+      "ci_lower": 98.18170964212732,
+      "ci_upper": 99.37133507963392,
+      "n": 103,
+      "seeds_mean": null,
+      "seeds_std": null,
+      "ci_method": "bca"
+    }
   },
   "disorder": {
     "raw": {
@@ -232,7 +250,16 @@
       "n_test_proteins": 117,
       "disorder_threshold": 8.0
     },
-    "retention_pct": 92.67789586885694
+    "retention_pct": 94.9290808176059,
+    "retention": {
+      "value": 94.9290808176059,
+      "ci_lower": 92.63254954471118,
+      "ci_upper": 96.73189431011869,
+      "n": 117,
+      "seeds_mean": null,
+      "seeds_std": null,
+      "ci_method": "bca"
+    }
   },
   "retrieval": {
     "baseline_A_raw_mean": {
@@ -320,7 +347,25 @@
       "n_queries": 2493
     },
     "retention_cosine_pct": 99.79929754139488,
-    "retention_euclidean_pct": 100.10214504596526
+    "retention_cosine": {
+      "value": 99.79929754139488,
+      "ci_lower": 99.3591857133101,
+      "ci_upper": 100.20151133501258,
+      "n": 2493,
+      "seeds_mean": null,
+      "seeds_std": null,
+      "ci_method": "bca"
+    },
+    "retention_euclidean_pct": 100.10214504596526,
+    "retention_euclidean": {
+      "value": 100.10214504596526,
+      "ci_lower": 99.74372116863147,
+      "ci_upper": 100.50477893181878,
+      "n": 2493,
+      "seeds_mean": null,
+      "seeds_std": null,
+      "ci_method": "bca"
+    }
   },
   "summary": {
     "tasks": [
@@ -336,7 +381,7 @@
       },
       {
         "task": "Disorder rho",
-        "retention_pct": 92.67789586885694,
+        "retention_pct": 94.9290808176059,
         "baseline": "vs raw 1024d"
       },
       {
@@ -350,7 +395,7 @@
         "baseline": "vs Baseline C"
       }
     ],
-    "mean_retention_pct": 98.09953201069072
+    "mean_retention_pct": 98.54976900044052
   },
   "_meta": {
     "script": "run_phase_a1.py",
@@ -375,6 +420,6 @@
       100.0
     ],
     "codec": "ABTT3 + RP768 + DCT K=4 (seed=42)",
-    "elapsed_seconds": 634.2
+    "elapsed_seconds": 774.2
   }
 }

@@ -86,6 +86,7 @@ from runners.protein_level import (
 from metrics.statistics import (
     bootstrap_ci,
     paired_bootstrap_retention,
+    paired_cluster_bootstrap_retention,
     multi_seed_summary,
 )
 
@@ -255,9 +256,14 @@ def metric_to_dict(mr: MetricResult) -> dict:
     return asdict(mr)
 
 
+_SKIP_KEYS = {"per_protein_scores", "per_protein_predictions", "per_query_cosine", "per_query_euclidean"}
+
+
 def results_to_serializable(results: dict) -> dict:
     out = {}
     for k, v in results.items():
+        if k in _SKIP_KEYS:
+            continue
         if isinstance(v, MetricResult):
             out[k] = metric_to_dict(v)
         elif isinstance(v, dict):
@@ -351,10 +357,12 @@ def run_cross_dataset_ss_benchmark(
     )
     print(fmt_metric(f"{metric_key.upper()} comp (CB513)", comp_cb513_result[metric_key]))
 
-    cb513_retention = (
-        comp_cb513_result[metric_key].value / raw_cb513_result[metric_key].value * 100
-    ) if raw_cb513_result[metric_key].value > 0 else None
-    print(fmt_retention(f"{task.upper()} retention (CB513)", comp_cb513_result[metric_key].value, raw_cb513_result[metric_key].value))
+    cb513_ret_ci = paired_bootstrap_retention(
+        raw_cb513_result["per_protein_scores"], comp_cb513_result["per_protein_scores"],
+        n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+    )
+    cb513_retention = cb513_ret_ci.value
+    print(f"  {task.upper()} retention (CB513): {cb513_ret_ci.value:.1f} ± {(cb513_ret_ci.ci_upper - cb513_ret_ci.ci_lower) / 2:.1f}%")
 
     # --- External test set ---
     # Merge CB513 train embeddings with external embeddings
@@ -397,21 +405,25 @@ def run_cross_dataset_ss_benchmark(
     )
     print(fmt_metric(f"{metric_key.upper()} comp ({external_name})", comp_external_result[metric_key]))
 
-    ext_retention = (
-        comp_external_result[metric_key].value / raw_external_result[metric_key].value * 100
-    ) if raw_external_result[metric_key].value > 0 else None
-    print(fmt_retention(f"{task.upper()} retention ({external_name})", comp_external_result[metric_key].value, raw_external_result[metric_key].value))
+    ext_ret_ci = paired_bootstrap_retention(
+        raw_external_result["per_protein_scores"], comp_external_result["per_protein_scores"],
+        n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+    )
+    ext_retention = ext_ret_ci.value
+    print(f"  {task.upper()} retention ({external_name}): {ext_ret_ci.value:.1f} ± {(ext_ret_ci.ci_upper - ext_ret_ci.ci_lower) / 2:.1f}%")
 
     return {
         "cb513": {
             "raw": raw_cb513_result,
             "compressed": comp_cb513_result,
             "retention_pct": cb513_retention,
+            "retention": cb513_ret_ci,
         },
         external_name.lower(): {
             "raw": raw_external_result,
             "compressed": comp_external_result,
             "retention_pct": ext_retention,
+            "retention": ext_ret_ci,
         },
     }
 
@@ -719,17 +731,25 @@ def main():
         print(fmt_metric("Spearman rho comp (CheZOD117)", dis_comp_chezod["spearman_rho"]))
         print(f"  Pooled rho comp: {dis_comp_chezod['pooled_spearman_rho'].value:.4f}")
 
-        chezod_retention = (
-            dis_comp_chezod["spearman_rho"].value / dis_raw_chezod["spearman_rho"].value * 100
-        ) if dis_raw_chezod["spearman_rho"].value > 0 else None
-        print(fmt_retention("Disorder retention (CheZOD117)",
-                            dis_comp_chezod["spearman_rho"].value,
-                            dis_raw_chezod["spearman_rho"].value))
+        from scipy.stats import spearmanr as _spearmanr
+        def _pooled_spearman(cluster_data):
+            all_true = np.concatenate([d["y_true"] for d in cluster_data])
+            all_pred = np.concatenate([d["y_pred"] for d in cluster_data])
+            rho, _ = _spearmanr(all_true, all_pred)
+            return float(rho) if not np.isnan(rho) else 0.0
+
+        chezod_ret_ci = paired_cluster_bootstrap_retention(
+            dis_raw_chezod["per_protein_predictions"], dis_comp_chezod["per_protein_predictions"],
+            _pooled_spearman, n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+        )
+        chezod_retention = chezod_ret_ci.value
+        print(f"  Disorder retention (CheZOD117): {chezod_ret_ci.value:.1f} ± {(chezod_ret_ci.ci_upper - chezod_ret_ci.ci_lower) / 2:.1f}%")
 
         all_results["disorder_chezod"] = {
             "raw": dis_raw_chezod,
             "compressed": dis_comp_chezod,
             "retention_pct": chezod_retention,
+            "retention": chezod_ret_ci,
         }
         if chezod_retention is not None:
             dis_retention["CheZOD117"] = chezod_retention
@@ -811,17 +831,18 @@ def main():
                 print(fmt_metric("Spearman rho comp (TriZOD348)", dis_comp_trizod["spearman_rho"]))
                 print(f"  Pooled rho comp: {dis_comp_trizod['pooled_spearman_rho'].value:.4f}")
 
-                trizod_retention = (
-                    dis_comp_trizod["spearman_rho"].value / dis_raw_trizod["spearman_rho"].value * 100
-                ) if dis_raw_trizod["spearman_rho"].value > 0 else None
-                print(fmt_retention("Disorder retention (TriZOD348)",
-                                    dis_comp_trizod["spearman_rho"].value,
-                                    dis_raw_trizod["spearman_rho"].value))
+                trizod_ret_ci = paired_cluster_bootstrap_retention(
+                    dis_raw_trizod["per_protein_predictions"], dis_comp_trizod["per_protein_predictions"],
+                    _pooled_spearman, n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+                )
+                trizod_retention = trizod_ret_ci.value
+                print(f"  Disorder retention (TriZOD348): {trizod_ret_ci.value:.1f} ± {(trizod_ret_ci.ci_upper - trizod_ret_ci.ci_lower) / 2:.1f}%")
 
                 all_results["disorder_trizod"] = {
                     "raw": dis_raw_trizod,
                     "compressed": dis_comp_trizod,
                     "retention_pct": trizod_retention,
+                    "retention": trizod_ret_ci,
                 }
                 if trizod_retention is not None:
                     dis_retention["TriZOD348"] = trizod_retention
@@ -925,15 +946,18 @@ def main():
                 )
                 print(fmt_metric("Q3 comp (ESM2 768d)", ss3_esm2_comp["q3"]))
 
-                esm2_ss3_retention = (
-                    ss3_esm2_comp["q3"].value / ss3_esm2_raw["q3"].value * 100
-                ) if ss3_esm2_raw["q3"].value > 0 else None
-                print(fmt_retention("ESM2 SS3 retention", ss3_esm2_comp["q3"].value, ss3_esm2_raw["q3"].value))
+                esm2_ss3_ret_ci = paired_bootstrap_retention(
+                    ss3_esm2_raw["per_protein_scores"], ss3_esm2_comp["per_protein_scores"],
+                    n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+                )
+                esm2_ss3_retention = esm2_ss3_ret_ci.value
+                print(f"  ESM2 SS3 retention: {esm2_ss3_ret_ci.value:.1f} ± {(esm2_ss3_ret_ci.ci_upper - esm2_ss3_ret_ci.ci_lower) / 2:.1f}%")
 
                 all_results["esm2_ss3"] = {
                     "raw": ss3_esm2_raw,
                     "compressed": ss3_esm2_comp,
                     "retention_pct": esm2_ss3_retention,
+                    "retention": esm2_ss3_ret_ci,
                     "esm2_dim": esm2_dim,
                 }
 
@@ -965,15 +989,18 @@ def main():
                     )
                     print(fmt_metric("Q8 comp (ESM2 768d)", ss8_esm2_comp["q8"]))
 
-                    esm2_ss8_retention = (
-                        ss8_esm2_comp["q8"].value / ss8_esm2_raw["q8"].value * 100
-                    ) if ss8_esm2_raw["q8"].value > 0 else None
-                    print(fmt_retention("ESM2 SS8 retention", ss8_esm2_comp["q8"].value, ss8_esm2_raw["q8"].value))
+                    esm2_ss8_ret_ci = paired_bootstrap_retention(
+                        ss8_esm2_raw["per_protein_scores"], ss8_esm2_comp["per_protein_scores"],
+                        n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+                    )
+                    esm2_ss8_retention = esm2_ss8_ret_ci.value
+                    print(f"  ESM2 SS8 retention: {esm2_ss8_ret_ci.value:.1f} ± {(esm2_ss8_ret_ci.ci_upper - esm2_ss8_ret_ci.ci_lower) / 2:.1f}%")
 
                     all_results["esm2_ss8"] = {
                         "raw": ss8_esm2_raw,
                         "compressed": ss8_esm2_comp,
                         "retention_pct": esm2_ss8_retention,
+                        "retention": esm2_ss8_ret_ci,
                         "esm2_dim": esm2_dim,
                     }
         elif esm2_cb513_exists and not can_run_ss:
@@ -1026,12 +1053,17 @@ def main():
             print(fmt_metric("Ret@1 cosine  (ESM2 compressed)", ret_esm2_comp["ret1_cosine"]))
             print(fmt_metric("Ret@1 euclid  (ESM2 compressed)", ret_esm2_comp["ret1_euclidean"]))
 
-            esm2_ret_cosine_retention = (
-                ret_esm2_comp["ret1_cosine"].value / ret_esm2_raw["ret1_cosine"].value * 100
-            ) if ret_esm2_raw["ret1_cosine"].value > 0 else None
-            esm2_ret_euclidean_retention = (
-                ret_esm2_comp["ret1_euclidean"].value / ret_esm2_raw["ret1_euclidean"].value * 100
-            ) if ret_esm2_raw["ret1_euclidean"].value > 0 else None
+            esm2_ret_cos_ci = paired_bootstrap_retention(
+                ret_esm2_raw["per_query_cosine"], ret_esm2_comp["per_query_cosine"],
+                n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+            )
+            esm2_ret_euc_ci = paired_bootstrap_retention(
+                ret_esm2_raw["per_query_euclidean"], ret_esm2_comp["per_query_euclidean"],
+                n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+            )
+            esm2_ret_cosine_retention = esm2_ret_cos_ci.value
+            esm2_ret_euclidean_retention = esm2_ret_euc_ci.value
+            print(f"  ESM2 Ret@1 cosine retention: {esm2_ret_cos_ci.value:.1f} ± {(esm2_ret_cos_ci.ci_upper - esm2_ret_cos_ci.ci_lower) / 2:.1f}%")
 
             print(fmt_retention("ESM2 Ret@1 cosine retention",
                                 ret_esm2_comp["ret1_cosine"].value,

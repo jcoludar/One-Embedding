@@ -48,7 +48,15 @@
         "seeds_std": 0.0,
         "ci_method": "bca"
       },
-      "ss3_retention_pct": 96.59853870098493,
+      "ss3_retention": {
+        "value": 96.59853870098493,
+        "ci_lower": 95.85674184460662,
+        "ci_upper": 97.3349508513715,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "ss8_q8": {
         "value": 0.681946696891704,
         "ci_lower": 0.6619219171831957,
@@ -58,7 +66,15 @@
         "seeds_std": 0.0,
         "ci_method": "bca"
       },
-      "ss8_retention_pct": 95.2669994183181,
+      "ss8_retention": {
+        "value": 95.2669994183181,
+        "ci_lower": 94.46482161312451,
+        "ci_upper": 95.99250347540206,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "disorder_pooled_rho": {
         "value": 0.5966691340116372,
         "ci_lower": 0.5178453995400569,
@@ -77,7 +93,15 @@
         "seeds_std": null,
         "ci_method": "bca"
       },
-      "disorder_retention_pct": 90.03710349800515,
+      "disorder_retention": {
+        "value": 90.03710349800515,
+        "ci_lower": 85.01909973592413,
+        "ci_upper": 92.95195008716493,
+        "n": 117,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "ret1_cosine": {
         "value": 0.7950260730044123,
         "ci_lower": 0.7789811472121941,
@@ -87,11 +111,19 @@
         "seeds_std": null,
         "ci_method": "bca"
       },
-      "ret1_retention_pct": 100.15159171298636,
+      "ret1_retention": {
+        "value": 100.15159171298636,
+        "ci_lower": 99.54682779456193,
+        "ci_upper": 100.75834175935287,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "best_C_ss3": 0.01,
       "best_C_ss8": 0.1,
       "best_alpha_disorder": 100.0,
-      "time_s": 166.62517929077148
+      "time_s": 189.94788217544556
     },
     "balanced": {
       "ss3_q3": {
@@ -103,7 +135,15 @@
         "seeds_std": 0.0,
         "ci_method": "bca"
       },
-      "ss3_retention_pct": 95.72165501313026,
+      "ss3_retention": {
+        "value": 95.72165501313026,
+        "ci_lower": 94.84602277741189,
+        "ci_upper": 96.62935875159894,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "ss8_q8": {
         "value": 0.668882615192855,
         "ci_lower": 0.647870914934687,
@@ -113,7 +153,15 @@
         "seeds_std": 0.0,
         "ci_method": "bca"
       },
-      "ss8_retention_pct": 93.4419654834404,
+      "ss8_retention": {
+        "value": 93.4419654834404,
+        "ci_lower": 92.533576800939,
+        "ci_upper": 94.29911344942244,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "disorder_pooled_rho": {
         "value": 0.5831051692777139,
         "ci_lower": 0.5032163932130295,
@@ -132,7 +180,15 @@
         "seeds_std": null,
         "ci_method": "bca"
       },
-      "disorder_retention_pct": 87.99030733078843,
+      "disorder_retention": {
+        "value": 87.99030733078843,
+        "ci_lower": 82.23605553048758,
+        "ci_upper": 91.14395014684186,
+        "n": 117,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "ret1_cosine": {
         "value": 0.7950260730044123,
         "ci_lower": 0.7789811472121941,
@@ -142,11 +198,19 @@
         "seeds_std": null,
         "ci_method": "bca"
       },
-      "ret1_retention_pct": 100.15159171298636,
+      "ret1_retention": {
+        "value": 100.15159171298636,
+        "ci_lower": 99.54682779456193,
+        "ci_upper": 100.75834175935287,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "best_C_ss3": 0.01,
       "best_C_ss8": 0.1,
       "best_alpha_disorder": 100.0,
-      "time_s": 319.683944940567
+      "time_s": 326.5319449901581
     },
     "compact": {
       "ss3_q3": {
@@ -158,7 +222,15 @@
         "seeds_std": 0.0,
         "ci_method": "bca"
       },
-      "ss3_retention_pct": 91.83835233630691,
+      "ss3_retention": {
+        "value": 91.83835233630691,
+        "ci_lower": 90.86517057591888,
+        "ci_upper": 92.78828871932912,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "ss8_q8": {
         "value": 0.6354741954392998,
         "ci_lower": 0.6150364706544356,
@@ -168,7 +240,15 @@
         "seeds_std": 0.0,
         "ci_method": "bca"
       },
-      "ss8_retention_pct": 88.7748559868542,
+      "ss8_retention": {
+        "value": 88.7748559868542,
+        "ci_lower": 87.601901633497,
+        "ci_upper": 89.82432748072375,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "disorder_pooled_rho": {
         "value": 0.5480625535768638,
         "ci_lower": 0.4693089529708627,
@@ -187,7 +267,15 @@
         "seeds_std": null,
         "ci_method": "bca"
       },
-      "disorder_retention_pct": 82.70239240969126,
+      "disorder_retention": {
+        "value": 82.70239240969126,
+        "ci_lower": 76.46077138788175,
+        "ci_upper": 86.18050332979278,
+        "n": 117,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "ret1_cosine": {
         "value": 0.7950260730044123,
         "ci_lower": 0.7789811472121941,
@@ -197,11 +285,19 @@
         "seeds_std": null,
         "ci_method": "bca"
       },
-      "ret1_retention_pct": 100.15159171298636,
+      "ret1_retention": {
+        "value": 100.15159171298636,
+        "ci_lower": 99.54682779456193,
+        "ci_upper": 100.75834175935287,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "best_C_ss3": 0.01,
       "best_C_ss8": 0.1,
       "best_alpha_disorder": 100.0,
-      "time_s": 235.87628698349
+      "time_s": 251.50272488594055
     },
     "micro": {
       "ss3_q3": {
@@ -213,7 +309,15 @@
         "seeds_std": 0.0,
         "ci_method": "bca"
       },
-      "ss3_retention_pct": 86.9991805143368,
+      "ss3_retention": {
+        "value": 86.9991805143368,
+        "ci_lower": 85.7331595066311,
+        "ci_upper": 88.12847031329598,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "ss8_q8": {
         "value": 0.5913511276490875,
         "ci_lower": 0.5716901953157345,
@@ -223,7 +327,15 @@
         "seeds_std": 0.0,
         "ci_method": "bca"
       },
-      "ss8_retention_pct": 82.61092515081688,
+      "ss8_retention": {
+        "value": 82.61092515081688,
+        "ci_lower": 81.0970406616997,
+        "ci_upper": 83.8441376641796,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "disorder_pooled_rho": {
         "value": 0.4946004674045155,
         "ci_lower": 0.4160452281520605,
@@ -242,7 +354,15 @@
         "seeds_std": null,
         "ci_method": "bca"
       },
-      "disorder_retention_pct": 74.63498769318532,
+      "disorder_retention": {
+        "value": 74.63498769318532,
+        "ci_lower": 67.69490932232236,
+        "ci_upper": 78.95153851270402,
+        "n": 117,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "ret1_cosine": {
         "value": 0.7950260730044123,
         "ci_lower": 0.7789811472121941,
@@ -252,11 +372,19 @@
         "seeds_std": null,
         "ci_method": "bca"
       },
-      "ret1_retention_pct": 100.15159171298636,
+      "ret1_retention": {
+        "value": 100.15159171298636,
+        "ci_lower": 99.54682779456193,
+        "ci_upper": 100.75834175935287,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "best_C_ss3": 0.01,
       "best_C_ss8": 0.1,
       "best_alpha_disorder": 100.0,
-      "time_s": 208.0960078239441
+      "time_s": 882.8024470806122
     },
     "binary": {
       "ss3_q3": {
@@ -268,7 +396,15 @@
         "seeds_std": 0.0,
         "ci_method": "bca"
       },
-      "ss3_retention_pct": 91.73775380846352,
+      "ss3_retention": {
+        "value": 91.73775380846352,
+        "ci_lower": 90.89684029023807,
+        "ci_upper": 92.6114054184547,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "ss8_q8": {
         "value": 0.6374765733725906,
         "ci_lower": 0.6171532425107155,
@@ -278,7 +414,15 @@
         "seeds_std": 0.0,
         "ci_method": "bca"
       },
-      "ss8_retention_pct": 89.05458538253211,
+      "ss8_retention": {
+        "value": 89.05458538253211,
+        "ci_lower": 88.05181857208409,
+        "ci_upper": 89.9952594574377,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "disorder_pooled_rho": {
         "value": 0.5963014701744552,
         "ci_lower": 0.5173922740622902,
@@ -297,7 +441,15 @@
         "seeds_std": null,
         "ci_method": "bca"
       },
-      "disorder_retention_pct": 89.9816231906223,
+      "disorder_retention": {
+        "value": 89.9816231906223,
+        "ci_lower": 85.79562980732301,
+        "ci_upper": 92.73841873774154,
+        "n": 117,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "ret1_cosine": {
         "value": 0.7950260730044123,
         "ci_lower": 0.7789811472121941,
@@ -307,11 +459,19 @@
         "seeds_std": null,
         "ci_method": "bca"
       },
-      "ret1_retention_pct": 100.15159171298636,
+      "ret1_retention": {
+        "value": 100.15159171298636,
+        "ci_lower": 99.54682779456193,
+        "ci_upper": 100.75834175935287,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
       "best_C_ss3": 0.01,
       "best_C_ss8": 0.1,
       "best_alpha_disorder": 100.0,
-      "time_s": 148.7549431324005
+      "time_s": 4846.479861021042
     }
   },
   "_meta": {

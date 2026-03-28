@@ -68,13 +68,13 @@ No codebook needed for the base codec. Optional PQ tiers (on 512d) require codeb
 
 | Mode | Quantization | Size (L=175) | Ret@1 | SS3 Q3 | SS8 Q8 | Disorder ρ | SS3 Ret | Dis Ret |
 |------|-------------|:----------:|:-----:|:------:|:------:|:----------:|:-------:|:-------:|
-| **`full`** | **int4 scalar** | **48 KB** | **0.795** | **0.812** | **0.682** | **0.597** | **96.6%** | **90.0%** |
-| **`balanced`** | **PQ M=128** | **26 KB** | **0.795** | **0.804** | **0.669** | **0.583** | **95.7%** | **88.0%** |
-| `binary` | 1-bit sign | 15 KB | 0.795 | 0.771 | 0.638 | 0.596 | 91.7% | 90.0% |
-| `compact` | PQ M=64 | 15 KB | 0.795 | 0.772 | 0.636 | 0.548 | 91.8% | 82.7% |
-| `micro` | PQ M=32 | 10 KB | 0.795 | 0.731 | 0.591 | 0.495 | 87.0% | 74.6% |
+| **`full`** | **int4 scalar** | **48 KB** | **0.795** | **0.812** | **0.682** | **0.597** | **96.6 ± 0.7%** | **90.0 ± 4.0%** |
+| **`balanced`** | **PQ M=128** | **26 KB** | **0.795** | **0.804** | **0.669** | **0.583** | **95.7 ± 0.9%** | **88.0 ± 4.5%** |
+| `binary` | 1-bit sign | 15 KB | 0.795 | 0.771 | 0.638 | 0.596 | 91.7 ± 0.9% | 90.0 ± 3.5% |
+| `compact` | PQ M=64 | 15 KB | 0.795 | 0.772 | 0.636 | 0.548 | 91.8 ± 1.0% | 82.7 ± 4.9% |
+| `micro` | PQ M=32 | 10 KB | 0.795 | 0.731 | 0.591 | 0.495 | 87.0 ± 1.2% | 74.6 ± 5.6% |
 
-All numbers rigorously benchmarked (BCa CIs, CV-tuned probes, pooled disorder ρ). Retrieval is **lossless across all modes** (100.2%). Binary matches full for disorder (90.0%) — RaBitQ effect. Size formula: L × M + 4096 bytes. Shared codebook: ~512 KB per mode.
+All numbers rigorously benchmarked (BCa CIs, CV-tuned probes, pooled disorder ρ). Retention ± from paired bootstrap CIs (10K resamples). Retrieval is **lossless across all modes** (100.2 ± 0.6%). Binary matches full for disorder (90.0 ± 3.5%) — RaBitQ effect. Size formula: L × M + 4096 bytes. Shared codebook: ~512 KB per mode.
 
 ```python
 # 1.0 codec: 768d float16 (default)
@@ -104,14 +104,14 @@ All numbers include 95% BCa bootstrap CIs (DiCiccio & Efron 1996, second-order a
 
 | Task | Level | Dataset (n) | Raw ProtT5 1024d | One Embedding 768d | Retention |
 |------|-------|-------------|:----------------:|:------------------:|:---------:|
-| SS3 (Q3) | per-residue | CB513 (103) | 0.840 [0.823, 0.852] | 0.833 [0.818, 0.845] | **99.1%** |
-| SS3 (Q3) | per-residue | TS115 (115) | 0.841 [0.829, 0.853] | 0.828 [0.816, 0.839] | **98.4%** |
-| SS3 (Q3) | per-residue | CASP12 (20) | 0.781 [0.748, 0.810] | 0.765 [0.730, 0.797] | **98.0%** |
-| SS8 (Q8) | per-residue | CB513 (103) | 0.716 [0.697, 0.734] | 0.707 [0.689, 0.725] | **98.8%** |
-| SS8 (Q8) | per-residue | TS115 (115) | 0.732 [0.715, 0.748] | 0.717 [0.701, 0.733] | **98.0%** |
-| SS8 (Q8) | per-residue | CASP12 (20) | 0.662 [0.629, 0.695] | 0.647 [0.611, 0.682] | **97.6%** |
-| Disorder (pooled ρ) | per-residue | CheZOD117 (117) | 0.663 [0.636, 0.688] | 0.629 [0.601, 0.656] | **94.9%** |
-| Disorder (pooled ρ) | per-residue | TriZOD348 (348) | 0.506 [0.476, 0.536] | 0.471 [0.439, 0.502] | **93.0%** |
+| SS3 (Q3) | per-residue | CB513 (103) | 0.840 [0.823, 0.852] | 0.833 [0.818, 0.845] | **99.1 ± 0.6%** |
+| SS3 (Q3) | per-residue | TS115 (115) | 0.841 [0.829, 0.853] | 0.828 [0.816, 0.839] | **98.4 ± 0.5%** |
+| SS3 (Q3) | per-residue | CASP12 (20) | 0.781 [0.748, 0.810] | 0.765 [0.730, 0.797] | **98.0 ± 1.2%** |
+| SS8 (Q8) | per-residue | CB513 (103) | 0.716 [0.697, 0.734] | 0.707 [0.689, 0.725] | **98.8 ± 0.6%** |
+| SS8 (Q8) | per-residue | TS115 (115) | 0.732 [0.715, 0.748] | 0.717 [0.701, 0.733] | **98.0 ± 0.7%** |
+| SS8 (Q8) | per-residue | CASP12 (20) | 0.662 [0.629, 0.695] | 0.647 [0.611, 0.682] | **97.6 ± 1.7%** |
+| Disorder (pooled ρ) | per-residue | CheZOD117 (117) | 0.663 [0.636, 0.688] | 0.629 [0.601, 0.656] | **94.9 ± 2.0%** |
+| Disorder (pooled ρ) | per-residue | TriZOD348 (348) | 0.506 [0.476, 0.536] | 0.471 [0.439, 0.502] | **93.0 ± 2.6%** |
 | Disorder (AUC-ROC) | per-residue | CheZOD117 (117) | 0.864 [0.848, 0.878] | 0.848 [0.831, 0.864] | **98.1%** |
 
 Disorder uses **pooled residue-level** Spearman ρ (matching SETH/ODiNPred/ADOPT/UdonPred standard) with cluster bootstrap CIs (resample proteins, recompute pooled statistic — Davison & Hinkley 1997). AUC-ROC computed on binary Z<8 threshold (CAID standard).
@@ -123,18 +123,18 @@ Cross-dataset consistency: SS3 max 1.1pp, SS8 max 1.2pp (both OK < 3pp threshold
 
 | Task | Level | Dataset (n) | Raw ProtT5 1024d | One Embedding 768d | Retention |
 |------|-------|-------------|:----------------:|:------------------:|:---------:|
-| Family Ret@1 | per-protein | SCOPe 5K (2493) | 0.799 [0.783, 0.815] | 0.798 [0.782, 0.814] | **99.8%** [99.4, 100.2] |
-| Superfamily Ret@1 | per-protein | CATH20 (9518) | 0.841 [0.834, 0.849] | 0.841 [0.834, 0.849] | **100.0%** [99.8, 100.2] |
-| Localization (Q10) | per-protein | DeepLoc test (2768) | 0.810 [0.795, 0.824] | 0.806 [0.791, 0.820] | **99.5%** [98.6, 100.4] |
-| Localization (Q10) | per-protein | DeepLoc setHARD (490) | 0.608 [0.563, 0.651] | 0.606 [0.563, 0.651] | **99.7%** [96.5, 102.8] |
+| Family Ret@1 | per-protein | SCOPe 5K (2493) | 0.799 [0.783, 0.815] | 0.798 [0.782, 0.814] | **99.8 ± 0.4%** |
+| Superfamily Ret@1 | per-protein | CATH20 (9518) | 0.841 [0.834, 0.849] | 0.841 [0.834, 0.849] | **100.0 ± 0.2%** |
+| Localization (Q10) | per-protein | DeepLoc test (2768) | 0.810 [0.795, 0.824] | 0.806 [0.791, 0.820] | **99.5 ± 0.9%** |
+| Localization (Q10) | per-protein | DeepLoc setHARD (490) | 0.608 [0.563, 0.651] | 0.606 [0.563, 0.651] | **99.7 ± 3.1%** |
 
 #### ESM2 Multi-PLM Validation (1280d → 768d, 40% compression)
 
 | Task | Raw ESM2 1280d | One Embedding 768d | Retention |
 |------|:--------------:|:------------------:|:---------:|
-| SS3 (Q3) | 0.836 [0.817, 0.851] | 0.801 [0.784, 0.816] | **95.8%** |
-| SS8 (Q8) | 0.715 [0.695, 0.734] | 0.684 [0.664, 0.703] | **95.7%** |
-| Ret@1 cosine | 0.675 | 0.675 | **100.0%** |
+| SS3 (Q3) | 0.836 [0.817, 0.851] | 0.801 [0.784, 0.816] | **95.8 ± 1.0%** |
+| SS8 (Q8) | 0.715 [0.695, 0.734] | 0.684 [0.664, 0.703] | **95.7 ± 1.1%** |
+| Ret@1 cosine | 0.675 | 0.675 | **100.0 ± 0.5%** |
 
 #### Ablation: Component Contributions (Exp 43 Phase D)
 

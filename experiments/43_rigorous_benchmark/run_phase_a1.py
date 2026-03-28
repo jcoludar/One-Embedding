@@ -57,6 +57,7 @@ from config import (
     SPLITS,
 )
 from rules import MetricResult
+from metrics.statistics import paired_bootstrap_retention, paired_cluster_bootstrap_retention
 
 # Runners (from experiment dir)
 from runners.per_residue import (
@@ -195,10 +196,16 @@ def metric_to_dict(mr: MetricResult) -> dict:
     return asdict(mr)
 
 
+# Keys with large per-protein data (not needed in JSON output)
+_SKIP_KEYS = {"per_protein_scores", "per_protein_predictions", "per_query_cosine", "per_query_euclidean"}
+
+
 def results_to_serializable(results: dict) -> dict:
     """Recursively convert a results dict so MetricResults become dicts."""
     out = {}
     for k, v in results.items():
+        if k in _SKIP_KEYS:
+            continue
         if isinstance(v, MetricResult):
             out[k] = metric_to_dict(v)
         elif isinstance(v, dict):
@@ -291,11 +298,16 @@ def main():
         print(fmt_metric("Q3 (compressed_768d)", ss3_comp["q3"]))
         print(fmt_retention("SS3 retention", ss3_comp["q3"].value, ss3_raw["q3"].value))
 
+        ss3_ret_ci = paired_bootstrap_retention(
+            ss3_raw["per_protein_scores"], ss3_comp["per_protein_scores"],
+            n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+        )
+        print(f"  SS3 retention: {ss3_ret_ci.value:.1f} ± {(ss3_ret_ci.ci_upper - ss3_ret_ci.ci_lower) / 2:.1f}%")
         all_results["ss3"] = {
             "raw": ss3_raw,
             "compressed": ss3_comp,
-            "retention_pct": (ss3_comp["q3"].value / ss3_raw["q3"].value * 100)
-            if ss3_raw["q3"].value > 0 else None,
+            "retention_pct": ss3_ret_ci.value,
+            "retention": ss3_ret_ci,
         }
 
         # ==============================================================
@@ -338,11 +350,16 @@ def main():
         print(fmt_metric("Q8 (compressed_768d)", ss8_comp["q8"]))
         print(fmt_retention("SS8 retention", ss8_comp["q8"].value, ss8_raw["q8"].value))
 
+        ss8_ret_ci = paired_bootstrap_retention(
+            ss8_raw["per_protein_scores"], ss8_comp["per_protein_scores"],
+            n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+        )
+        print(f"  SS8 retention: {ss8_ret_ci.value:.1f} ± {(ss8_ret_ci.ci_upper - ss8_ret_ci.ci_lower) / 2:.1f}%")
         all_results["ss8"] = {
             "raw": ss8_raw,
             "compressed": ss8_comp,
-            "retention_pct": (ss8_comp["q8"].value / ss8_raw["q8"].value * 100)
-            if ss8_raw["q8"].value > 0 else None,
+            "retention_pct": ss8_ret_ci.value,
+            "retention": ss8_ret_ci,
         }
 
     # ==================================================================
@@ -419,11 +436,25 @@ def main():
         print(fmt_retention("Disorder retention (per-protein)", dis_comp["spearman_rho"].value, dis_raw["spearman_rho"].value))
         print(fmt_retention("Disorder retention (pooled)", dis_comp["pooled_spearman_rho"].value, dis_raw["pooled_spearman_rho"].value))
 
+        # Paired cluster bootstrap retention for disorder (pooled rho)
+        from scipy.stats import spearmanr as _spearmanr
+        def _pooled_spearman(cluster_data):
+            all_true = np.concatenate([d["y_true"] for d in cluster_data])
+            all_pred = np.concatenate([d["y_pred"] for d in cluster_data])
+            rho, _ = _spearmanr(all_true, all_pred)
+            return float(rho) if not np.isnan(rho) else 0.0
+
+        dis_ret_ci = paired_cluster_bootstrap_retention(
+            dis_raw["per_protein_predictions"], dis_comp["per_protein_predictions"],
+            _pooled_spearman, n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+        )
+        print(f"  Disorder pooled retention: {dis_ret_ci.value:.1f} ± {(dis_ret_ci.ci_upper - dis_ret_ci.ci_lower) / 2:.1f}%")
+
         all_results["disorder"] = {
             "raw": dis_raw,
             "compressed": dis_comp,
-            "retention_pct": (dis_comp["spearman_rho"].value / dis_raw["spearman_rho"].value * 100)
-            if dis_raw["spearman_rho"].value > 0 else None,
+            "retention_pct": dis_ret_ci.value,
+            "retention": dis_ret_ci,
         }
 
     # ==================================================================
@@ -522,17 +553,26 @@ def main():
             ret_C["ret1_euclidean"].value,
         ))
 
+        ret_cos_ci = paired_bootstrap_retention(
+            ret_C["per_query_cosine"], ret_comp["per_query_cosine"],
+            n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+        )
+        ret_euc_ci = paired_bootstrap_retention(
+            ret_C["per_query_euclidean"], ret_comp["per_query_euclidean"],
+            n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+        )
+        print(f"  Ret@1 cosine retention: {ret_cos_ci.value:.1f} ± {(ret_cos_ci.ci_upper - ret_cos_ci.ci_lower) / 2:.1f}%")
+        print(f"  Ret@1 euclidean retention: {ret_euc_ci.value:.1f} ± {(ret_euc_ci.ci_upper - ret_euc_ci.ci_lower) / 2:.1f}%")
+
         all_results["retrieval"] = {
             "baseline_A_raw_mean": ret_A,
             "baseline_B_raw_dct4": ret_B,
             "baseline_C_abtt3_dct4": ret_C,
             "compressed": ret_comp,
-            "retention_cosine_pct": (
-                ret_comp["ret1_cosine"].value / ret_C["ret1_cosine"].value * 100
-            ) if ret_C["ret1_cosine"].value > 0 else None,
-            "retention_euclidean_pct": (
-                ret_comp["ret1_euclidean"].value / ret_C["ret1_euclidean"].value * 100
-            ) if ret_C["ret1_euclidean"].value > 0 else None,
+            "retention_cosine_pct": ret_cos_ci.value,
+            "retention_cosine": ret_cos_ci,
+            "retention_euclidean_pct": ret_euc_ci.value,
+            "retention_euclidean": ret_euc_ci,
         }
 
     # ==================================================================
@@ -542,28 +582,31 @@ def main():
 
     summary_rows = []
 
+    def _fmt_ret_ci(r):
+        hw = (r["retention"].ci_upper - r["retention"].ci_lower) / 2
+        return f"{r['retention_pct']:.1f} ± {hw:.1f}%"
+
     if "ss3" in all_results:
-        ret_val = all_results["ss3"]["retention_pct"]
-        summary_rows.append(("SS3 Q3", ret_val, "vs raw 1024d"))
-        print(f"  SS3 Q3:       {ret_val:.1f}%  (vs raw 1024d)")
+        summary_rows.append(("SS3 Q3", all_results["ss3"]["retention_pct"], "vs raw 1024d"))
+        print(f"  SS3 Q3:       {_fmt_ret_ci(all_results['ss3'])}  (vs raw 1024d)")
 
     if "ss8" in all_results:
-        ret_val = all_results["ss8"]["retention_pct"]
-        summary_rows.append(("SS8 Q8", ret_val, "vs raw 1024d"))
-        print(f"  SS8 Q8:       {ret_val:.1f}%  (vs raw 1024d)")
+        summary_rows.append(("SS8 Q8", all_results["ss8"]["retention_pct"], "vs raw 1024d"))
+        print(f"  SS8 Q8:       {_fmt_ret_ci(all_results['ss8'])}  (vs raw 1024d)")
 
     if "disorder" in all_results:
-        ret_val = all_results["disorder"]["retention_pct"]
-        summary_rows.append(("Disorder rho", ret_val, "vs raw 1024d"))
-        print(f"  Disorder rho: {ret_val:.1f}%  (vs raw 1024d)")
+        summary_rows.append(("Disorder rho", all_results["disorder"]["retention_pct"], "vs raw 1024d"))
+        print(f"  Disorder rho: {_fmt_ret_ci(all_results['disorder'])}  (vs raw 1024d)")
 
     if "retrieval" in all_results:
         ret_cos = all_results["retrieval"]["retention_cosine_pct"]
         ret_euc = all_results["retrieval"]["retention_euclidean_pct"]
+        hw_cos = (all_results["retrieval"]["retention_cosine"].ci_upper - all_results["retrieval"]["retention_cosine"].ci_lower) / 2
+        hw_euc = (all_results["retrieval"]["retention_euclidean"].ci_upper - all_results["retrieval"]["retention_euclidean"].ci_lower) / 2
         summary_rows.append(("Ret@1 cosine", ret_cos, "vs Baseline C"))
         summary_rows.append(("Ret@1 euclidean", ret_euc, "vs Baseline C"))
-        print(f"  Ret@1 cos:    {ret_cos:.1f}%  (vs Baseline C: ABTT3+DCT4)")
-        print(f"  Ret@1 euc:    {ret_euc:.1f}%  (vs Baseline C: ABTT3+DCT4)")
+        print(f"  Ret@1 cos:    {ret_cos:.1f} ± {hw_cos:.1f}%  (vs Baseline C: ABTT3+DCT4)")
+        print(f"  Ret@1 euc:    {ret_euc:.1f} ± {hw_euc:.1f}%  (vs Baseline C: ABTT3+DCT4)")
 
     if summary_rows:
         valid = [r[1] for r in summary_rows if r[1] is not None]

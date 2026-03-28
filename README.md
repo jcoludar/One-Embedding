@@ -83,13 +83,13 @@ All tiers share the same preprocessing and protein vector. The only difference i
 
 | Mode | Quantization | Size | Ret@1 | SS3 Q3 | SS8 Q8 | Disorder ρ | SS3 Ret | Dis Ret |
 |------|-------------|:----:|:-----:|:------:|:------:|:----------:|:-------:|:-------:|
-| **`full`** | **int4 scalar** | **48 KB** | **0.795** | **0.812** | **0.682** | **0.597** | **96.6%** | **90.0%** |
-| **`balanced`** | **PQ M=128** | **26 KB** | **0.795** | **0.804** | **0.669** | **0.583** | **95.7%** | **88.0%** |
-| `binary` | 1-bit sign | 15 KB | 0.795 | 0.771 | 0.638 | 0.596 | 91.7% | 90.0% |
-| `compact` | PQ M=64 | 15 KB | 0.795 | 0.772 | 0.636 | 0.548 | 91.8% | 82.7% |
-| `micro` | PQ M=32 | 10 KB | 0.795 | 0.731 | 0.591 | 0.495 | 87.0% | 74.6% |
+| **`full`** | **int4 scalar** | **48 KB** | **0.795** | **0.812** | **0.682** | **0.597** | **96.6 ± 0.7%** | **90.0 ± 4.0%** |
+| **`balanced`** | **PQ M=128** | **26 KB** | **0.795** | **0.804** | **0.669** | **0.583** | **95.7 ± 0.9%** | **88.0 ± 4.5%** |
+| `binary` | 1-bit sign | 15 KB | 0.795 | 0.771 | 0.638 | 0.596 | 91.7 ± 0.9% | 90.0 ± 3.5% |
+| `compact` | PQ M=64 | 15 KB | 0.795 | 0.772 | 0.636 | 0.548 | 91.8 ± 1.0% | 82.7 ± 4.9% |
+| `micro` | PQ M=32 | 10 KB | 0.795 | 0.731 | 0.591 | 0.495 | 87.0 ± 1.2% | 74.6 ± 5.6% |
 
-All numbers rigorously benchmarked (Exp 43: BCa bootstrap CIs, CV-tuned probes, pooled disorder ρ). Retrieval is **lossless across all modes** (100.2%). Binary matches full for disorder (90.0%) — RaBitQ effect. Payload size: PQ modes store `L x M + 4096` bytes. Shared codebook: ~512 KB per mode.
+All numbers rigorously benchmarked (Exp 43: BCa bootstrap CIs, CV-tuned probes, pooled disorder ρ). Retention ± from paired bootstrap CIs (10K resamples). Retrieval is **lossless across all modes** (100.2 ± 0.6%). Binary matches full for disorder (90.0 ± 3.5%) — RaBitQ effect. Payload size: PQ modes store `L x M + 4096` bytes. Shared codebook: ~512 KB per mode.
 
 ### Per-Residue Quality Across Tiers
 
@@ -102,11 +102,11 @@ All numbers rigorously benchmarked (Exp 43: BCa bootstrap CIs, CV-tuned probes, 
 
 | Use Case | Tier | Why |
 |----------|------|-----|
-| **General purpose** | `balanced` | Best quality/size trade-off (26 KB, 95.7% SS3) |
-| **Maximum per-residue fidelity** | `full` | Highest SS3/disorder retention (48 KB, 96.6% SS3) |
-| **Storage-constrained** | `compact` | Good quality at 15 KB (91.8% SS3) |
-| **Retrieval-only** | `binary` | Lossless retrieval + 90% disorder at 15 KB |
-| **Extreme compression** | `micro` | 10 KB, still 87.0% SS3 retention |
+| **General purpose** | `balanced` | Best quality/size trade-off (26 KB, 95.7 ± 0.9% SS3) |
+| **Maximum per-residue fidelity** | `full` | Highest SS3/disorder retention (48 KB, 96.6 ± 0.7% SS3) |
+| **Storage-constrained** | `compact` | Good quality at 15 KB (91.8 ± 1.0% SS3) |
+| **Retrieval-only** | `binary` | Lossless retrieval + 90.0 ± 3.5% disorder at 15 KB |
+| **Extreme compression** | `micro` | 10 KB, still 87.0 ± 1.2% SS3 retention |
 
 ## Retention Benchmarks
 
@@ -118,13 +118,13 @@ All numbers include 95% BCa bootstrap CIs. Probes CV-tuned. Predictions averaged
 
 | Task | Dataset (n) | Raw ProtT5 1024d | Compressed 768d | Retention |
 |------|-------------|:----------------:|:---------------:|:---------:|
-| SS3 Q3 | CB513 (103) | 0.840 [0.823, 0.852] | 0.833 [0.818, 0.845] | **99.1%** |
-| SS3 Q3 | TS115 (115) | 0.841 [0.829, 0.853] | 0.828 [0.816, 0.839] | **98.4%** |
-| SS8 Q8 | CB513 (103) | 0.716 [0.697, 0.734] | 0.707 [0.689, 0.725] | **98.8%** |
-| Disorder (pooled rho) | CheZOD117 (117) | 0.663 [0.636, 0.688] | 0.629 [0.601, 0.656] | **94.9%** |
-| Family Ret@1 | SCOPe 5K (2493) | 0.799 [0.783, 0.815] | 0.798 [0.782, 0.814] | **99.8%** |
-| Superfamily Ret@1 | CATH20 (9518) | 0.841 [0.834, 0.849] | 0.841 [0.834, 0.849] | **100.0%** |
-| Localization Q10 | DeepLoc (2768) | 0.810 [0.795, 0.824] | 0.806 [0.791, 0.820] | **99.5%** |
+| SS3 Q3 | CB513 (103) | 0.840 [0.823, 0.852] | 0.833 [0.818, 0.845] | **99.1 ± 0.6%** |
+| SS3 Q3 | TS115 (115) | 0.841 [0.829, 0.853] | 0.828 [0.816, 0.839] | **98.4 ± 0.5%** |
+| SS8 Q8 | CB513 (103) | 0.716 [0.697, 0.734] | 0.707 [0.689, 0.725] | **98.8 ± 0.6%** |
+| Disorder (pooled rho) | CheZOD117 (117) | 0.663 [0.636, 0.688] | 0.629 [0.601, 0.656] | **94.9 ± 2.0%** |
+| Family Ret@1 | SCOPe 5K (2493) | 0.799 [0.783, 0.815] | 0.798 [0.782, 0.814] | **99.8 ± 0.4%** |
+| Superfamily Ret@1 | CATH20 (9518) | 0.841 [0.834, 0.849] | 0.841 [0.834, 0.849] | **100.0 ± 0.2%** |
+| Localization Q10 | DeepLoc (2768) | 0.810 [0.795, 0.824] | 0.806 [0.791, 0.820] | **99.5 ± 0.9%** |
 
 ### Structural Retention (Experiment 37, 512d)
 
@@ -133,7 +133,7 @@ All numbers include 95% BCa bootstrap CIs. Probes CV-tuned. Predictions averaged
 | Local distance difference (lDDT) | **100.7%** | 50 SCOPe domains |
 | Contact precision | **106.5%** | 50 SCOPe domains |
 
-CIs on raw and compressed **overlap** for all tasks — no statistically significant difference detected. Cross-dataset consistency verified on 3 independent SS3/SS8 test sets (max 1.2pp divergence). ESM2 multi-PLM validation: 95.8% SS3, 100.0% retrieval.
+CIs on raw and compressed **overlap** for all tasks — no statistically significant difference detected. Cross-dataset consistency verified on 3 independent SS3/SS8 test sets (max 1.2pp divergence). ESM2 multi-PLM validation: 95.8 ± 1.0% SS3, 100.0 ± 0.5% retrieval. All retention ± from paired bootstrap CIs (10K resamples).
 
 ## Embedding Phylogenetics (Experiment 35)
 
