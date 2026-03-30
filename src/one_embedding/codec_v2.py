@@ -1,32 +1,28 @@
-"""One Embedding Codec V2: progressive compression with selectable quality tiers.
+"""One Embedding Codec — universal protein embedding compression.
 
-Extends V1 with Product Quantization for dramatically smaller per-protein
-storage, while preserving both retrieval and per-residue task quality.
-
-Compression modes (mean L=175, D_in=1024):
-    'full'     — int4 per-residue, 48 KB (same as V1)
-    'balanced' — PQ M=128 per-residue, 26 KB  (Ret@1=0.784, SS3=0.807)
-    'compact'  — PQ M=64 per-residue, 15 KB   (Ret@1=0.779, SS3=0.778)
-    'micro'    — PQ M=32 per-residue, 10 KB    (Ret@1=0.766, SS3=0.739)
-    'binary'   — 1-bit per-residue, 15 KB      (Ret@1=0.787, SS3=0.776)
+Three knobs: d_out (768), quantization ('pq'), pq_m (auto).
+Default: ABTT3 + RP 768d + PQ M=128 → ~30x compression.
 
 Usage:
-    # One-time: fit codebook on training corpus
-    codec = OneEmbeddingCodec(quantization='pq', pq_m=64)
+    # Default — ~30x compression, just works
+    codec = OneEmbeddingCodec()
     codec.fit(training_embeddings)
     codec.save_codebook('codebook.h5')
 
-    # Encode (uses fitted codebook)
-    codec = OneEmbeddingCodec(quantization='pq', pq_m=64, codebook_path='codebook.h5')
+    # Encode
+    codec = OneEmbeddingCodec(codebook_path='codebook.h5')
     codec.encode_h5_to_h5('raw.h5', 'compressed.h5')
 
     # Decode (receiver side: h5py + numpy + codebook)
     data = OneEmbeddingCodec.load('compressed.h5', codebook_path='codebook.h5')
-    data['per_residue']   # (L, 512)
-    data['protein_vec']   # (2048,)
+    data['per_residue']   # (L, 768)
+    data['protein_vec']   # (3072,)
 
-    # Legacy V2 compat
-    codec = OneEmbeddingCodecV2(mode='compact')
+    # Max fidelity — no RP, fp16 only
+    codec = OneEmbeddingCodec(d_out=1024, quantization=None)
+
+    # More compression — int4 (10x)
+    codec = OneEmbeddingCodec(quantization='int4')
 """
 
 import json
@@ -59,31 +55,25 @@ def auto_pq_m(d_out: int) -> int:
     return 1
 
 
-_LEGACY_MODES = {
-    "full":     {"type": "int4",   "desc": "int4 per-residue (V1 compatible)"},
-    "balanced": {"type": "pq",     "M": 128, "K": 256, "desc": "PQ M=128"},
-    "compact":  {"type": "pq",     "M": 64,  "K": 256, "desc": "PQ M=64"},
-    "micro":    {"type": "pq",     "M": 32,  "K": 256, "desc": "PQ M=32"},
-    "binary":   {"type": "binary", "desc": "1-bit sign quantization"},
-}
-
-# Alias so existing code importing MODES still works
-MODES = _LEGACY_MODES
-
 _VALID_QUANTIZATIONS = {None, "int4", "pq", "binary"}
 
 
 class OneEmbeddingCodec:
-    """Progressive protein embedding codec with PQ support.
+    """Universal protein embedding codec.
 
-    Args:
-        d_out: RP projection dimensionality (default 768).
-        quantization: Compression type — None (fp16), 'int4', 'pq', 'binary'.
-        pq_m: Number of PQ sub-spaces (auto-computed from d_out when None).
-        dct_k: DCT coefficients for protein vector (default 4).
-        seed: Fixed seed for RP matrix (default 42).
-        codebook_path: Path to pre-fitted codebook H5 (required for PQ modes).
-        mode: Legacy V2 parameter — maps to quantization (backward compat).
+    Compresses raw PLM per-residue embeddings (any PLM, any protein) into
+    compact representations for storage and downstream tasks.
+
+    Default: ABTT3 + RP to 768d + PQ M=128 → ~30x compression.
+
+    Three knobs control the compression/fidelity trade-off:
+        d_out: Dimensions after random projection (default 768).
+            Higher = more fidelity, less compression.
+            Set to input dim (e.g. 1024) to skip RP entirely.
+        quantization: Per-residue storage method (default 'pq').
+            None = fp16 (2.7x), 'int4' (10x), 'pq' (~30x), 'binary' (41x).
+        pq_m: PQ subquantizers (default auto = d_out // 6).
+            Only used when quantization='pq'. Must divide d_out evenly.
     """
 
     def __init__(
@@ -94,20 +84,7 @@ class OneEmbeddingCodec:
         dct_k: int = 4,
         seed: int = 42,
         codebook_path: str | None = None,
-        # Legacy V2 compat — if mode is passed, map to new API
-        mode: str | None = None,
     ):
-        # Legacy V2 compat: map mode to quantization
-        if mode is not None:
-            if mode not in _LEGACY_MODES:
-                raise ValueError(f"Unknown mode '{mode}'. Choose from: {list(_LEGACY_MODES)}")
-            cfg = _LEGACY_MODES[mode]
-            quantization = cfg["type"]
-            if quantization == "pq":
-                pq_m = cfg["M"]
-            if d_out == 768:  # only override if user didn't set it
-                d_out = 512  # legacy V2 was 512d
-
         if quantization not in _VALID_QUANTIZATIONS:
             raise ValueError(
                 f"quantization must be one of {_VALID_QUANTIZATIONS}, got '{quantization}'"
@@ -139,30 +116,6 @@ class OneEmbeddingCodec:
 
         if codebook_path is not None:
             self._load_codebook(codebook_path)
-
-    # ── Legacy compat properties ───────────────────────────────────────────
-
-    @property
-    def mode(self):
-        """Legacy compat."""
-        if self.quantization == "int4":
-            return "full"
-        elif self.quantization == "pq":
-            return "balanced"
-        elif self.quantization == "binary":
-            return "binary"
-        return "preserve"
-
-    @property
-    def mode_cfg(self):
-        """Legacy compat — maps quantization to old mode config."""
-        if self.quantization == "int4":
-            return {"type": "int4"}
-        elif self.quantization == "pq":
-            return {"type": "pq", "M": self.pq_m, "K": self.pq_k}
-        elif self.quantization == "binary":
-            return {"type": "binary"}
-        return {"type": "fp16"}
 
     # ── Projection ────────────────────────────────────────────────────────
 
@@ -227,7 +180,6 @@ class OneEmbeddingCodec:
                 f.attrs["pq_sub_dim"] = self._pq_model["sub_dim"]
                 f.attrs["pq_D"] = self._pq_model["D"]
 
-            f.attrs["mode"] = self.mode
             f.attrs["quantization"] = self.quantization or "none"
             f.attrs["d_out"] = self.d_out
             f.attrs["dct_k"] = self.dct_k
@@ -305,12 +257,7 @@ class OneEmbeddingCodec:
         L = meta["seq_len"]
         d_out = meta.get("d_out", self.d_out)
 
-        # V3 format: "quantization" key. V2 legacy: "mode" key
         quantization = meta.get("quantization")
-        if quantization is None and "mode" in meta:
-            legacy_mode = meta["mode"]
-            cfg = _LEGACY_MODES.get(legacy_mode, {})
-            quantization = cfg.get("type")
 
         if quantization is None or quantization == "fp16":
             return encoded["per_residue_fp16"].astype(np.float32)
@@ -393,12 +340,7 @@ class OneEmbeddingCodec:
             L = meta["seq_len"]
             d_out = meta.get("d_out", 512)
 
-            # Determine quantization type
             quantization = meta.get("quantization")
-            if quantization is None and "mode" in meta:
-                legacy_mode = meta["mode"]
-                cfg = _LEGACY_MODES.get(legacy_mode, {})
-                quantization = cfg.get("type")
 
             if quantization is None or quantization == "fp16":
                 # fp16 format — dataset named "per_residue"
@@ -505,5 +447,3 @@ class OneEmbeddingCodec:
         return output_h5
 
 
-# Backward-compat alias
-OneEmbeddingCodecV2 = OneEmbeddingCodec
