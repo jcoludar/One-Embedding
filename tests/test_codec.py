@@ -15,7 +15,7 @@ from src.one_embedding.codec import OneEmbeddingCodec
 
 @pytest.fixture
 def codec():
-    return OneEmbeddingCodec(d_out=512, dct_k=4, seed=42)
+    return OneEmbeddingCodec(d_out=512, quantization=None, dct_k=4, seed=42)
 
 
 @pytest.fixture
@@ -40,44 +40,38 @@ def raw_h5(tmp_path):
 class TestEncode:
     def test_output_shapes(self, codec, raw_embedding):
         result = codec.encode(raw_embedding)
-        assert result["per_residue"].shape == (50, 512)
+        assert result["per_residue_fp16"].shape == (50, 512)
         assert result["protein_vec"].shape == (2048,)
 
     def test_output_dtypes_default_float16(self, codec, raw_embedding):
         result = codec.encode(raw_embedding)
-        assert result["per_residue"].dtype == np.float16
+        assert result["per_residue_fp16"].dtype == np.float16
         assert result["protein_vec"].dtype == np.float16
-
-    def test_output_dtypes_explicit_float32(self, raw_embedding):
-        codec32 = OneEmbeddingCodec(dtype="float32")
-        result = codec32.encode(raw_embedding)
-        assert result["per_residue"].dtype == np.float32
-        assert result["protein_vec"].dtype == np.float32
 
     def test_metadata_fields(self, codec, raw_embedding):
         result = codec.encode(raw_embedding)
         meta = result["metadata"]
-        assert meta["codec"] == "rp_dct"
+        assert meta["codec"] == "one_embedding"
+        assert meta["version"] == 3
         assert meta["d_in"] == 1024
         assert meta["d_out"] == 512
         assert meta["dct_k"] == 4
         assert meta["seed"] == 42
         assert meta["seq_len"] == 50
-        assert meta["protein_vec_dim"] == 2048
-        assert meta["dtype"] == "float16"
+        assert meta["quantization"] is None
 
     def test_deterministic(self, codec, raw_embedding):
         r1 = codec.encode(raw_embedding)
         r2 = codec.encode(raw_embedding)
-        np.testing.assert_array_equal(r1["per_residue"], r2["per_residue"])
+        np.testing.assert_array_equal(r1["per_residue_fp16"], r2["per_residue_fp16"])
         np.testing.assert_array_equal(r1["protein_vec"], r2["protein_vec"])
 
     def test_different_seeds_differ(self, raw_embedding):
-        c1 = OneEmbeddingCodec(seed=42)
-        c2 = OneEmbeddingCodec(seed=99)
+        c1 = OneEmbeddingCodec(quantization=None, seed=42)
+        c2 = OneEmbeddingCodec(quantization=None, seed=99)
         r1 = c1.encode(raw_embedding)
         r2 = c2.encode(raw_embedding)
-        assert not np.allclose(r1["per_residue"], r2["per_residue"])
+        assert not np.allclose(r1["per_residue_fp16"], r2["per_residue_fp16"])
 
     def test_different_input_dims(self, codec):
         """Works with ESM2 (1280d) and ESM-C (960d)."""
@@ -85,7 +79,7 @@ class TestEncode:
         for D in [960, 1024, 1280]:
             raw = rng.randn(30, D).astype(np.float32)
             result = codec.encode(raw)
-            assert result["per_residue"].shape == (30, 512)
+            assert result["per_residue_fp16"].shape == (30, 512)
             assert result["protein_vec"].shape == (2048,)
             assert result["metadata"]["d_in"] == D
 
@@ -96,7 +90,8 @@ class TestSaveLoad:
         path = codec.save(encoded, tmp_path / "test.h5", protein_id="my_protein")
 
         loaded = OneEmbeddingCodec.load(path)
-        np.testing.assert_array_equal(loaded["per_residue"], encoded["per_residue"])
+        np.testing.assert_array_equal(loaded["per_residue"],
+                                       encoded["per_residue_fp16"].astype(np.float32))
         np.testing.assert_array_equal(loaded["protein_vec"], encoded["protein_vec"])
         assert loaded["metadata"]["protein_id"] == "my_protein"
         assert loaded["metadata"]["d_out"] == 512
@@ -110,7 +105,6 @@ class TestSaveLoad:
         loaded = OneEmbeddingCodec.load(str(path))
         assert loaded["per_residue"].shape == (50, 512)
         assert loaded["protein_vec"].shape == (2048,)
-        assert loaded["per_residue"].dtype == np.float16
 
     def test_file_uses_gzip(self, codec, raw_embedding, tmp_path):
         encoded = codec.encode(raw_embedding)
@@ -120,37 +114,25 @@ class TestSaveLoad:
 
 
 class TestBatch:
-    def test_encode_h5_individual(self, codec, raw_h5, tmp_path):
-        out_dir = tmp_path / "encoded"
-        paths = codec.encode_h5(str(raw_h5), str(out_dir))
-        assert len(paths) == 3
-        for p in paths:
-            loaded = OneEmbeddingCodec.load(p)
-            assert loaded["per_residue"].shape[1] == 512
-            assert loaded["protein_vec"].shape == (2048,)
-
     def test_encode_h5_to_h5(self, codec, raw_h5, tmp_path):
         out_path = tmp_path / "encoded.h5"
         codec.encode_h5_to_h5(str(raw_h5), str(out_path))
 
-        loaded = OneEmbeddingCodec.load_batch(str(out_path))
-        assert len(loaded["protein_vecs"]) == 3
-        assert len(loaded["per_residue"]) == 3
-        assert loaded["metadata"]["codec"] == "rp_dct"
-
-        for pid, vec in loaded["protein_vecs"].items():
-            assert vec.shape == (2048,)
+        with h5py.File(out_path, "r") as f:
+            import json
+            meta = json.loads(f.attrs["metadata"])
+            assert meta["codec"] == "one_embedding"
+            assert meta["version"] == 3
+            pids = list(f.keys())
+            assert len(pids) == 3
+            for pid in pids:
+                grp = f[pid]
+                assert grp["protein_vec"][:].shape == (2048,)
+                assert grp["per_residue"][:].shape[1] == 512
 
     def test_max_proteins(self, codec, raw_h5, tmp_path):
         out_path = tmp_path / "encoded.h5"
         codec.encode_h5_to_h5(str(raw_h5), str(out_path), max_proteins=2)
-        loaded = OneEmbeddingCodec.load_batch(str(out_path))
-        assert len(loaded["protein_vecs"]) == 2
 
-    def test_load_subset(self, codec, raw_h5, tmp_path):
-        out_path = tmp_path / "encoded.h5"
-        codec.encode_h5_to_h5(str(raw_h5), str(out_path))
-        loaded = OneEmbeddingCodec.load_batch(str(out_path),
-                                               protein_ids=["prot_0"])
-        assert len(loaded["protein_vecs"]) == 1
-        assert "prot_0" in loaded["protein_vecs"]
+        with h5py.File(out_path, "r") as f:
+            assert len(list(f.keys())) == 2
