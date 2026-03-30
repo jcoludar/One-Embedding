@@ -73,46 +73,38 @@ uv run python experiments/make_benchmark_barplots.py       # Per-benchmark + V2 
 uv run python experiments/make_publication_figures.py       # Publication figures
 ```
 
-## Compression Tiers (Optional Extreme Compression)
+## Compression Configurations (Experiment 44)
 
 ![V2 Pareto](docs/figures/pub_v2_pareto.png)
 
-For storage-constrained applications, the V2 codec adds quantization on top of the 512d base: **ABTT k=3** -> **RP to 512d** -> **quantize** (PQ, int4, or binary) -> **DCT K=4** for protein-level vector. These tiers trade per-residue fidelity for smaller size, down to 10 KB/protein.
+The unified codec has three knobs: `d_out` (768), `quantization` ('pq'), `pq_m` (auto=192). Default: **ABTT3 + RP 768d + PQ M=192 → ~20x compression, ~34 KB/protein.**
 
-All tiers share the same preprocessing and protein vector. The only difference is per-residue quantization:
+| Config | Quantization | Size (L=175) | Compression | SS3 Ret | SS8 Ret | Dis Ret | Ret Ret |
+|--------|-------------|:----------:|:-----------:|:-------:|:-------:|:-------:|:-------:|
+| lossless (1024d fp16) | None | 366 KB | 2x | 100.0 ± 0.2% | 100.0 ± 0.3% | 99.9 ± 0.1% | 100.4 ± 0.5% |
+| fp16 (768d) | None | 275 KB | 2.7x | 99.1 ± 0.5% | 98.7 ± 0.6% | 95.0 ± 2.1% | 100.2 ± 0.6% |
+| int4 (768d) | int4 | 67 KB | 10x | 99.2 ± 0.6% | 98.6 ± 0.6% | 94.8 ± 2.2% | 100.2 ± 0.6% |
+| **PQ M=192 (default)** | **PQ** | **34 KB** | **20x** | **98.8 ± 0.5%** | **97.6 ± 0.8%** | **92.8 ± 2.7%** | **100.2 ± 0.6%** |
+| PQ M=128 | PQ | 23 KB | 30x | 97.1 ± 0.6% | 95.3 ± 0.8% | 90.6 ± 2.9% | 100.2 ± 0.6% |
+| binary | 1-bit sign | 17 KB | 41x | 95.9 ± 0.7% | 93.6 ± 1.0% | 92.5 ± 2.7% | 100.2 ± 0.6% |
 
-| Mode | Quantization | Size | Ret@1 | SS3 Q3 | SS8 Q8 | Disorder ρ | SS3 Ret | Dis Ret |
-|------|-------------|:----:|:-----:|:------:|:------:|:----------:|:-------:|:-------:|
-| **`full`** | **int4 scalar** | **48 KB** | **0.795** | **0.812** | **0.682** | **0.597** | **96.6 ± 0.7%** | **90.0 ± 4.0%** |
-| **`balanced`** | **PQ M=128** | **26 KB** | **0.795** | **0.804** | **0.669** | **0.583** | **95.7 ± 0.9%** | **88.0 ± 4.5%** |
-| `binary` | 1-bit sign | 15 KB | 0.795 | 0.771 | 0.638 | 0.596 | 91.7 ± 0.9% | 90.0 ± 3.5% |
-| `compact` | PQ M=64 | 15 KB | 0.795 | 0.772 | 0.636 | 0.548 | 91.8 ± 1.0% | 82.7 ± 4.9% |
-| `micro` | PQ M=32 | 10 KB | 0.795 | 0.731 | 0.591 | 0.495 | 87.0 ± 1.2% | 74.6 ± 5.6% |
+All Exp 44, rigorous (BCa CIs, CV-tuned probes, paired bootstrap retention, pooled disorder ρ). Retrieval **lossless across all configs** (100.2 ± 0.6%). int4 is indistinguishable from fp16 at 10x. Binary beats PQ M=128 on disorder — RaBitQ effect.
 
-All numbers rigorously benchmarked (Exp 43: BCa bootstrap CIs, CV-tuned probes, pooled disorder ρ). Retention ± from paired bootstrap CIs (10K resamples). Retrieval is **lossless across all modes** (100.2 ± 0.6%). Binary matches full for disorder (90.0 ± 3.5%) — RaBitQ effect. Payload size: PQ modes store `L x M + 4096` bytes. Shared codebook: ~512 KB per mode.
+### When to Use What
 
-### Per-Residue Quality Across Tiers
+| Use Case | Config | Why |
+|----------|--------|-----|
+| **General purpose** | default (PQ M=192) | 20x compression, 92.8% disorder, 98.8% SS3 |
+| **Disorder-sensitive** | `d_out=1024, quantization=None` | 2x compression, ~100% on everything |
+| **Large databases** | `pq_m=128` | 30x compression, 97.1% SS3, 90.6% disorder |
+| **Retrieval-only** | `quantization='binary'` | 41x compression, lossless retrieval |
+| **Max quality + compression** | `quantization='int4'` | 10x compression, ~99% on everything |
 
-| | |
-|:---:|:---:|
-| ![V2 SS3](docs/figures/pub_v2_ss3.png) | ![V2 Disorder](docs/figures/pub_v2_disorder.png) |
-| ![V2 TM](docs/figures/pub_v2_tm.png) | |
+## Detailed Retention Benchmarks
 
-### When to Use Which Tier
+How much task performance does the codec preserve compared to raw ProtT5-XL 1024d embeddings?
 
-| Use Case | Tier | Why |
-|----------|------|-----|
-| **General purpose** | `balanced` | Best quality/size trade-off (26 KB, 95.7 ± 0.9% SS3) |
-| **Maximum per-residue fidelity** | `full` | Highest SS3/disorder retention (48 KB, 96.6 ± 0.7% SS3) |
-| **Storage-constrained** | `compact` | Good quality at 15 KB (91.8 ± 1.0% SS3) |
-| **Retrieval-only** | `binary` | Lossless retrieval + 90.0 ± 3.5% disorder at 15 KB |
-| **Extreme compression** | `micro` | 10 KB, still 87.0 ± 1.2% SS3 retention |
-
-## Retention Benchmarks
-
-How much task performance does the 1.0 codec (768d float16) preserve compared to raw ProtT5-XL 1024d embeddings?
-
-### 768d Retention (Experiment 43 — rigorous, BCa CIs)
+### 768d fp16 Retention (Experiment 43 — rigorous, BCa CIs)
 
 All numbers include 95% BCa bootstrap CIs. Probes CV-tuned. Predictions averaged across 3 seeds. Disorder uses pooled residue-level Spearman rho (SETH/CAID standard).
 

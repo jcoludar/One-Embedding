@@ -12,17 +12,21 @@ from src.one_embedding.codec_v2 import auto_pq_m
 
 
 class TestAutoPqM:
-    def test_768d_gives_128(self):
-        assert auto_pq_m(768) == 128
+    def test_768d_gives_192(self):
+        """768 // 4 = 192, divides evenly."""
+        assert auto_pq_m(768) == 192
 
-    def test_512d_gives_64(self):
-        assert auto_pq_m(512) == 64
+    def test_512d_gives_128(self):
+        """512 // 4 = 128, divides evenly."""
+        assert auto_pq_m(512) == 128
 
-    def test_1024d_gives_128(self):
-        assert auto_pq_m(1024) == 128
+    def test_1024d_gives_256(self):
+        """1024 // 4 = 256, divides evenly."""
+        assert auto_pq_m(1024) == 256
 
-    def test_1280d_gives_160(self):
-        assert auto_pq_m(1280) == 160
+    def test_1280d_gives_320(self):
+        """1280 // 4 = 320, divides evenly."""
+        assert auto_pq_m(1280) == 320
 
     def test_result_divides_d_out(self):
         for d in [256, 384, 512, 640, 768, 896, 1024, 1280]:
@@ -38,7 +42,7 @@ class TestConstructor:
         codec = OneEmbeddingCodec()
         assert codec.d_out == 768
         assert codec.quantization == "pq"
-        assert codec.pq_m == 128
+        assert codec.pq_m == 192
 
     def test_quantization_none(self):
         codec = OneEmbeddingCodec(quantization=None)
@@ -69,7 +73,7 @@ class TestConstructor:
     def test_d_out_override(self):
         codec = OneEmbeddingCodec(d_out=512)
         assert codec.d_out == 512
-        assert codec.pq_m == 64
+        assert codec.pq_m == 128
 
 
 import h5py

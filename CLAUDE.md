@@ -1,7 +1,7 @@
 # Protein Embedding Codec
 
 ## Project Overview
-Universal codec for PLM per-residue embeddings. **232 compression methods benchmarked** across 42 experiments. The 1.0 codec uses ABTT3 preprocessing + random projection to 768d (configurable) + float16 storage in `.one.h5` format, achieving **275 KB/protein** (2.5x compression) with **97–100% retention** across 11+ tasks on 8+ datasets (Exp 43, rigorous benchmarks with bootstrap CIs). Optional extreme compression tiers (PQ/int4/binary on 512d) go down to 10–52 KB.
+Universal codec for PLM per-residue embeddings. **232 compression methods benchmarked** across 44 experiments. The unified codec uses ABTT3 + RP 768d + PQ M=192 by default, achieving **~34 KB/protein** (~20x compression) with **92.8–100% retention** across 12+ tasks on 8+ datasets (Exp 44, rigorous benchmarks with paired bootstrap CIs). Configurable: `d_out` (768), `quantization` ('pq'), `pq_m` (auto). Ranges from lossless (1024d fp16, 2x) to extreme (binary, 41x).
 
 ## Quick Start
 
@@ -62,38 +62,37 @@ uv run python experiments/13_robust_validation.py --step R1
 
 ## One Embedding 1.0 (Recommended)
 
-Pipeline: ABTT k=3 (remove top-3 PCs) → RP to 768d (configurable) → float16 storage in `.one.h5`.
-Protein vector (for retrieval): DCT K=4 of projected embeddings → (D*4,) fp16.
-No codebook needed for the base codec. Optional PQ tiers (on 512d) require codebook fitting.
+Pipeline: ABTT k=3 → RP to d_out (768 default, skip if d_out≥D_in) → quantize → DCT K=4 protein vector.
+Three knobs: `d_out` (768), `quantization` ('pq'), `pq_m` (auto=192). PQ modes require codebook fitting.
 
-| Mode | Quantization | Size (L=175) | Ret@1 | SS3 Q3 | SS8 Q8 | Disorder ρ | SS3 Ret | Dis Ret |
-|------|-------------|:----------:|:-----:|:------:|:------:|:----------:|:-------:|:-------:|
-| **`full`** | **int4 scalar** | **48 KB** | **0.795** | **0.812** | **0.682** | **0.597** | **96.6 ± 0.7%** | **90.0 ± 4.0%** |
-| **`balanced`** | **PQ M=128** | **26 KB** | **0.795** | **0.804** | **0.669** | **0.583** | **95.7 ± 0.9%** | **88.0 ± 4.5%** |
-| `binary` | 1-bit sign | 15 KB | 0.795 | 0.771 | 0.638 | 0.596 | 91.7 ± 0.9% | 90.0 ± 3.5% |
-| `compact` | PQ M=64 | 15 KB | 0.795 | 0.772 | 0.636 | 0.548 | 91.8 ± 1.0% | 82.7 ± 4.9% |
-| `micro` | PQ M=32 | 10 KB | 0.795 | 0.731 | 0.591 | 0.495 | 87.0 ± 1.2% | 74.6 ± 5.6% |
+| Config | Quantization | Size (L=175) | Compression | SS3 Ret | SS8 Ret | Dis Ret | Ret Ret |
+|--------|-------------|:----------:|:-----------:|:-------:|:-------:|:-------:|:-------:|
+| lossless (1024d) | fp16 | 366 KB | 2x | 100.0 ± 0.2% | 100.0 ± 0.3% | 99.9 ± 0.1% | 100.4 ± 0.5% |
+| fp16 (768d) | fp16 | 275 KB | 2.7x | 99.1 ± 0.5% | 98.7 ± 0.6% | 95.0 ± 2.1% | 100.2 ± 0.6% |
+| int4 (768d) | int4 | 67 KB | 10x | 99.2 ± 0.6% | 98.6 ± 0.6% | 94.8 ± 2.2% | 100.2 ± 0.6% |
+| **PQ M=192 (768d, default)** | **PQ** | **34 KB** | **20x** | **98.8 ± 0.5%** | **97.6 ± 0.8%** | **92.8 ± 2.7%** | **100.2 ± 0.6%** |
+| PQ M=128 (768d) | PQ | 23 KB | 30x | 97.1 ± 0.6% | 95.3 ± 0.8% | 90.6 ± 2.9% | 100.2 ± 0.6% |
+| binary (768d) | 1-bit sign | 17 KB | 41x | 95.9 ± 0.7% | 93.6 ± 1.0% | 92.5 ± 2.7% | 100.2 ± 0.6% |
 
-All numbers rigorously benchmarked (BCa CIs, CV-tuned probes, pooled disorder ρ). Retention ± from paired bootstrap CIs (10K resamples). Retrieval is **lossless across all modes** (100.2 ± 0.6%). Binary matches full for disorder (90.0 ± 3.5%) — RaBitQ effect. Size formula: L × M + 4096 bytes. Shared codebook: ~512 KB per mode.
+All Exp 44, rigorous (BCa CIs, CV-tuned probes, paired bootstrap retention, pooled disorder ρ). Retrieval **lossless across all configs** (100.2 ± 0.6%). int4 is indistinguishable from fp16 at 10x compression. Binary beats PQ M=128 on disorder (92.5% vs 90.6%) — RaBitQ effect.
 
 ```python
-# 1.0 codec: 768d float16 (default)
-from src.one_embedding.codec import OneEmbeddingCodec
-codec = OneEmbeddingCodec(d_out=768, dct_k=4)
+# Unified codec: default ~20x compression, just works
+from src.one_embedding.codec_v2 import OneEmbeddingCodec
+codec = OneEmbeddingCodec()
+codec.fit(training_embeddings)
 codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.one.h5")
 
-# Decode (receiver side — h5py + numpy only)
-data = OneEmbeddingCodec.load("compressed.one.h5")
+# Decode (receiver side — h5py + numpy + codebook)
+data = OneEmbeddingCodec.load("compressed.one.h5", codebook_path="codebook.h5")
 data['per_residue']   # (L, 768) for per-residue tasks
 data['protein_vec']   # (3072,) for retrieval / clustering / UMAP
-```
 
-### Extreme Compression Tiers (optional, requires codebook)
-```python
-from src.one_embedding.codec_v2 import OneEmbeddingCodecV2
-codec = OneEmbeddingCodecV2(mode='balanced', codebook_path='codebook.h5')
-codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.h5")
-# 26 KB/protein with PQ M=128 on 512d
+# Max fidelity — no RP, ~100% retention on everything
+codec = OneEmbeddingCodec(d_out=1024, quantization=None)
+
+# More compression — binary, 41x
+codec = OneEmbeddingCodec(quantization='binary')
 ```
 
 ### Rigorous Retention Benchmarks (Exp 43, 768d vs raw ProtT5)

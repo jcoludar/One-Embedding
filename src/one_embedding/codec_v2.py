@@ -1,7 +1,7 @@
 """One Embedding Codec — universal protein embedding compression.
 
 Three knobs: d_out (768), quantization ('pq'), pq_m (auto).
-Default: ABTT3 + RP 768d + PQ M=128 → ~30x compression.
+Default: ABTT3 + RP 768d + PQ M=192 → ~20x compression.
 
 Usage:
     # Default — ~30x compression, just works
@@ -42,13 +42,13 @@ from src.one_embedding.quantization import (
 
 
 def auto_pq_m(d_out: int) -> int:
-    """Compute default PQ M targeting ~6d sub-vectors (~30x compression).
+    """Compute default PQ M targeting ~4d sub-vectors (~20x compression).
 
-    Finds the largest factor of d_out that is <= d_out // 6.
-    For d_out=768: returns 128 (6d sub-vectors, 30x compression).
-    For d_out=512: returns 64 (8d sub-vectors, 32x compression).
+    Finds the largest factor of d_out that is <= d_out // 4.
+    For d_out=768: returns 192 (4d sub-vectors, 20x compression).
+    For d_out=512: returns 128 (4d sub-vectors, 32x compression).
     """
-    target = d_out // 6
+    target = d_out // 4
     for m in range(target, 0, -1):
         if d_out % m == 0:
             return m
@@ -64,15 +64,15 @@ class OneEmbeddingCodec:
     Compresses raw PLM per-residue embeddings (any PLM, any protein) into
     compact representations for storage and downstream tasks.
 
-    Default: ABTT3 + RP to 768d + PQ M=128 → ~30x compression.
+    Default: ABTT3 + RP to 768d + PQ M=192 → ~20x compression.
 
     Three knobs control the compression/fidelity trade-off:
         d_out: Dimensions after random projection (default 768).
             Higher = more fidelity, less compression.
             Set to input dim (e.g. 1024) to skip RP entirely.
         quantization: Per-residue storage method (default 'pq').
-            None = fp16 (2.7x), 'int4' (10x), 'pq' (~30x), 'binary' (41x).
-        pq_m: PQ subquantizers (default auto = d_out // 6).
+            None = fp16 (2.7x), 'int4' (10x), 'pq' (~20x), 'binary' (41x).
+        pq_m: PQ subquantizers (default auto = d_out // 4).
             Only used when quantization='pq'. Must divide d_out evenly.
     """
 
