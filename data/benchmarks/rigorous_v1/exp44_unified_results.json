@@ -1,0 +1,159 @@
+{
+  "raw_baselines": {
+    "ss3_q3": {
+      "value": 0.8402178716664075,
+      "ci_lower": 0.8247524763593267,
+      "ci_upper": 0.8519414437534967,
+      "n": 103,
+      "seeds_mean": 0.8402178716664075,
+      "seeds_std": 0.0,
+      "ci_method": "bca"
+    },
+    "ss8_q8": {
+      "value": 0.7158267826797725,
+      "ci_lower": 0.6947922314248642,
+      "ci_upper": 0.7314518152029535,
+      "n": 103,
+      "seeds_mean": 0.7158267826797725,
+      "seeds_std": 0.0,
+      "ci_method": "bca"
+    },
+    "disorder_pooled_rho": {
+      "value": 0.6626925021248122,
+      "ci_lower": 0.575790888626687,
+      "ci_upper": 0.7179918385622487,
+      "n": 117,
+      "seeds_mean": null,
+      "seeds_std": null,
+      "ci_method": "bca"
+    },
+    "ret1_cosine": {
+      "value": 0.793822703569996,
+      "ci_lower": 0.7833935018050542,
+      "ci_upper": 0.808200727539356,
+      "n": 2493,
+      "seeds_mean": null,
+      "seeds_std": null,
+      "ci_method": "bca"
+    }
+  },
+  "configs": {
+    "lossless": {
+      "config": {
+        "name": "lossless",
+        "d_out": 1024,
+        "quantization": null,
+        "pq_m": null
+      },
+      "ss3_q3": {
+        "value": 0.8405797888790644,
+        "ci_lower": 0.8241751576346312,
+        "ci_upper": 0.8525204231652039,
+        "n": 103,
+        "seeds_mean": 0.8405797888790644,
+        "seeds_std": 0.0,
+        "ci_method": "bca"
+      },
+      "ss3_retention": {
+        "value": 100.0430742102568,
+        "ci_lower": 99.89121759608426,
+        "ci_upper": 100.29135577968674,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
+      "ss8_q8": {
+        "value": 0.715939256245111,
+        "ci_lower": 0.695274354798253,
+        "ci_upper": 0.7315190651731085,
+        "n": 103,
+        "seeds_mean": 0.715939256245111,
+        "seeds_std": 0.0,
+        "ci_method": "bca"
+      },
+      "ss8_retention": {
+        "value": 100.01571239971176,
+        "ci_lower": 99.75106510287259,
+        "ci_upper": 100.27865619993217,
+        "n": 103,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
+      "disorder_pooled_rho": {
+        "value": 0.6617603181721233,
+        "ci_lower": 0.5749501915142513,
+        "ci_upper": 0.717054262101704,
+        "n": 117,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
+      "disorder_auc_roc": {
+        "value": 0.8893296471466506,
+        "ci_lower": 0.8271270785691506,
+        "ci_upper": 0.9201972361368946,
+        "n": 117,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
+      "disorder_retention": {
+        "value": 99.85933386152702,
+        "ci_lower": 99.72711555942008,
+        "ci_upper": 100.02849493690097,
+        "n": 117,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
+      "ret1_cosine": {
+        "value": 0.7966305655836342,
+        "ci_lower": 0.7840580960035093,
+        "ci_upper": 0.8081663278728285,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
+      "ret1_retention": {
+        "value": 100.35371399696817,
+        "ci_lower": 99.80470796710955,
+        "ci_upper": 100.76529909825192,
+        "n": 2493,
+        "seeds_mean": null,
+        "seeds_std": null,
+        "ci_method": "bca"
+      },
+      "best_C_ss3": 0.1,
+      "best_C_ss8": 0.1,
+      "best_alpha_disorder": 10.0,
+      "time_s": 241.1648211479187
+    }
+  },
+  "_meta": {
+    "script": "44_unified_codec_benchmark.py",
+    "methodology": "BCa bootstrap, CV-tuned probes, averaged 3-seed, pooled disorder rho",
+    "seeds": [
+      42,
+      123,
+      456
+    ],
+    "n_bootstrap": 100,
+    "C_grid": [
+      0.01,
+      0.1,
+      1.0,
+      10.0
+    ],
+    "alpha_grid": [
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0
+    ],
+    "smoke_test": true
+  }
+}
