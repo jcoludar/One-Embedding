@@ -8,10 +8,13 @@ for continuous embedding data. No existing Bayesian phylo software handles
 Spec: docs/superpowers/specs/2026-03-17-embedding-phylogenetics-design.md
 """
 
+import atexit
 import copy
 import json
 import math
+import os
 import re
+import signal
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -1532,8 +1535,43 @@ class MultiRunOrchestrator:
         if self.n_runs == 1:
             return [_run_single_mc3(args_list[0])]
 
-        with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
+        executor = ProcessPoolExecutor(max_workers=self.max_workers)
+
+        def _cleanup():
+            executor.shutdown(wait=False, cancel_futures=True)
+            # Force-kill any remaining child processes
+            for pid in list(executor._processes or {}):
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except (OSError, ProcessLookupError):
+                    pass
+
+        atexit.register(_cleanup)
+
+        # Handle SIGTERM/SIGINT
+        original_sigterm = signal.getsignal(signal.SIGTERM)
+        original_sigint = signal.getsignal(signal.SIGINT)
+
+        def _signal_handler(signum, frame):
+            _cleanup()
+            # Re-raise with original handler
+            if signum == signal.SIGTERM and callable(original_sigterm):
+                original_sigterm(signum, frame)
+            elif signum == signal.SIGINT and callable(original_sigint):
+                original_sigint(signum, frame)
+            raise SystemExit(1)
+
+        signal.signal(signal.SIGTERM, _signal_handler)
+        signal.signal(signal.SIGINT, _signal_handler)
+
+        try:
             results = list(executor.map(_run_single_mc3, args_list))
+        finally:
+            _cleanup()
+            atexit.unregister(_cleanup)
+            signal.signal(signal.SIGTERM, original_sigterm)
+            signal.signal(signal.SIGINT, original_sigint)
+
         return results
 
 
