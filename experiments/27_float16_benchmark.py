@@ -32,7 +32,7 @@ from src.evaluation.per_residue_tasks import (
     load_cb513_csv,
 )
 from src.extraction.data_loader import filter_by_family_size, load_metadata_csv
-from src.one_embedding.codec import OneEmbeddingCodec
+from src.one_embedding.codec_v2 import OneEmbeddingCodec
 from src.one_embedding.transforms import dct_summary
 from src.one_embedding.universal_transforms import random_orthogonal_project
 from src.utils.h5_store import load_residue_embeddings
@@ -76,16 +76,20 @@ def normal_ci(p: float, n: int) -> float:
     return 1.96 * np.sqrt(p * (1 - p) / n)
 
 
-def encode_per_residue(raw: np.ndarray, codec: OneEmbeddingCodec) -> np.ndarray:
-    """Apply D-compression only (random projection), return (L, d_out) in codec dtype."""
+def encode_per_residue(raw: np.ndarray, codec: OneEmbeddingCodec, dtype=np.float16) -> np.ndarray:
+    """Apply D-compression only (random projection), return (L, d_out) in target dtype.
+
+    Note: the unified OneEmbeddingCodec always stores as fp16 (quantization=None).
+    The dtype parameter is kept for the float32 comparison path in this historical script.
+    """
     R = codec._get_projection_matrix(raw.shape[1])
-    return (raw @ R).astype(codec.dtype)
+    return (raw @ R).astype(dtype)
 
 
-def encode_protein_vec(per_residue_f32: np.ndarray, codec: OneEmbeddingCodec) -> np.ndarray:
-    """DCT pooling on float32 per-residue, then cast to codec dtype."""
+def encode_protein_vec(per_residue_f32: np.ndarray, codec: OneEmbeddingCodec, dtype=np.float16) -> np.ndarray:
+    """DCT pooling on float32 per-residue, then cast to target dtype."""
     protein_vec = dct_summary(per_residue_f32, K=codec.dct_k)
-    return protein_vec.astype(codec.dtype)
+    return protein_vec.astype(dtype)
 
 
 def main():
@@ -96,8 +100,12 @@ def main():
     results = {}
 
     # ── Setup ──
-    codec16 = OneEmbeddingCodec(d_out=512, dct_k=4, seed=42, dtype="float16")
-    codec32 = OneEmbeddingCodec(d_out=512, dct_k=4, seed=42, dtype="float32")
+    # Unified codec: quantization=None stores as fp16 (only supported dtype).
+    # float32 comparison is historical — kept as an explicit numpy cast below.
+    codec16 = OneEmbeddingCodec(d_out=512, quantization=None, dct_k=4, seed=42)
+    # codec32 is emulated by casting to float32 explicitly; the unified codec
+    # no longer has a dtype parameter since fp32 storage is not supported.
+    codec32 = codec16  # same projection matrix; float32 path uses dtype=np.float32 below
 
     metadata = load_metadata()
     split = load_split()
@@ -108,7 +116,8 @@ def main():
     embeddings = load_plm_embeddings("prot_t5_xl", "medium5k")
     print(f"  Loaded {len(embeddings)} ProtT5-XL embeddings")
 
-    for label, codec in [("float32", codec32), ("float16", codec16)]:
+    for label, target_dtype in [("float32", np.float32), ("float16", np.float16)]:
+        codec = codec16  # same projection matrix for both; dtype differs only in cast
         t0 = time.time()
         vectors = {}
         for pid in test_ids:
@@ -119,7 +128,7 @@ def main():
             per_res_f32 = raw @ R  # always compute in float32
             protein_vec = dct_summary(per_res_f32, K=codec.dct_k)
             # Cast to target dtype, then back to float32 for cosine similarity
-            vectors[pid] = protein_vec.astype(codec.dtype).astype(np.float32)
+            vectors[pid] = protein_vec.astype(target_dtype).astype(np.float32)
 
         ret = evaluate_retrieval_from_vectors(
             vectors, metadata, label_key="family",
@@ -181,13 +190,14 @@ def main():
         sequences, ss3_labels, ss8_labels, _ = load_cb513_csv(cb513_path)
         print(f"  CB513: {len(ss3_labels)} proteins, {len(cb513_embeddings)} embeddings")
 
-        for label, codec in [("float32", codec32), ("float16", codec16)]:
+        for label, target_dtype in [("float32", np.float32), ("float16", np.float16)]:
+            codec = codec16  # same projection matrix; only cast differs
             avail_ids = [pid for pid in ss3_labels if pid in cb513_embeddings]
             coded_embs = {}
             for pid in avail_ids:
                 raw = cb513_embeddings[pid].astype(np.float32)
                 R = codec._get_projection_matrix(raw.shape[1])
-                per_res = (raw @ R).astype(codec.dtype).astype(np.float32)
+                per_res = (raw @ R).astype(target_dtype).astype(np.float32)
                 coded_embs[pid] = per_res
 
             rng = random.Random(42)

@@ -33,8 +33,17 @@ from runners.protein_level import compute_protein_vectors, run_retrieval_benchma
 from metrics.statistics import paired_bootstrap_retention, paired_cluster_bootstrap_retention
 from rules import MetricResult
 
-from src.one_embedding.codec_v2 import OneEmbeddingCodecV2, MODES
+from src.one_embedding.codec_v2 import OneEmbeddingCodec
 from src.utils.h5_store import load_residue_embeddings
+
+# V2 mode configs (512d for historical reproducibility with Exp 34 / Exp 43 V2 tiers)
+V2_CONFIGS = {
+    "full":     {"d_out": 512, "quantization": "int4",   "pq_m": None, "desc": "int4 per-residue (V1 compatible)"},
+    "balanced": {"d_out": 512, "quantization": "pq",     "pq_m": 128,  "desc": "PQ M=128"},
+    "compact":  {"d_out": 512, "quantization": "pq",     "pq_m": 64,   "desc": "PQ M=64"},
+    "micro":    {"d_out": 512, "quantization": "pq",     "pq_m": 32,   "desc": "PQ M=32"},
+    "binary":   {"d_out": 512, "quantization": "binary", "pq_m": None, "desc": "1-bit sign quantization"},
+}
 
 
 def load_split(path):
@@ -156,12 +165,13 @@ def main():
 
     for mode in modes:
         print("=" * 70)
-        print(f"  MODE: {mode} — {MODES[mode]['desc']}")
+        print(f"  MODE: {mode} — {V2_CONFIGS[mode]['desc']}")
         print("=" * 70)
         t0 = time.time()
 
         # Fit codec on SCOPe train
-        codec = OneEmbeddingCodecV2(mode=mode)
+        cfg = V2_CONFIGS[mode]
+        codec = OneEmbeddingCodec(d_out=cfg["d_out"], quantization=cfg["quantization"], pq_m=cfg["pq_m"])
         scope_train_ids = scope_split["train_ids"]
         train_embs = {k: v for k, v in raw_scope.items() if k in set(scope_train_ids)}
         print(f"  Fitting codebook on {len(train_embs)} train proteins...")

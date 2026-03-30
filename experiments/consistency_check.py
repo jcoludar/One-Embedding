@@ -1,6 +1,11 @@
 """
-Comprehensive consistency check between the new production core Codec
-and the existing research OneEmbeddingCodec.
+Comprehensive consistency check between the production Codec (one_embedding.core.codec)
+and the unified OneEmbeddingCodec (src.one_embedding.codec_v2).
+
+NOTE: The old V1 research codec (src.one_embedding.codec.OneEmbeddingCodec with dtype
+parameter) is no longer the primary codec. Section 1 now uses the unified
+OneEmbeddingCodec from codec_v2 (quantization=None, d_out=512) as the comparison
+baseline against the core Codec.
 
 Run with:
     uv run python3 experiments/consistency_check.py
@@ -49,15 +54,17 @@ META_CSV = os.path.join(PROJECT_ROOT, "data/proteins/metadata_5k.csv")
 section("1. Codec output consistency — Old vs New on 10 real proteins")
 
 try:
-    from src.one_embedding.codec import OneEmbeddingCodec
+    from src.one_embedding.codec_v2 import OneEmbeddingCodec
     from src.one_embedding.core.codec import Codec
 
     with h5py.File(EMB_H5, "r") as f:
         protein_ids = list(f.keys())[:10]
         raw_dict = {pid: f[pid][:].astype(np.float32) for pid in protein_ids}
 
-    # Fit new Codec on the same 10-protein corpus
-    old_codec = OneEmbeddingCodec(d_out=512, dct_k=4, seed=42)
+    # Fit both codecs on the same 10-protein corpus
+    # old_codec is now the unified OneEmbeddingCodec (quantization=None = fp16, d_out=512)
+    old_codec = OneEmbeddingCodec(d_out=512, quantization=None, dct_k=4, seed=42)
+    old_codec.fit(raw_dict)
     new_codec = Codec(d_out=512, dct_k=4, seed=42)
     new_codec.fit(raw_dict, k=3)
 
@@ -74,7 +81,9 @@ try:
         expected_pr = (L, 512)
         expected_pv = (2048,)
 
-        if old_enc["per_residue"].shape != expected_pr:
+        # Unified codec (quantization=None) uses "per_residue_fp16" key
+        old_pr_raw = old_enc.get("per_residue_fp16", old_enc.get("per_residue"))
+        if old_pr_raw is None or old_pr_raw.shape != expected_pr:
             shape_pr_ok = False
         if new_enc["per_residue"].shape != expected_pr:
             shape_pr_ok = False
@@ -84,7 +93,7 @@ try:
             shape_pv_ok = False
 
         # Cosine similarity between old and new per_residue (mean over residues)
-        old_pr = old_enc["per_residue"].astype(np.float32)
+        old_pr = old_pr_raw.astype(np.float32)
         new_pr = new_enc["per_residue"].astype(np.float32)
         # Per-residue row-wise cosine
         norms_old = np.linalg.norm(old_pr, axis=1, keepdims=True) + 1e-10

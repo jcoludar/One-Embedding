@@ -20,7 +20,17 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.one_embedding.codec_v2 import OneEmbeddingCodecV2, MODES
+from src.one_embedding.codec_v2 import OneEmbeddingCodec
+
+# V2 mode configs (512d for historical reproducibility with Exp 34 tiers)
+V2_CONFIGS = {
+    "full":     {"d_out": 512, "quantization": "int4",   "pq_m": None, "desc": "int4 per-residue (V1 compatible)", "type": "int4"},
+    "balanced": {"d_out": 512, "quantization": "pq",     "pq_m": 128,  "desc": "PQ M=128",                         "type": "pq"},
+    "compact":  {"d_out": 512, "quantization": "pq",     "pq_m": 64,   "desc": "PQ M=64",                          "type": "pq"},
+    "micro":    {"d_out": 512, "quantization": "pq",     "pq_m": 32,   "desc": "PQ M=32",                          "type": "pq"},
+    "binary":   {"d_out": 512, "quantization": "binary", "pq_m": None, "desc": "1-bit sign quantization",          "type": "binary"},
+}
+
 from src.one_embedding.transforms import dct_summary
 from src.one_embedding.preprocessing import compute_corpus_stats, all_but_the_top
 from src.one_embedding.universal_transforms import random_orthogonal_project
@@ -141,11 +151,12 @@ def step_D1(results):
     modes_to_test = ["full", "balanced", "compact", "micro", "binary"]
 
     for mode in modes_to_test:
-        print(f"\n  ═══ Mode: {mode} ({MODES[mode]['desc']}) ═══")
+        print(f"\n  ═══ Mode: {mode} ({V2_CONFIGS[mode]['desc']}) ═══")
         t0 = time.time()
 
         # Create and fit codec
-        codec = OneEmbeddingCodecV2(mode=mode)
+        cfg = V2_CONFIGS[mode]
+        codec = OneEmbeddingCodec(d_out=cfg["d_out"], quantization=cfg["quantization"], pq_m=cfg["pq_m"])
         print(f"    Fitting codebook on {len(train_embs)} train proteins...")
         codec.fit(train_embs)
 
@@ -154,7 +165,7 @@ def step_D1(results):
         print(f"    Codebook saved: {codebook_path}")
 
         # Reload codec from saved codebook (tests persistence)
-        codec = OneEmbeddingCodecV2(mode=mode, codebook_path=str(codebook_path))
+        codec = OneEmbeddingCodec(d_out=cfg["d_out"], quantization=cfg["quantization"], pq_m=cfg["pq_m"], codebook_path=str(codebook_path))
 
         # Encode all 5K proteins
         print(f"    Encoding {len(embeddings)} proteins...")
@@ -226,7 +237,7 @@ def step_D1(results):
 
         row = {
             "mode": mode,
-            "desc": MODES[mode]["desc"],
+            "desc": V2_CONFIGS[mode]["desc"],
             "family_ret1": ret["precision@1"],
             "family_mrr": ret["mrr"],
             "ss3_q3": ss3["q3"],
@@ -284,7 +295,8 @@ def step_D2(results):
     for mode in ["compact", "binary", "full"]:
         print(f"\n  --- Roundtrip: {mode} ---")
 
-        codec = OneEmbeddingCodecV2(mode=mode)
+        cfg_d2 = V2_CONFIGS[mode]
+        codec = OneEmbeddingCodec(d_out=cfg_d2["d_out"], quantization=cfg_d2["quantization"], pq_m=cfg_d2["pq_m"])
         codec.fit(train_embs)
         codebook_path = CODEBOOK_DIR / f"codebook_{mode}.h5"
         codec.save_codebook(codebook_path)
@@ -299,8 +311,8 @@ def step_D2(results):
 
         codec.save(encoded, tmp_path, protein_id=test_pid)
 
-        cb_path = str(codebook_path) if MODES[mode]["type"] == "pq" else None
-        loaded = OneEmbeddingCodecV2.load(tmp_path, codebook_path=cb_path)
+        cb_path = str(codebook_path) if V2_CONFIGS[mode]["type"] == "pq" else None
+        loaded = OneEmbeddingCodec.load(tmp_path, codebook_path=cb_path)
 
         # Verify
         vec_match = np.allclose(
