@@ -12,23 +12,25 @@ Compression modes (mean L=175, D_in=1024):
 
 Usage:
     # One-time: fit codebook on training corpus
-    codec = OneEmbeddingCodecV2(mode='compact')
+    codec = OneEmbeddingCodec(quantization='pq', pq_m=64)
     codec.fit(training_embeddings)
     codec.save_codebook('codebook.h5')
 
     # Encode (uses fitted codebook)
-    codec = OneEmbeddingCodecV2(mode='compact', codebook_path='codebook.h5')
+    codec = OneEmbeddingCodec(quantization='pq', pq_m=64, codebook_path='codebook.h5')
     codec.encode_h5_to_h5('raw.h5', 'compressed.h5')
 
     # Decode (receiver side: h5py + numpy + codebook)
-    data = OneEmbeddingCodecV2.load('compressed.h5', codebook_path='codebook.h5')
+    data = OneEmbeddingCodec.load('compressed.h5', codebook_path='codebook.h5')
     data['per_residue']   # (L, 512)
     data['protein_vec']   # (2048,)
+
+    # Legacy V2 compat
+    codec = OneEmbeddingCodecV2(mode='compact')
 """
 
 import json
 from pathlib import Path
-from typing import Optional
 
 import h5py
 import numpy as np
@@ -43,7 +45,21 @@ from src.one_embedding.quantization import (
 )
 
 
-MODES = {
+def auto_pq_m(d_out: int) -> int:
+    """Compute default PQ M targeting ~6d sub-vectors (~30x compression).
+
+    Finds the largest factor of d_out that is <= d_out // 6.
+    For d_out=768: returns 128 (6d sub-vectors, 30x compression).
+    For d_out=512: returns 64 (8d sub-vectors, 32x compression).
+    """
+    target = d_out // 6
+    for m in range(target, 0, -1):
+        if d_out % m == 0:
+            return m
+    return 1
+
+
+_LEGACY_MODES = {
     "full":     {"type": "int4",   "desc": "int4 per-residue (V1 compatible)"},
     "balanced": {"type": "pq",     "M": 128, "K": 256, "desc": "PQ M=128"},
     "compact":  {"type": "pq",     "M": 64,  "K": 256, "desc": "PQ M=64"},
@@ -51,41 +67,104 @@ MODES = {
     "binary":   {"type": "binary", "desc": "1-bit sign quantization"},
 }
 
+# Alias so existing code importing MODES still works
+MODES = _LEGACY_MODES
 
-class OneEmbeddingCodecV2:
+_VALID_QUANTIZATIONS = {None, "int4", "pq", "binary"}
+
+
+class OneEmbeddingCodec:
     """Progressive protein embedding codec with PQ support.
 
     Args:
-        mode: Compression mode — 'full', 'balanced', 'compact', 'micro', 'binary'.
-        d_out: RP projection dimensionality (default 512).
+        d_out: RP projection dimensionality (default 768).
+        quantization: Compression type — None (fp16), 'int4', 'pq', 'binary'.
+        pq_m: Number of PQ sub-spaces (auto-computed from d_out when None).
         dct_k: DCT coefficients for protein vector (default 4).
         seed: Fixed seed for RP matrix (default 42).
         codebook_path: Path to pre-fitted codebook H5 (required for PQ modes).
+        mode: Legacy V2 parameter — maps to quantization (backward compat).
     """
 
     def __init__(
         self,
-        mode: str = "compact",
-        d_out: int = 512,
+        d_out: int = 768,
+        quantization: str | None = "pq",
+        pq_m: int | None = None,
         dct_k: int = 4,
         seed: int = 42,
-        codebook_path: Optional[str] = None,
+        codebook_path: str | None = None,
+        # Legacy V2 compat — if mode is passed, map to new API
+        mode: str | None = None,
     ):
-        if mode not in MODES:
-            raise ValueError(f"Unknown mode '{mode}'. Choose from: {list(MODES)}")
-        self.mode = mode
-        self.mode_cfg = MODES[mode]
+        # Legacy V2 compat: map mode to quantization
+        if mode is not None:
+            if mode not in _LEGACY_MODES:
+                raise ValueError(f"Unknown mode '{mode}'. Choose from: {list(_LEGACY_MODES)}")
+            cfg = _LEGACY_MODES[mode]
+            quantization = cfg["type"]
+            if quantization == "pq":
+                pq_m = cfg["M"]
+            if d_out == 768:  # only override if user didn't set it
+                d_out = 512  # legacy V2 was 512d
+
+        if quantization not in _VALID_QUANTIZATIONS:
+            raise ValueError(
+                f"quantization must be one of {_VALID_QUANTIZATIONS}, got '{quantization}'"
+            )
+
         self.d_out = d_out
+        self.quantization = quantization
         self.dct_k = dct_k
         self.seed = seed
         self._proj_cache: dict[int, np.ndarray] = {}
+        self._corpus_stats = None
+        self._pq_model = None
 
-        # Corpus stats (from fit or loaded codebook)
-        self._corpus_stats: Optional[dict] = None
-        self._pq_model: Optional[dict] = None
+        # Resolve pq_m
+        if quantization == "pq":
+            if pq_m is None:
+                pq_m = auto_pq_m(d_out)
+            if d_out % pq_m != 0:
+                factors = [f for f in range(1, d_out + 1) if d_out % f == 0 and f <= d_out // 2]
+                raise ValueError(
+                    f"pq_m={pq_m} must divide d_out={d_out} evenly. "
+                    f"Some valid values: {factors[-10:]}"
+                )
+            self.pq_m = pq_m
+            self.pq_k = 256
+        else:
+            self.pq_m = None
+            self.pq_k = None
 
         if codebook_path is not None:
             self._load_codebook(codebook_path)
+
+    # ── Legacy compat properties ───────────────────────────────────────────
+
+    @property
+    def mode(self):
+        """Legacy compat."""
+        if self.quantization == "int4":
+            return "full"
+        elif self.quantization == "pq":
+            return "balanced"
+        elif self.quantization == "binary":
+            return "binary"
+        return "preserve"
+
+    @property
+    def mode_cfg(self):
+        """Legacy compat — maps quantization to old mode config."""
+        if self.quantization == "int4":
+            return {"type": "int4"}
+        elif self.quantization == "pq":
+            return {"type": "pq", "M": self.pq_m, "K": self.pq_k}
+        elif self.quantization == "binary":
+            return {"type": "binary"}
+        return {"type": "fp16"}
+
+    # ── Projection ────────────────────────────────────────────────────────
 
     def _get_projection_matrix(self, d_in: int) -> np.ndarray:
         if d_in not in self._proj_cache:
@@ -225,7 +304,7 @@ class OneEmbeddingCodecV2:
     def decode_per_residue(self, encoded: dict) -> np.ndarray:
         """Decode per-residue embeddings from encoded dict."""
         mode = encoded["metadata"]["mode"]
-        cfg = MODES[mode]
+        cfg = MODES.get(mode, self.mode_cfg)
         L = encoded["metadata"]["seq_len"]
 
         if cfg["type"] == "int4":
@@ -291,7 +370,7 @@ class OneEmbeddingCodecV2:
         return path
 
     @staticmethod
-    def load(path: str, codebook_path: Optional[str] = None) -> dict:
+    def load(path: str, codebook_path: str | None = None) -> dict:
         """Load and decode a compressed protein.
 
         Args:
@@ -306,7 +385,7 @@ class OneEmbeddingCodecV2:
             protein_vec = f["protein_vec"][:]
 
             mode = meta["mode"]
-            cfg = MODES[mode]
+            cfg = MODES.get(mode, {"type": "fp16"})
             L = meta["seq_len"]
             d_out = meta["d_out"]
 
@@ -354,7 +433,7 @@ class OneEmbeddingCodecV2:
 
     def encode_h5_to_h5(
         self, input_h5: str, output_h5: str,
-        max_proteins: Optional[int] = None,
+        max_proteins: int | None = None,
     ) -> Path:
         """Batch-encode all proteins from raw H5 to compressed H5."""
         output_h5 = Path(output_h5)
@@ -408,3 +487,7 @@ class OneEmbeddingCodecV2:
                                        compression="gzip", compression_opts=4)
 
         return output_h5
+
+
+# Backward-compat alias
+OneEmbeddingCodecV2 = OneEmbeddingCodec
