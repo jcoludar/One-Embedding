@@ -175,11 +175,13 @@ class OneEmbeddingCodec:
         return self._proj_cache[d_in]
 
     def _preprocess(self, raw: np.ndarray) -> np.ndarray:
-        """Apply ABTT3 + RP projection."""
+        """Apply ABTT3 + RP projection (skip RP if d_out >= d_in)."""
         raw = raw.astype(np.float32)
         if self._corpus_stats is not None:
             top3 = self._corpus_stats["top_pcs"][:3]
             raw = all_but_the_top(raw, top3)
+        if self.d_out >= raw.shape[1]:
+            return raw  # skip RP — lossless mode
         R = self._get_projection_matrix(raw.shape[1])
         return (raw @ R).astype(np.float32)
 
@@ -197,17 +199,13 @@ class OneEmbeddingCodec:
             embeddings, n_sample=50_000, n_pcs=5, seed=self.seed
         )
 
-        # Preprocess all training data
-        preprocessed = {}
-        for pid, m in embeddings.items():
-            preprocessed[pid] = self._preprocess(m)
-
         # Fit PQ if needed
-        if self.mode_cfg["type"] == "pq":
-            M = self.mode_cfg["M"]
-            K = self.mode_cfg["K"]
+        if self.quantization == "pq":
+            preprocessed = {}
+            for pid, m in embeddings.items():
+                preprocessed[pid] = self._preprocess(m)
             self._pq_model = pq_fit(
-                preprocessed, M=M, n_centroids=K,
+                preprocessed, M=self.pq_m, n_centroids=self.pq_k,
                 max_residues=max_residues, seed=self.seed,
             )
 
@@ -230,6 +228,7 @@ class OneEmbeddingCodec:
                 f.attrs["pq_D"] = self._pq_model["D"]
 
             f.attrs["mode"] = self.mode
+            f.attrs["quantization"] = self.quantization or "none"
             f.attrs["d_out"] = self.d_out
             f.attrs["dct_k"] = self.dct_k
             f.attrs["seed"] = self.seed
@@ -270,32 +269,31 @@ class OneEmbeddingCodec:
         result = {
             "protein_vec": protein_vec,
             "metadata": {
-                "codec": "one_embedding_v2",
-                "mode": self.mode,
-                "version": 2,
+                "codec": "one_embedding",
+                "version": 3,
                 "d_in": D,
                 "d_out": self.d_out,
+                "quantization": self.quantization,
+                "pq_m": self.pq_m,
                 "dct_k": self.dct_k,
                 "seed": self.seed,
                 "seq_len": L,
             },
         }
 
-        mode_type = self.mode_cfg["type"]
-
-        if mode_type == "int4":
+        if self.quantization is None:
+            result["per_residue_fp16"] = projected.astype(np.float16)
+        elif self.quantization == "int4":
             compressed = quantize_int4(projected)
             result["per_residue_data"] = compressed["data"]
             result["per_residue_scales"] = compressed["scales"]
             result["per_residue_zp"] = compressed["zero_points"]
-
-        elif mode_type == "binary":
+        elif self.quantization == "binary":
             compressed = quantize_binary(projected)
             result["per_residue_bits"] = compressed["bits"]
             result["per_residue_means"] = compressed["means"]
             result["per_residue_scales"] = compressed["scales"]
-
-        elif mode_type == "pq":
+        elif self.quantization == "pq":
             codes = pq_encode(projected, self._pq_model)
             result["pq_codes"] = codes  # (L, M) uint8
 
@@ -303,34 +301,40 @@ class OneEmbeddingCodec:
 
     def decode_per_residue(self, encoded: dict) -> np.ndarray:
         """Decode per-residue embeddings from encoded dict."""
-        mode = encoded["metadata"]["mode"]
-        cfg = MODES.get(mode, self.mode_cfg)
-        L = encoded["metadata"]["seq_len"]
+        meta = encoded["metadata"]
+        L = meta["seq_len"]
+        d_out = meta.get("d_out", self.d_out)
 
-        if cfg["type"] == "int4":
+        # V3 format: "quantization" key. V2 legacy: "mode" key
+        quantization = meta.get("quantization")
+        if quantization is None and "mode" in meta:
+            legacy_mode = meta["mode"]
+            cfg = _LEGACY_MODES.get(legacy_mode, {})
+            quantization = cfg.get("type")
+
+        if quantization is None or quantization == "fp16":
+            return encoded["per_residue_fp16"].astype(np.float32)
+        elif quantization == "int4":
             compressed = {
                 "data": encoded["per_residue_data"],
                 "scales": encoded["per_residue_scales"],
                 "zero_points": encoded["per_residue_zp"],
-                "original_shape": (L, self.d_out),
+                "original_shape": (L, d_out),
                 "dtype": "int4",
             }
             return dequantize_int4(compressed)
-
-        elif cfg["type"] == "binary":
+        elif quantization == "binary":
             compressed = {
                 "bits": encoded["per_residue_bits"],
                 "means": encoded["per_residue_means"],
                 "scales": encoded["per_residue_scales"],
-                "original_shape": (L, self.d_out),
+                "original_shape": (L, d_out),
                 "dtype": "binary",
             }
             return dequantize_binary(compressed)
-
-        elif cfg["type"] == "pq":
+        elif quantization == "pq":
             return pq_decode(encoded["pq_codes"], self._pq_model)
-
-        raise ValueError(f"Unknown mode type: {cfg['type']}")
+        raise ValueError(f"Unknown quantization: {quantization}")
 
     # ── H5 I/O ────────────────────────────────────────────────────────────
 
@@ -342,8 +346,10 @@ class OneEmbeddingCodec:
         with h5py.File(path, "w") as f:
             f.create_dataset("protein_vec", data=encoded["protein_vec"])
 
-            mode_type = self.mode_cfg["type"]
-            if mode_type == "int4":
+            if self.quantization is None:
+                f.create_dataset("per_residue", data=encoded["per_residue_fp16"],
+                                 compression="gzip", compression_opts=4)
+            elif self.quantization == "int4":
                 f.create_dataset("per_residue_data",
                                  data=encoded["per_residue_data"],
                                  compression="gzip", compression_opts=4)
@@ -351,7 +357,7 @@ class OneEmbeddingCodec:
                                  data=encoded["per_residue_scales"])
                 f.create_dataset("per_residue_zp",
                                  data=encoded["per_residue_zp"])
-            elif mode_type == "binary":
+            elif self.quantization == "binary":
                 f.create_dataset("per_residue_bits",
                                  data=encoded["per_residue_bits"],
                                  compression="gzip", compression_opts=4)
@@ -359,7 +365,7 @@ class OneEmbeddingCodec:
                                  data=encoded["per_residue_means"])
                 f.create_dataset("per_residue_scales",
                                  data=encoded["per_residue_scales"])
-            elif mode_type == "pq":
+            elif self.quantization == "pq":
                 f.create_dataset("pq_codes", data=encoded["pq_codes"],
                                  compression="gzip", compression_opts=4)
 
@@ -384,12 +390,20 @@ class OneEmbeddingCodec:
             meta = json.loads(f.attrs["metadata"])
             protein_vec = f["protein_vec"][:]
 
-            mode = meta["mode"]
-            cfg = MODES.get(mode, {"type": "fp16"})
             L = meta["seq_len"]
-            d_out = meta["d_out"]
+            d_out = meta.get("d_out", 512)
 
-            if cfg["type"] == "int4":
+            # Determine quantization type
+            quantization = meta.get("quantization")
+            if quantization is None and "mode" in meta:
+                legacy_mode = meta["mode"]
+                cfg = _LEGACY_MODES.get(legacy_mode, {})
+                quantization = cfg.get("type")
+
+            if quantization is None or quantization == "fp16":
+                # fp16 format — dataset named "per_residue"
+                per_residue = f["per_residue"][:].astype(np.float32)
+            elif quantization == "int4":
                 compressed = {
                     "data": f["per_residue_data"][:],
                     "scales": f["per_residue_scales"][:],
@@ -398,8 +412,7 @@ class OneEmbeddingCodec:
                     "dtype": "int4",
                 }
                 per_residue = dequantize_int4(compressed)
-
-            elif cfg["type"] == "binary":
+            elif quantization == "binary":
                 compressed = {
                     "bits": f["per_residue_bits"][:],
                     "means": f["per_residue_means"][:],
@@ -408,8 +421,7 @@ class OneEmbeddingCodec:
                     "dtype": "binary",
                 }
                 per_residue = dequantize_binary(compressed)
-
-            elif cfg["type"] == "pq":
+            elif quantization == "pq":
                 codes = f["pq_codes"][:]
                 if codebook_path is None:
                     raise ValueError("codebook_path required for PQ modes")
@@ -423,7 +435,7 @@ class OneEmbeddingCodec:
                     }
                 per_residue = pq_decode(codes, pq_model)
             else:
-                raise ValueError(f"Unknown mode: {mode}")
+                raise ValueError(f"Unknown quantization: {quantization}")
 
         return {
             "per_residue": per_residue,
@@ -447,10 +459,11 @@ class OneEmbeddingCodec:
                 keys = keys[:max_proteins]
 
             fout.attrs["metadata"] = json.dumps({
-                "codec": "one_embedding_v2",
-                "mode": self.mode,
-                "version": 2,
+                "codec": "one_embedding",
+                "version": 3,
                 "d_out": self.d_out,
+                "quantization": self.quantization,
+                "pq_m": self.pq_m,
                 "dct_k": self.dct_k,
                 "seed": self.seed,
                 "n_proteins": len(keys),
@@ -465,8 +478,11 @@ class OneEmbeddingCodec:
                 grp.attrs["seq_len"] = raw.shape[0]
                 grp.attrs["d_in"] = raw.shape[1]
 
-                mode_type = self.mode_cfg["type"]
-                if mode_type == "int4":
+                if self.quantization is None:
+                    grp.create_dataset("per_residue",
+                                       data=encoded["per_residue_fp16"],
+                                       compression="gzip", compression_opts=4)
+                elif self.quantization == "int4":
                     grp.create_dataset("per_residue_data",
                                        data=encoded["per_residue_data"],
                                        compression="gzip", compression_opts=4)
@@ -474,7 +490,7 @@ class OneEmbeddingCodec:
                                        data=encoded["per_residue_scales"])
                     grp.create_dataset("per_residue_zp",
                                        data=encoded["per_residue_zp"])
-                elif mode_type == "binary":
+                elif self.quantization == "binary":
                     grp.create_dataset("per_residue_bits",
                                        data=encoded["per_residue_bits"],
                                        compression="gzip", compression_opts=4)
@@ -482,7 +498,7 @@ class OneEmbeddingCodec:
                                        data=encoded["per_residue_means"])
                     grp.create_dataset("per_residue_scales",
                                        data=encoded["per_residue_scales"])
-                elif mode_type == "pq":
+                elif self.quantization == "pq":
                     grp.create_dataset("pq_codes", data=encoded["pq_codes"],
                                        compression="gzip", compression_opts=4)
 
