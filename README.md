@@ -1,15 +1,15 @@
 # One Embedding: Universal Compression for PLM Protein Embeddings
 
-A universal codec that compresses any protein language model's per-residue output into a compact, fixed-schema representation -- the **One Embedding**. The 1.0 codec projects to 768d (configurable) and stores as float16 in `.one.h5` format, achieving **275 KB/protein** (2.5x compression) with **97-100% retention** across 12+ tasks (Exp 43, BCa bootstrap CIs). Optional extreme compression tiers (PQ/int4/binary on 512d) go down to 10--52 KB. Works with any PLM (ProtT5, ESM2, ESM-C). Receiver needs only `h5py` and `numpy`.
+A universal codec that compresses any protein language model's per-residue output into a compact, fixed-schema representation -- the **One Embedding**. Default: ABTT3 + RP 768d + PQ M=192 → **~34 KB/protein** (~20x compression) with **92.8–100% retention** across 12+ tasks on 8+ datasets (Exp 44, paired bootstrap CIs). Configurable from lossless (1024d fp16, 2x) to extreme (binary, 41x). Works with any PLM (ProtT5, ESM2, ESM-C). Receiver needs `h5py`, `numpy`, and codebook file.
 
 ## TL;DR
 
-Protein language models produce large variable-length per-residue embedding matrices `(L, D)`. The 1.0 codec compresses each using: All-but-the-Top (remove top-3 corpus PCs) -> random projection to 768d (configurable) -> store as float16 in `.one.h5` format. A protein-level vector `(D*dct_k,)` is computed via DCT K=4 for retrieval/clustering. The 768d default preserves 97-100% task retention across 12+ tasks on 8+ datasets (Exp 43, rigorous BCa bootstrap CIs). Optional extreme compression tiers (on 512d) use PQ/int4/binary quantization for 10--52 KB payloads.
+Protein language models produce large variable-length per-residue embedding matrices `(L, D)`. The unified codec compresses each using: All-but-the-Top (remove top-3 corpus PCs) → random projection to 768d → PQ quantization (M=192, 4d sub-vectors) → store in `.one.h5` format. A protein-level vector `(D*dct_k,)` is computed via DCT K=4 for retrieval/clustering. Three knobs: `d_out` (768), `quantization` ('pq'), `pq_m` (auto=192).
 
-- **Retrieval/clustering**: `protein_vec` -> (3072,) vector at 768d. Cosine similarity.
-- **Per-residue (SS3, disorder)**: `per_residue` -> (L, 768) float16 embeddings.
+- **Retrieval/clustering**: `protein_vec` → (3072,) vector. Cosine similarity. Lossless across all configs.
+- **Per-residue (SS3, disorder)**: `per_residue` → (L, 768) decoded embeddings.
 
-232 compression methods benchmarked across 42 experiments to arrive at this design.
+232 compression methods benchmarked across 44 experiments to arrive at this design.
 
 ## Quick Start
 
@@ -60,9 +60,8 @@ uv sync
 # Extract embeddings (prerequisite for all experiments)
 uv run python experiments/01_extract_residue_embeddings.py
 
-# V2 codec benchmarks
-uv run python experiments/32_pq_on_rp512.py              # PQ sweep on preprocessed space
-uv run python experiments/34_progressive_codec.py          # V2 tiers benchmark
+# Unified codec benchmarks
+uv run python experiments/44_unified_codec_benchmark.py     # 768d quantization sweep (Exp 44)
 
 # Retention benchmarks
 uv run python experiments/36_toolkit_benchmark.py          # Disorder + SS3 retention
@@ -169,18 +168,19 @@ For extreme compression, PQ quantization can be applied on top of 512d projectio
 
 ![Storage Comparison](docs/figures/pub_storage_comparison.png)
 
-| Representation | Size/protein | Compression | Retrieval | Per-Residue |
-|----------------|:------------:|:-----------:|:---------:|:-----------:|
+| Representation | Size/protein | Compression | Ret@1 | Per-Residue |
+|----------------|:------------:|:-----------:|:-----:|:-----------:|
 | Raw ProtT5 (L, 1024) fp32 | 700 KB | 1x | Baseline | Baseline |
-| **1.0 codec (RP768) fp16** | **275 KB** | **2.5x** | **0.798** | **(L, 768)** |
-| V2 `balanced` PQ M=128 | 26 KB | 27x | 0.786 | (L, 512) |
-| V2 `full` int4 | 52 KB | 14x | 0.786 | (L, 512) |
-| V2 `compact` PQ M=64 | 15 KB | 47x | 0.786 | (L, 512) |
-| V1 codec (RP512) fp16 | 179 KB | 4x | 0.780 | (L, 512) |
-| protein_vec only (3072,) fp16 | 6 KB | 117x | 0.798 | No |
+| Lossless (1024d fp16) | 366 KB | 2x | 0.797 | (L, 1024) |
+| fp16 (768d) | 275 KB | 2.7x | 0.795 | (L, 768) |
+| int4 (768d) | 67 KB | 10x | 0.795 | (L, 768) |
+| **PQ M=192 (default)** | **34 KB** | **20x** | **0.795** | **(L, 768)** |
+| PQ M=128 | 23 KB | 30x | 0.795 | (L, 768) |
+| binary (768d) | 17 KB | 41x | 0.795 | (L, 768) |
+| protein_vec only (3072,) fp16 | 6 KB | 117x | 0.795 | No |
 | mean pool only (1024,) fp32 | 4 KB | 175x | 0.734 | No |
 
-Mean L=175 residues. V2 sizes are data payload; on-disk H5 files add ~7 KB.
+Mean L=175 residues. All 768d configs from Exp 44. Retrieval lossless across all quantizations.
 
 ## Built-in Tools
 
@@ -311,11 +311,9 @@ data['per_residue']   # (L, 768) float16
 data['protein_vec']   # (3072,) float16
 ```
 
-The 1.0 codec stores `(L, 768)` float16 per-residue embeddings + `(3072,)` protein vector. Size: ~275 KB/protein (2.5x compression). No quantization beyond float16. Pre-fitted ABTT weights available for ProtT5 and ESM2 via `OneEmbeddingCodec.for_plm('prot_t5', d_out=768)`.
+The unified codec stores PQ-compressed per-residue embeddings + `(3072,)` protein vector. Default: ~34 KB/protein (20x compression) with PQ M=192 on 768d. Slide `quantization=None` for fp16 (~275 KB, 2.7x) or `quantization='binary'` for 1-bit (~17 KB, 41x). Set `d_out=1024` for lossless mode (~366 KB, 2x, ~100% retention on everything).
 
-Use 512d (`d_out=512`, ~179 KB) for more compression, or add PQ tiers for extreme compression.
-
-## The Journey: 232 Methods in 42 Experiments
+## The Journey: 232 Methods in 44 Experiments
 
 ### Phase 1-4: Trained Compression (Experiments 1-10)
 
@@ -388,8 +386,8 @@ A pointwise MLP (1024 -> 512 -> 256) trained with unsupervised reconstruction th
 ```
 src/
   one_embedding/           Research library
-    core/                  Published codec (V1 Codec class, pre-fitted ABTT weights)
-    codec_v2.py            V2 codec with PQ support (5 quality tiers)
+    core/                  Package codec (pre-fitted ABTT weights)
+    codec_v2.py            Unified OneEmbeddingCodec (fp16/int4/PQ/binary, configurable)
     preprocessing.py       ABTT, PCA rotation
     quantization.py        int2/int4/int8/binary/PQ/RVQ
     transforms.py          DCT, Haar, spectral
@@ -413,9 +411,11 @@ experiments/
   18-23                    Universal codec candidates + path geometry
   25-26                    Universal codec benchmark + chained codecs
   28-29                    Extreme compression + exhaustive sweep
-  31-34                    V2 codec: bitwidth, PQ, VQ, progressive tiers
+  31-34                    V2 codec: bitwidth, PQ, VQ, progressive tiers (512d)
   35                       Embedding phylogenetics (MCMC + MrBayes)
   36-37                    Toolkit + structural retention benchmarks
+  43                       Rigorous benchmark framework (BCa CIs, CV-tuned, paired retention)
+  44                       Unified codec 768d sweep (6 configs, Exp 44)
   make_benchmark_barplots.py    Per-benchmark + V2 figures
   make_publication_figures.py   Publication figures
 

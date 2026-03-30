@@ -164,18 +164,18 @@ See [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) for the full journey (232 methods
 - Probes: CV-tuned (GridSearchCV on train set, 3-fold, C/alpha grids)
 - ABTT leakage: formally tested — PCs differ across corpora but downstream Ret@1 varies <0.2pp (irrelevant)
 
-758 tests, 12+ tasks, 8+ datasets, 2 PLMs. BCa CIs on everything.
+782 tests, 12+ tasks, 8+ datasets, 2 PLMs. BCa CIs on everything.
 
 ## Architecture
 - `one_embedding/` — **Published package** (one_embedding/core/ codec, one_embedding/extract/ PLM wrappers, one_embedding/tools/ 7 tools, one_embedding/cli.py, one_embedding/io.py .one.h5/.oemb format, one_embedding/__init__.py top-level API)
-- `src/one_embedding/` — **Research library**: OneEmbeddingCodec (V1), OneEmbeddingCodecV2 (PQ), transforms (DCT, Haar, spectral), universal codecs, preprocessing (ABTT, PCA rotation), quantization (int2/int4/int8/binary/PQ/RVQ), path transforms, enriched transforms, data analysis
+- `src/one_embedding/` — **Research library**: unified OneEmbeddingCodec (codec_v2.py: fp16/int4/PQ/binary, configurable d_out/quantization/pq_m), transforms (DCT, Haar, spectral), universal codecs, preprocessing (ABTT, PCA rotation), quantization (int2/int4/int8/binary/PQ/RVQ), path transforms, enriched transforms, data analysis
 - `src/compressors/` — ChannelCompressor (trained), AttentionPool, MLP-AE, VQ, baselines
 - `src/extraction/` — ESM2 + ProtT5 + ESM-C embedding extraction
 - `src/training/` — Unified trainer with reconstruction, contrastive, VICReg losses
 - `src/evaluation/` — Retrieval (cosine+euclidean), per-residue probes (SS3/SS8/disorder/TM/SignalP), biological annotations (GO/EC/Pfam/taxonomy), hierarchy, statistical tests, FAISS search index
 - `src/utils/` — Device management (MPS/CPU), H5 I/O
-- `experiments/` — 43 experiment scripts (01–43) + figure generators. Exp 43 = rigorous benchmark framework (14 golden rules, 758 tests)
-- `tests/` — 758 tests across multiple modules
+- `experiments/` — 44 experiment scripts (01–44) + figure generators. Exp 43 = rigorous benchmark framework, Exp 44 = unified codec 768d sweep
+- `tests/` — 782 tests across multiple modules
 - `.one.h5 format` — H5-based single/batch protein embedding files (protein_vec + per_residue). Legacy `.oemb` also supported.
 
 ## Hardware

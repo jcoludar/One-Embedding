@@ -37,20 +37,23 @@ Built a rule-enforced benchmark framework (14 golden rules) to honestly validate
 - **Phase D**: Ablation — ABTT contributes +0.6pp retrieval, RP costs -0.3pp SS3, fp16 is 0.0pp (lossless). No length-dependent degradation
 - **ABTT Stability**: Cross-corpus stability test — PCs differ across corpora (subspace similarity 0.18-0.71) but downstream Ret@1 varies by only 0.20pp. ABTT fitting corpus choice is irrelevant for performance.
 
-758 tests, 12+ tasks, 8+ datasets, 2 PLMs. BCa CIs on everything.
+782 tests, 12+ tasks, 8+ datasets, 2 PLMs. BCa CIs on everything.
 
-### V2 Extreme Compression — Rigorous Re-validation
-Replaced Exp 34 results (hardcoded C=1.0 probes) with Exp 43 framework (CV-tuned, BCa CIs, pooled disorder ρ). All 5 V2 modes benchmarked:
+### V2 Extreme Compression — Rigorous Re-validation (512d, Exp 43)
+Replaced Exp 34 results (hardcoded C=1.0 probes) with Exp 43 framework (CV-tuned, BCa CIs, pooled disorder ρ). All 5 V2 modes on 512d benchmarked. Key finding: retrieval is **lossless across all modes** (100.2%). Binary matches full for disorder (90.0%) — RaBitQ effect.
 
-| Mode | Size | SS3 Ret | SS8 Ret | Disorder Ret | Ret@1 Ret |
-|------|:----:|:-------:|:-------:|:------------:|:---------:|
-| full (int4) | 48 KB | 96.6% | 95.3% | 90.0% | **100.2%** |
-| balanced (PQ M=128) | 26 KB | 95.7% | 93.4% | 88.0% | **100.2%** |
-| binary (1-bit) | 15 KB | 91.7% | 89.1% | 90.0% | **100.2%** |
-| compact (PQ M=64) | 15 KB | 91.8% | 88.8% | 82.7% | **100.2%** |
-| micro (PQ M=32) | 10 KB | 87.0% | 82.6% | 74.6% | **100.2%** |
+### Phase 11: Unified Codec + 768d Quantization Sweep (Experiment 44)
+Merged V1 (fp16) and V2 (quantized) into single `OneEmbeddingCodec` with three knobs: `d_out`, `quantization`, `pq_m`. First-ever benchmarks of PQ/int4/binary on 768d:
 
-Key findings: retrieval is **lossless across all modes** (100.2%). Binary matches full for disorder (90.0% both) — RaBitQ effect confirmed. Old hardcoded-probe numbers (e.g., SS3=0.807 for balanced) were slightly inflated vs CV-tuned (0.804).
+| Config | Size (L=175) | Compression | SS3 Ret | Dis Ret | Ret Ret |
+|--------|:----------:|:-----------:|:-------:|:-------:|:-------:|
+| lossless (1024d fp16) | 366 KB | 2x | 100.0 ± 0.2% | 99.9 ± 0.1% | 100.4 ± 0.5% |
+| int4 (768d) | 67 KB | 10x | 99.2 ± 0.6% | 94.8 ± 2.2% | 100.2 ± 0.6% |
+| **PQ M=192 (default)** | **34 KB** | **20x** | **98.8 ± 0.5%** | **92.8 ± 2.7%** | **100.2 ± 0.6%** |
+| PQ M=128 | 23 KB | 30x | 97.1 ± 0.6% | 90.6 ± 2.9% | 100.2 ± 0.6% |
+| binary (768d) | 17 KB | 41x | 95.9 ± 0.7% | 92.5 ± 2.7% | 100.2 ± 0.6% |
+
+Key findings: int4 is indistinguishable from fp16 at 10x compression. Lossless (1024d, no RP) truly achieves ~100% on everything including disorder. Binary still beats PQ M=128 on disorder (RaBitQ on 768d). Default set to PQ M=192 (~20x) — 30x showed borderline disorder retention (90.6%, CI touching 87.7%).
 
 ---
 
