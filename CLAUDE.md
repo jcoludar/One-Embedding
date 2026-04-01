@@ -1,34 +1,35 @@
 # Protein Embedding Codec
 
 ## Project Overview
-Universal codec for PLM per-residue embeddings. **232 compression methods benchmarked** across 44 experiments. The unified codec uses ABTT3 + RP 768d + PQ M=192 by default, achieving **~34 KB/protein** (~20x compression) with **92.8–100% retention** across 12+ tasks on 8+ datasets (Exp 44, rigorous benchmarks with paired bootstrap CIs). Configurable: `d_out` (768), `quantization` ('pq'), `pq_m` (auto). Ranges from lossless (1024d fp16, 2x) to extreme (binary, 41x).
+Universal codec for PLM per-residue embeddings. **232 compression methods benchmarked** across 47 experiments, validated on **5 PLMs** (ProtT5, ESM2, ESM-C, ProstT5, ANKH). The unified codec uses center + RP 896d + binary by default, achieving **~17 KB/protein** (~37x compression) with **95–100% retention** across 6 tasks on 5 PLMs (Exp 46/47, BCa CIs). Binary is 20x faster to encode than PQ and needs no codebook. Configurable: `d_out` (896), `quantization` ('binary'), `pq_m` (auto), `abtt_k` (0). Use `quantization='pq', pq_m=224` for maximum quality at 18x.
 
 ## Quick Start
 
 ### One Embedding Package (recommended)
 ```python
-import one_embedding as oe
+from src.one_embedding.codec_v2 import OneEmbeddingCodec
 
-# Encode raw PLM embeddings to .one.h5 format
-oe.encode("raw_embeddings.h5", "compressed.one.h5")
+# Fit codec on training data
+codec = OneEmbeddingCodec()  # default: 896d binary, ~37x, no codebook
+codec.fit(training_embeddings)  # dict of {pid: (L, D) arrays} — for centering stats
+
+# Encode (binary: no codebook needed, 1500 proteins/s)
+encoded = codec.encode(raw_embeddings)  # (L, 1024) -> compressed dict
+codec.save(encoded, "protein.one.h5")
 
 # Decode
-data = oe.decode("compressed.one.h5")
-data['per_residue']   # (L, D) for per-residue tasks (768d default)
-data['protein_vec']   # (D*K,) for retrieval / clustering / UMAP
+data = OneEmbeddingCodec.load("protein.one.h5")
+data['per_residue']   # (L, 896) for per-residue tasks
+data['protein_vec']   # (3584,) for retrieval / clustering / UMAP
 
-# Embed sequences directly (ProtT5 or ESM2)
-vecs = oe.embed(["MKTAYIAKQRQISFVKSHFSRQ..."], model="prot_t5")
-```
+# Batch encode/decode
+codec.encode_h5_to_h5("raw.h5", "compressed.h5")
+batch = OneEmbeddingCodec.load_batch("compressed.h5")
 
-```bash
-# CLI
-one-embedding encode raw.h5 compressed.one.h5
-one-embedding inspect compressed.one.h5
-one-embedding disorder compressed.one.h5
-one-embedding search query.one.h5 database/ --top-k 10
-
-# 7 built-in tools: disorder, classify, search, align, ss3, conserve, mutate
+# Max quality mode (PQ, needs codebook)
+codec = OneEmbeddingCodec(quantization='pq', pq_m=224)
+codec.fit(training_embeddings)
+codec.save_codebook("codebook.h5")
 ```
 
 ### Low-level API (research / custom pipelines)
@@ -62,37 +63,37 @@ uv run python experiments/13_robust_validation.py --step R1
 
 ## One Embedding 1.0 (Recommended)
 
-Pipeline: ABTT k=3 → RP to d_out (768 default, skip if d_out≥D_in) → quantize → DCT K=4 protein vector.
-Three knobs: `d_out` (768), `quantization` ('pq'), `pq_m` (auto=192). PQ modes require codebook fitting.
+Pipeline: center → RP to d_out (896 default, skip if d_out≥D_in) → quantize → DCT K=4 protein vector.
+Four knobs: `d_out` (896), `quantization` ('binary'), `pq_m` (auto), `abtt_k` (0). Binary is the default: 37x compression, no codebook needed, 1500 proteins/s encoding. Use `quantization='pq'` for max quality (18x). ABTT off by default — Exp 45 showed it destroys disorder signal.
 
 | Config | Quantization | Size (L=175) | Compression | SS3 Ret | SS8 Ret | Dis Ret | Ret Ret |
 |--------|-------------|:----------:|:-----------:|:-------:|:-------:|:-------:|:-------:|
 | lossless (1024d) | fp16 | 366 KB | 2x | 100.0 ± 0.2% | 100.0 ± 0.3% | 99.9 ± 0.1% | 100.4 ± 0.5% |
 | fp16 (768d) | fp16 | 275 KB | 2.7x | 99.1 ± 0.5% | 98.7 ± 0.6% | 95.0 ± 2.1% | 100.2 ± 0.6% |
 | int4 (768d) | int4 | 67 KB | 10x | 99.2 ± 0.6% | 98.6 ± 0.6% | 94.8 ± 2.2% | 100.2 ± 0.6% |
-| **PQ M=192 (768d, default)** | **PQ** | **34 KB** | **20x** | **98.8 ± 0.5%** | **97.6 ± 0.8%** | **92.8 ± 2.7%** | **100.2 ± 0.6%** |
+| PQ M=192 (768d) | PQ | 34 KB | 20x | 98.8 ± 0.5% | 97.6 ± 0.8% | 92.8 ± 2.7% | 100.2 ± 0.6% |
 | PQ M=128 (768d) | PQ | 23 KB | 30x | 97.1 ± 0.6% | 95.3 ± 0.8% | 90.6 ± 2.9% | 100.2 ± 0.6% |
 | binary (768d) | 1-bit sign | 17 KB | 41x | 95.9 ± 0.7% | 93.6 ± 1.0% | 92.5 ± 2.7% | 100.2 ± 0.6% |
 
 All Exp 44, rigorous (BCa CIs, CV-tuned probes, paired bootstrap retention, pooled disorder ρ). Retrieval **lossless across all configs** (100.2 ± 0.6%). int4 is indistinguishable from fp16 at 10x compression. Binary beats PQ M=128 on disorder (92.5% vs 90.6%) — RaBitQ effect.
 
 ```python
-# Unified codec: default ~20x compression, just works
+# Default codec: binary, ~37x compression, no codebook needed
 from src.one_embedding.codec_v2 import OneEmbeddingCodec
-codec = OneEmbeddingCodec()
-codec.fit(training_embeddings)
+codec = OneEmbeddingCodec()  # binary 896d
+codec.fit(training_embeddings)  # centering stats only
 codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.one.h5")
 
-# Decode (receiver side — h5py + numpy + codebook)
-data = OneEmbeddingCodec.load("compressed.one.h5", codebook_path="codebook.h5")
-data['per_residue']   # (L, 768) for per-residue tasks
-data['protein_vec']   # (3072,) for retrieval / clustering / UMAP
+# Decode batch (receiver side — h5py + numpy only, no codebook)
+proteins = OneEmbeddingCodec.load_batch("compressed.one.h5")
+proteins['P12345']['per_residue']   # (L, 896) for per-residue tasks
+proteins['P12345']['protein_vec']   # (3584,) for retrieval / clustering / UMAP
 
 # Max fidelity — no RP, ~100% retention on everything
 codec = OneEmbeddingCodec(d_out=1024, quantization=None)
 
-# More compression — binary, 41x
-codec = OneEmbeddingCodec(quantization='binary')
+# Max quality — PQ M=224, 18x (needs codebook)
+codec = OneEmbeddingCodec(quantization='pq', pq_m=224)
 ```
 
 ### Rigorous Retention Benchmarks (Exp 43, 768d vs raw ProtT5)
@@ -109,9 +110,9 @@ All numbers include 95% BCa bootstrap CIs (DiCiccio & Efron 1996, second-order a
 | SS8 (Q8) | per-residue | CB513 (103) | 0.716 [0.697, 0.734] | 0.707 [0.689, 0.725] | **98.8 ± 0.6%** |
 | SS8 (Q8) | per-residue | TS115 (115) | 0.732 [0.715, 0.748] | 0.717 [0.701, 0.733] | **98.0 ± 0.7%** |
 | SS8 (Q8) | per-residue | CASP12 (20) | 0.662 [0.629, 0.695] | 0.647 [0.611, 0.682] | **97.6 ± 1.7%** |
-| Disorder (pooled ρ) | per-residue | CheZOD117 (117) | 0.663 [0.636, 0.688] | 0.629 [0.601, 0.656] | **94.9 ± 2.0%** |
-| Disorder (pooled ρ) | per-residue | TriZOD348 (348) | 0.506 [0.476, 0.536] | 0.471 [0.439, 0.502] | **93.0 ± 2.6%** |
-| Disorder (AUC-ROC) | per-residue | CheZOD117 (117) | 0.864 [0.848, 0.878] | 0.848 [0.831, 0.864] | **98.1%** |
+| Disorder (pooled ρ) | per-residue | CheZOD117 (117) | 0.663 [0.585, 0.723] | 0.629 [0.548, 0.691] | **94.9 ± 2.0%** |
+| Disorder (pooled ρ) | per-residue | TriZOD348 (348) | 0.506 [0.461, 0.566] | 0.471 [0.426, 0.533] | **93.0 ± 2.6%** |
+| Disorder (AUC-ROC) | per-residue | CheZOD117 (117) | 0.890 [0.836, 0.922] | 0.877 [0.826, 0.909] | **98.6%** |
 
 Disorder uses **pooled residue-level** Spearman ρ (matching SETH/ODiNPred/ADOPT/UdonPred standard) with cluster bootstrap CIs (resample proteins, recompute pooled statistic — Davison & Hinkley 1997). AUC-ROC computed on binary Z<8 threshold (CAID standard).
 
@@ -154,7 +155,7 @@ Length stress test: no degradation (short 99.8%, medium 100.7%, long 101.3%).
 
 ## Experiment History & Methodology
 
-See [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) for the full journey (232 methods, 43 experiments, idea space).
+See [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) for the full journey (232 methods, 47 experiments, idea space).
 
 **Benchmark methodology (Nature-level, Exp 43):**
 - Bootstrap: BCa (DiCiccio & Efron 1996), B=10,000, percentile fallback for n<25
@@ -164,18 +165,40 @@ See [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) for the full journey (232 methods
 - Probes: CV-tuned (GridSearchCV on train set, 3-fold, C/alpha grids)
 - ABTT leakage: formally tested — PCs differ across corpora but downstream Ret@1 varies <0.2pp (irrelevant)
 
-782 tests, 12+ tasks, 8+ datasets, 2 PLMs. BCa CIs on everything.
+798 tests, 6 tasks, 8 datasets, 5 PLMs. BCa CIs on everything.
+
+**Multi-PLM validation (Exp 46, center + RP896 + PQ224, ~18x):**
+
+| PLM | dim | SS3 ret | SS8 ret | Ret@1 ret | Dis ret |
+|-----|:---:|:-------:|:-------:|:---------:|:-------:|
+| ProstT5 | 1024 | 99.2±0.3% | 98.6±0.5% | 100.0±0.5% | 98.3±1.1% |
+| ProtT5-XL | 1024 | 99.0±0.5% | 98.5±0.6% | 100.6±0.6% | 95.4±1.9% |
+| ESM-C 600M | 1152 | 98.3±0.5% | 97.6±0.7% | 102.6±2.9% | 98.1±1.0% |
+| ANKH-large | 1536 | 97.9±0.5% | 96.3±0.8% | 99.9±0.6% | 94.8±2.3% |
+| ESM2-650M | 1280 | 97.6±0.7% | 96.5±0.7% | 97.8±1.6% | 98.8±0.9% |
+
+**Codec sweep (Exp 47, ProtT5, standard tiers):**
+
+| Config | Compression | SS3 ret | SS8 ret | Ret@1 ret | Dis ret |
+|--------|:-----------:|:-------:|:-------:|:---------:|:-------:|
+| lossless 1024d | 2x | 100.2% | 100.0% | 100.4% | 100.0% |
+| fp16 896d | 2.3x | 100.0% | 99.2% | 100.6% | 98.6% |
+| int4 896d | 9x | 99.8% | 98.8% | 100.4% | 98.2% |
+| **PQ M=224 896d** | **18x** | **99.0%** | **98.5%** | **100.6%** | **95.4%** |
+| PQ M=128 896d | 32x | 97.5% | 96.1% | 100.1% | 91.4% |
+| binary 896d | 37x | 97.6% | 95.0% | 100.4% | 94.9% |
+
+VQ/RVQ confirmed genuinely poor (not bug-caused): VQ K=16384 gets 79% SS3 ret, 58% Dis ret.
 
 ## Architecture
-- `one_embedding/` — **Published package** (one_embedding/core/ codec, one_embedding/extract/ PLM wrappers, one_embedding/tools/ 7 tools, one_embedding/cli.py, one_embedding/io.py .one.h5/.oemb format, one_embedding/__init__.py top-level API)
-- `src/one_embedding/` — **Research library**: unified OneEmbeddingCodec (codec_v2.py: fp16/int4/PQ/binary, configurable d_out/quantization/pq_m), transforms (DCT, Haar, spectral), universal codecs, preprocessing (ABTT, PCA rotation), quantization (int2/int4/int8/binary/PQ/RVQ), path transforms, enriched transforms, data analysis
+- `src/one_embedding/` — **Unified codec + research library**: OneEmbeddingCodec (codec_v2.py: fp16/int4/PQ/binary, configurable d_out/quantization/pq_m), transforms (DCT, Haar, spectral), universal codecs, preprocessing (ABTT, PCA rotation), quantization (int2/int4/int8/binary/PQ/RVQ), path transforms, enriched transforms, data analysis, I/O (.one.h5/.oemb format)
 - `src/compressors/` — ChannelCompressor (trained), AttentionPool, MLP-AE, VQ, baselines
 - `src/extraction/` — ESM2 + ProtT5 + ESM-C embedding extraction
 - `src/training/` — Unified trainer with reconstruction, contrastive, VICReg losses
 - `src/evaluation/` — Retrieval (cosine+euclidean), per-residue probes (SS3/SS8/disorder/TM/SignalP), biological annotations (GO/EC/Pfam/taxonomy), hierarchy, statistical tests, FAISS search index
 - `src/utils/` — Device management (MPS/CPU), H5 I/O
-- `experiments/` — 44 experiment scripts (01–44) + figure generators. Exp 43 = rigorous benchmark framework, Exp 44 = unified codec 768d sweep
-- `tests/` — 782 tests across multiple modules
+- `experiments/` — 47 experiment scripts (01–47) + figure generators. Exp 43 = rigorous benchmark, Exp 44 = unified codec sweep, Exp 45 = disorder forensics, Exp 46 = multi-PLM pipeline (5 PLMs), Exp 47 = codec config sweep
+- `tests/` — 798 tests across multiple modules
 - `.one.h5 format` — H5-based single/batch protein embedding files (protein_vec + per_residue). Legacy `.oemb` also supported.
 
 ## Hardware

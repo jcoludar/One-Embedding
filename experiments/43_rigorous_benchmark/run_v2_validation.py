@@ -17,7 +17,6 @@ import sys
 import time
 from pathlib import Path
 
-import h5py
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -84,13 +83,7 @@ def metric_to_dict(m):
     return m
 
 
-def _pooled_spearman(cluster_data):
-    """Compute pooled Spearman rho across all residues in cluster_data."""
-    from scipy.stats import spearmanr
-    all_true = np.concatenate([d["y_true"] for d in cluster_data])
-    all_pred = np.concatenate([d["y_pred"] for d in cluster_data])
-    rho, _ = spearmanr(all_true, all_pred)
-    return float(rho) if not np.isnan(rho) else 0.0
+from runners.per_residue import pooled_spearman as _pooled_spearman
 
 
 def main():

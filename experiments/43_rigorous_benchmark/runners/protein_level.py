@@ -96,6 +96,7 @@ def run_retrieval_benchmark(
     results = {}
     for metric in ["cosine", "euclidean"]:
         per_query = _retrieval_ret1(vectors, metadata, label_key, metric)
+        results[f"per_query_{metric}"] = per_query
         if per_query:
             ret1_ci = bootstrap_ci(per_query, n_bootstrap=n_bootstrap, seed=seed)
             results[f"ret1_{metric}"] = ret1_ci
@@ -103,10 +104,4 @@ def run_retrieval_benchmark(
             results[f"ret1_{metric}"] = MetricResult(value=0.0, ci_lower=0.0, ci_upper=0.0, n=0)
 
     results["n_queries"] = len(vectors)
-
-    # Expose per-query scores for paired retention CI computation
-    for metric in ["cosine", "euclidean"]:
-        per_query = _retrieval_ret1(vectors, metadata, label_key, metric)
-        results[f"per_query_{metric}"] = per_query
-
     return results

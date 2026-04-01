@@ -1455,6 +1455,7 @@ class MC3Runner:
             ci.sigma2, cj.sigma2 = cj.sigma2, ci.sigma2
             ci.logL, cj.logL = cj.logL, ci.logL
             ci.log_prior, cj.log_prior = cj.log_prior, ci.log_prior
+            ci.bm, cj.bm = cj.bm, ci.bm
             self.n_swaps_accepted += 1
 
 
@@ -2381,7 +2382,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     fig.savefig(RESULTS_DIR / f"{ds}_diagnostics.png", dpi=150)
     plt.close()
-    print(f"  Saved: {RESULTS_DIR / 'conotoxin_diagnostics.png'}")
+    print(f"  Saved: {RESULTS_DIR / f'{ds}_diagnostics.png'}")
 
     with open(BENCH_PATH, "w") as f:
         json.dump(results, f, indent=2, default=float)

@@ -1,6 +1,6 @@
-"""Backward compatibility — imports unified codec from codec_v2.
+"""Unified codec — re-export from codec_v2.
 
-All new code should use:
+All code should use:
     from src.one_embedding.codec_v2 import OneEmbeddingCodec
 """
 

@@ -52,7 +52,7 @@ class TestEncode:
         result = codec.encode(raw_embedding)
         meta = result["metadata"]
         assert meta["codec"] == "one_embedding"
-        assert meta["version"] == 3
+        assert meta["version"] == 4
         assert meta["d_in"] == 1024
         assert meta["d_out"] == 512
         assert meta["dct_k"] == 4
@@ -122,7 +122,7 @@ class TestBatch:
             import json
             meta = json.loads(f.attrs["metadata"])
             assert meta["codec"] == "one_embedding"
-            assert meta["version"] == 3
+            assert meta["version"] == 4
             pids = list(f.keys())
             assert len(pids) == 3
             for pid in pids:

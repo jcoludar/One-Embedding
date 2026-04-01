@@ -1,0 +1,56 @@
+{
+  "codec": "center + RP896 + PQ M=224 (18x)",
+  "ss3_cb513": {
+    "raw": 0.8402178716664075,
+    "comp": 0.8320907200213195,
+    "retention": 99.03273282809738,
+    "retention_ci": [
+      98.56255567172882,
+      99.50240585617385
+    ]
+  },
+  "ss8_cb513": {
+    "raw": 0.7158267826797725,
+    "comp": 0.7052248992292574,
+    "retention": 98.51893171545973,
+    "retention_ci": [
+      97.94364407016532,
+      99.10951728921945
+    ]
+  },
+  "ret1_scope": {
+    "raw": 0.793822703569996,
+    "comp": 0.7986361813076615,
+    "retention": 100.60636685194544,
+    "retention_ci": [
+      100.0,
+      101.2332990750257
+    ]
+  },
+  "dis_chezod": {
+    "raw": 0.6626925021248122,
+    "comp": 0.6321564401989741,
+    "retention": 95.39212201316155,
+    "retention_ci": [
+      93.27847042646533,
+      96.99572774102316
+    ]
+  },
+  "timing": {
+    "fit_time_s": 204.7,
+    "fit_n_proteins": 2493,
+    "encode_per_protein_ms": 12.55,
+    "roundtrip_per_protein_ms": 13.26,
+    "encode_proteins_per_s": 80,
+    "encode_residues_per_s": 12486,
+    "bottleneck": "PQ encode (70.6 us/residue = 88% of total)",
+    "mean_protein_length": 156,
+    "stages_ms_per_protein": {
+      "center": 0.1,
+      "rp_1024_896": 0.81,
+      "pq_encode": 11.07,
+      "dct_k4": 0.82,
+      "pq_decode": 0.68
+    }
+  }
+}

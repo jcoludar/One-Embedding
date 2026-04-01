@@ -428,8 +428,8 @@ def run_localization_benchmark(
     raw_per_protein_scores = {}  # {pid: 1.0/0.0} across all seeds
     comp_per_protein_scores = {}
 
-    raw_seed_results = []
-    comp_seed_results = []
+    raw_seed_score_dicts = []
+    comp_seed_score_dicts = []
 
     for seed in seeds:
         # Raw
@@ -438,13 +438,11 @@ def run_localization_benchmark(
             X_test=raw_test_vecs, y_test=y_test,
             C_grid=C_grid, cv_folds=cv_folds, seed=seed,
         )
-        # Per-protein correct/incorrect for bootstrap
         raw_correct = {
             test_ids[i]: 1.0 if raw_probe["predictions"][i] == y_test[i] else 0.0
             for i in range(len(test_ids))
         }
-        raw_q10 = bootstrap_ci(raw_correct, n_bootstrap=n_bootstrap, seed=seed)
-        raw_seed_results.append(raw_q10)
+        raw_seed_score_dicts.append(raw_correct)
 
         # Compressed
         comp_probe = train_classification_probe(
@@ -456,19 +454,18 @@ def run_localization_benchmark(
             test_ids[i]: 1.0 if comp_probe["predictions"][i] == y_test[i] else 0.0
             for i in range(len(test_ids))
         }
-        comp_q10 = bootstrap_ci(comp_correct, n_bootstrap=n_bootstrap, seed=seed)
-        comp_seed_results.append(comp_q10)
+        comp_seed_score_dicts.append(comp_correct)
 
-        # Accumulate per-protein scores for paired bootstrap (use last seed)
-        raw_per_protein_scores = raw_correct
-        comp_per_protein_scores = comp_correct
+    # Average per-protein scores across seeds, then bootstrap (Bouthillier et al. 2021)
+    from metrics.statistics import averaged_multi_seed
+    raw_q10_summary = averaged_multi_seed(raw_seed_score_dicts, n_bootstrap=n_bootstrap, seed=seeds[0])
+    comp_q10_summary = averaged_multi_seed(comp_seed_score_dicts, n_bootstrap=n_bootstrap, seed=seeds[0])
 
-    # Multi-seed summary
-    from metrics.statistics import multi_seed_summary
-    raw_q10_summary = multi_seed_summary(raw_seed_results) if len(seeds) > 1 else raw_seed_results[0]
-    comp_q10_summary = multi_seed_summary(comp_seed_results) if len(seeds) > 1 else comp_seed_results[0]
+    # Averaged per-protein scores for paired bootstrap retention
+    common_pids = sorted(set.intersection(*[set(s.keys()) for s in raw_seed_score_dicts]))
+    raw_per_protein_scores = {pid: float(np.mean([s[pid] for s in raw_seed_score_dicts])) for pid in common_pids}
+    comp_per_protein_scores = {pid: float(np.mean([s[pid] for s in comp_seed_score_dicts])) for pid in common_pids}
 
-    # Paired bootstrap retention (on the median seed's per-protein scores)
     retention = paired_bootstrap_retention(
         raw_scores=raw_per_protein_scores,
         comp_scores=comp_per_protein_scores,

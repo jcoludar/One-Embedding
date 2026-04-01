@@ -437,16 +437,11 @@ def main():
         print(fmt_retention("Disorder retention (pooled)", dis_comp["pooled_spearman_rho"].value, dis_raw["pooled_spearman_rho"].value))
 
         # Paired cluster bootstrap retention for disorder (pooled rho)
-        from scipy.stats import spearmanr as _spearmanr
-        def _pooled_spearman(cluster_data):
-            all_true = np.concatenate([d["y_true"] for d in cluster_data])
-            all_pred = np.concatenate([d["y_pred"] for d in cluster_data])
-            rho, _ = _spearmanr(all_true, all_pred)
-            return float(rho) if not np.isnan(rho) else 0.0
+        from runners.per_residue import pooled_spearman
 
         dis_ret_ci = paired_cluster_bootstrap_retention(
             dis_raw["per_protein_predictions"], dis_comp["per_protein_predictions"],
-            _pooled_spearman, n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+            pooled_spearman, n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
         )
         print(f"  Disorder pooled retention: {dis_ret_ci.value:.1f} ± {(dis_ret_ci.ci_upper - dis_ret_ci.ci_lower) / 2:.1f}%")
 

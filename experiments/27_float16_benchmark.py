@@ -34,7 +34,6 @@ from src.evaluation.per_residue_tasks import (
 from src.extraction.data_loader import filter_by_family_size, load_metadata_csv
 from src.one_embedding.codec_v2 import OneEmbeddingCodec
 from src.one_embedding.transforms import dct_summary
-from src.one_embedding.universal_transforms import random_orthogonal_project
 from src.utils.h5_store import load_residue_embeddings
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"

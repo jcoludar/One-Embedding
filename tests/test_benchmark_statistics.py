@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from rules import MetricResult
 from metrics.statistics import (
-    bootstrap_ci, multi_seed_summary, averaged_multi_seed,
+    bootstrap_ci, averaged_multi_seed,
     paired_bootstrap_retention, paired_bootstrap_metric,
     paired_cluster_bootstrap_retention,
 )
@@ -85,29 +85,20 @@ class TestBCaBootstrap:
         assert r1.value == r2.value
 
 
-class TestMultiSeedSummary:
+class TestBootstrapCIEdgeCases:
 
-    def test_returns_metric_result_with_seeds(self):
-        seed_results = [
-            MetricResult(value=0.95, ci_lower=0.93, ci_upper=0.97, n=100),
-            MetricResult(value=0.94, ci_lower=0.92, ci_upper=0.96, n=100),
-            MetricResult(value=0.96, ci_lower=0.94, ci_upper=0.98, n=100),
-        ]
-        result = multi_seed_summary(seed_results)
-        assert isinstance(result, MetricResult)
-        assert result.seeds_mean is not None
-        assert result.seeds_std is not None
+    def test_single_item_returns_exact(self):
+        scores = {"p0": 0.75}
+        result = bootstrap_ci(scores)
+        assert result.value == 0.75
+        assert result.ci_lower == 0.75
+        assert result.ci_upper == 0.75
+        assert result.n == 1
+        assert result.ci_method == "exact"
 
-    def test_median_seed_selected(self):
-        seed_results = [
-            MetricResult(value=0.90, ci_lower=0.88, ci_upper=0.92, n=100),
-            MetricResult(value=0.95, ci_lower=0.93, ci_upper=0.97, n=100),
-            MetricResult(value=1.00, ci_lower=0.98, ci_upper=1.02, n=100),
-        ]
-        result = multi_seed_summary(seed_results)
-        assert result.value == 0.95
-        assert result.ci_lower == 0.93
-        assert result.ci_upper == 0.97
+    def test_empty_raises(self):
+        with pytest.raises(ValueError, match="must not be empty"):
+            bootstrap_ci({})
 
 
 class TestPairedBootstrapRetention:

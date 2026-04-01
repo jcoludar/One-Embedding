@@ -61,6 +61,7 @@ def train_classification_probe(
     return {
         "predictions": predictions,
         "best_C": best_C,
+        "fitted_model": grid.best_estimator_,
         "accuracy": float(accuracy_score(y_test, predictions)),
         "macro_f1": float(f1_score(y_test, predictions, average="macro", zero_division=0)),
         "weighted_f1": float(f1_score(y_test, predictions, average="weighted", zero_division=0)),
@@ -107,6 +108,7 @@ def train_regression_probe(
     return {
         "predictions": predictions,
         "best_alpha": float(model.alpha_),
+        "fitted_model": model,
         "spearman_rho": float(rho),
         "p_value": float(p_value),
         "mse": mse,

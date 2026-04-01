@@ -31,14 +31,6 @@ V2_CONFIGS = {
     "binary":   {"d_out": 512, "quantization": "binary", "pq_m": None, "desc": "1-bit sign quantization",          "type": "binary"},
 }
 
-from src.one_embedding.transforms import dct_summary
-from src.one_embedding.preprocessing import compute_corpus_stats, all_but_the_top
-from src.one_embedding.universal_transforms import random_orthogonal_project
-from src.one_embedding.quantization import (
-    quantize_int4, dequantize_int4,
-    quantize_binary, dequantize_binary,
-    pq_encode, pq_decode,
-)
 from src.evaluation.retrieval import evaluate_retrieval_from_vectors
 from src.evaluation.per_residue_tasks import (
     evaluate_ss3_probe, evaluate_ss8_probe,
@@ -255,15 +247,6 @@ def step_D1(results):
         print(f"    [{elapsed:.0f}s]")
 
         del encoded_all
-
-    # ── Add raw ProtT5 baseline ──
-    print(f"\n  ═══ Raw ProtT5 baseline ═══")
-    from src.evaluation.per_residue_tasks import evaluate_ss3_probe as _ss3
-    plm_pr = {}
-    for ds_name, ds_data in [
-        ("ss3", (cb513_raw, ss3_labels, cb_train, cb_test)),
-    ]:
-        pass  # Already have baseline from plm benchmark suite
 
     results["D1"] = d1_results
     results["steps_done"].append("D1")

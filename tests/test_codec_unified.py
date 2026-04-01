@@ -3,29 +3,26 @@
 import sys
 from pathlib import Path
 
+import h5py
 import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.one_embedding.codec_v2 import auto_pq_m
+from src.one_embedding.codec_v2 import OneEmbeddingCodec, auto_pq_m
 
 
 class TestAutoPqM:
     def test_768d_gives_192(self):
-        """768 // 4 = 192, divides evenly."""
         assert auto_pq_m(768) == 192
 
     def test_512d_gives_128(self):
-        """512 // 4 = 128, divides evenly."""
         assert auto_pq_m(512) == 128
 
     def test_1024d_gives_256(self):
-        """1024 // 4 = 256, divides evenly."""
         assert auto_pq_m(1024) == 256
 
     def test_1280d_gives_320(self):
-        """1280 // 4 = 320, divides evenly."""
         assert auto_pq_m(1280) == 320
 
     def test_result_divides_d_out(self):
@@ -34,15 +31,13 @@ class TestAutoPqM:
             assert d % m == 0, f"d_out={d}, pq_m={m}, remainder={d % m}"
 
 
-from src.one_embedding.codec_v2 import OneEmbeddingCodec
-
-
 class TestConstructor:
     def test_defaults(self):
         codec = OneEmbeddingCodec()
-        assert codec.d_out == 768
-        assert codec.quantization == "pq"
-        assert codec.pq_m == 192
+        assert codec.d_out == 896
+        assert codec.quantization == "binary"
+        assert codec.pq_m is None
+        assert codec.abtt_k == 0
 
     def test_quantization_none(self):
         codec = OneEmbeddingCodec(quantization=None)
@@ -59,8 +54,8 @@ class TestConstructor:
         assert codec.quantization == 'binary'
 
     def test_custom_pq_m(self):
-        codec = OneEmbeddingCodec(quantization='pq', pq_m=192)
-        assert codec.pq_m == 192
+        codec = OneEmbeddingCodec(quantization='pq', pq_m=224)
+        assert codec.pq_m == 224
 
     def test_invalid_pq_m_raises(self):
         with pytest.raises(ValueError, match="must divide"):
@@ -73,10 +68,37 @@ class TestConstructor:
     def test_d_out_override(self):
         codec = OneEmbeddingCodec(d_out=512)
         assert codec.d_out == 512
+        # binary default: pq_m is None
+        assert codec.pq_m is None
+
+    def test_d_out_override_with_pq(self):
+        codec = OneEmbeddingCodec(d_out=512, quantization='pq')
+        assert codec.d_out == 512
         assert codec.pq_m == 128
 
+    def test_abtt_k_default_zero(self):
+        codec = OneEmbeddingCodec()
+        assert codec.abtt_k == 0
 
-import h5py
+    def test_abtt_k_override(self):
+        codec = OneEmbeddingCodec(abtt_k=3)
+        assert codec.abtt_k == 3
+
+    def test_repr(self):
+        codec = OneEmbeddingCodec()
+        r = repr(codec)
+        assert "d_out=896" in r
+        assert "quantization='binary'" in r
+        assert "abtt_k=0" in r
+
+    def test_is_fitted_false_before_fit(self):
+        codec = OneEmbeddingCodec(quantization=None)
+        assert not codec.is_fitted
+
+    def test_is_fitted_true_after_fit(self, small_corpus):
+        codec = OneEmbeddingCodec(quantization=None)
+        codec.fit(small_corpus)
+        assert codec.is_fitted
 
 
 @pytest.fixture
@@ -151,11 +173,22 @@ class TestEncodeDecode:
         encoded = codec.encode(raw_1024)
         meta = encoded["metadata"]
         assert meta["codec"] == "one_embedding"
-        assert meta["version"] == 3
+        assert meta["version"] == 4
         assert meta["d_out"] == 768
         assert meta["quantization"] == "pq"
         assert meta["pq_m"] == 128
+        assert meta["abtt_k"] == 0
         assert meta["seq_len"] == 30
+
+    def test_pq_without_fit_raises(self, raw_1024):
+        codec = OneEmbeddingCodec(d_out=768, quantization='pq')
+        with pytest.raises(RuntimeError, match="fitted codebook"):
+            codec.encode(raw_1024)
+
+    def test_save_codebook_without_fit_raises(self):
+        codec = OneEmbeddingCodec(quantization=None)
+        with pytest.raises(RuntimeError, match="fit"):
+            codec.save_codebook("/tmp/shouldnt_exist.h5")
 
 
 class TestSaveLoad:
@@ -191,17 +224,6 @@ class TestSaveLoad:
         assert loaded["per_residue"].shape == (30, 768)
         assert loaded["metadata"]["quantization"] == "pq"
 
-    def test_codebook_stores_quantization_params(self, small_corpus, tmp_path):
-        codec = OneEmbeddingCodec(d_out=768, quantization='pq', pq_m=192)
-        codec.fit(small_corpus)
-        cb_path = tmp_path / "codebook.h5"
-        codec.save_codebook(str(cb_path))
-
-        with h5py.File(cb_path, "r") as f:
-            assert f.attrs["d_out"] == 768
-            assert f.attrs["quantization"] == "pq"
-            assert f.attrs["pq_M"] == 192
-
     def test_int4_h5_roundtrip(self, raw_1024, small_corpus, tmp_path):
         codec = OneEmbeddingCodec(d_out=768, quantization='int4')
         codec.fit(small_corpus)
@@ -214,3 +236,127 @@ class TestSaveLoad:
 
         loaded = OneEmbeddingCodec.load(str(h5_path), codebook_path=str(cb_path))
         assert loaded["per_residue"].shape == (30, 768)
+
+    def test_binary_h5_roundtrip(self, raw_1024, small_corpus, tmp_path):
+        codec = OneEmbeddingCodec(d_out=768, quantization='binary')
+        codec.fit(small_corpus)
+        cb_path = tmp_path / "codebook.h5"
+        codec.save_codebook(str(cb_path))
+
+        encoded = codec.encode(raw_1024)
+        h5_path = tmp_path / "protein.h5"
+        codec.save(encoded, str(h5_path))
+
+        loaded = OneEmbeddingCodec.load(str(h5_path), codebook_path=str(cb_path))
+        assert loaded["per_residue"].shape == (30, 768)
+        assert loaded["metadata"]["quantization"] == "binary"
+
+    def test_codebook_stores_quantization_params(self, small_corpus, tmp_path):
+        codec = OneEmbeddingCodec(d_out=896, quantization='pq', pq_m=224)
+        codec.fit(small_corpus)
+        cb_path = tmp_path / "codebook.h5"
+        codec.save_codebook(str(cb_path))
+
+        with h5py.File(cb_path, "r") as f:
+            assert f.attrs["d_out"] == 896
+            assert f.attrs["quantization"] == "pq"
+            assert f.attrs["pq_M"] == 224
+            assert f.attrs["abtt_k"] == 0
+
+
+class TestBatchEncodeLoad:
+    """Tests for encode_h5_to_h5 + load_batch roundtrip."""
+
+    def _make_raw_h5(self, tmp_path, corpus):
+        h5_path = tmp_path / "raw.h5"
+        with h5py.File(h5_path, "w") as f:
+            for pid, arr in corpus.items():
+                f.create_dataset(pid, data=arr)
+        return h5_path
+
+    def test_fp16_batch_roundtrip(self, small_corpus, tmp_path):
+        raw_h5 = self._make_raw_h5(tmp_path, small_corpus)
+        out_h5 = tmp_path / "compressed.h5"
+
+        codec = OneEmbeddingCodec(d_out=768, quantization=None)
+        codec.fit(small_corpus)
+        codec.encode_h5_to_h5(str(raw_h5), str(out_h5))
+
+        loaded = OneEmbeddingCodec.load_batch(str(out_h5))
+        assert len(loaded) == len(small_corpus)
+        for pid in small_corpus:
+            assert loaded[pid]["per_residue"].shape[1] == 768
+            assert loaded[pid]["protein_vec"].shape == (768 * 4,)
+
+    def test_int4_batch_roundtrip(self, small_corpus, tmp_path):
+        raw_h5 = self._make_raw_h5(tmp_path, small_corpus)
+        out_h5 = tmp_path / "compressed.h5"
+
+        codec = OneEmbeddingCodec(d_out=768, quantization='int4')
+        codec.fit(small_corpus)
+        codec.encode_h5_to_h5(str(raw_h5), str(out_h5))
+
+        loaded = OneEmbeddingCodec.load_batch(str(out_h5))
+        assert len(loaded) == len(small_corpus)
+        for pid in small_corpus:
+            assert loaded[pid]["per_residue"].shape[1] == 768
+
+    def test_pq_batch_roundtrip(self, small_corpus, tmp_path):
+        raw_h5 = self._make_raw_h5(tmp_path, small_corpus)
+        out_h5 = tmp_path / "compressed.h5"
+        cb_h5 = tmp_path / "codebook.h5"
+
+        codec = OneEmbeddingCodec(d_out=768, quantization='pq', pq_m=128)
+        codec.fit(small_corpus)
+        codec.save_codebook(str(cb_h5))
+        codec.encode_h5_to_h5(str(raw_h5), str(out_h5))
+
+        loaded = OneEmbeddingCodec.load_batch(str(out_h5), codebook_path=str(cb_h5))
+        assert len(loaded) == len(small_corpus)
+        for pid in small_corpus:
+            assert loaded[pid]["per_residue"].shape[1] == 768
+
+    def test_binary_batch_roundtrip(self, small_corpus, tmp_path):
+        raw_h5 = self._make_raw_h5(tmp_path, small_corpus)
+        out_h5 = tmp_path / "compressed.h5"
+
+        codec = OneEmbeddingCodec(d_out=768, quantization='binary')
+        codec.fit(small_corpus)
+        codec.encode_h5_to_h5(str(raw_h5), str(out_h5))
+
+        loaded = OneEmbeddingCodec.load_batch(str(out_h5))
+        assert len(loaded) == len(small_corpus)
+        for pid in small_corpus:
+            assert loaded[pid]["per_residue"].shape[1] == 768
+
+    def test_load_batch_subset(self, small_corpus, tmp_path):
+        raw_h5 = self._make_raw_h5(tmp_path, small_corpus)
+        out_h5 = tmp_path / "compressed.h5"
+
+        codec = OneEmbeddingCodec(d_out=768, quantization=None)
+        codec.fit(small_corpus)
+        codec.encode_h5_to_h5(str(raw_h5), str(out_h5))
+
+        subset = list(small_corpus.keys())[:3]
+        loaded = OneEmbeddingCodec.load_batch(str(out_h5), protein_ids=subset)
+        assert len(loaded) == 3
+        assert set(loaded.keys()) == set(subset)
+
+    def test_load_batch_missing_id_raises(self, small_corpus, tmp_path):
+        raw_h5 = self._make_raw_h5(tmp_path, small_corpus)
+        out_h5 = tmp_path / "compressed.h5"
+
+        codec = OneEmbeddingCodec(d_out=768, quantization=None)
+        codec.fit(small_corpus)
+        codec.encode_h5_to_h5(str(raw_h5), str(out_h5))
+
+        with pytest.raises(KeyError, match="not found"):
+            OneEmbeddingCodec.load_batch(str(out_h5), protein_ids=["nonexistent_id"])
+
+    def test_pq_batch_without_fit_raises(self, small_corpus, tmp_path):
+        raw_h5 = self._make_raw_h5(tmp_path, small_corpus)
+        out_h5 = tmp_path / "compressed.h5"
+
+        codec = OneEmbeddingCodec(d_out=768, quantization='pq')
+        with pytest.raises(RuntimeError, match="fitted codebook"):
+            codec.encode_h5_to_h5(str(raw_h5), str(out_h5))

@@ -1,4 +1,4 @@
-# The Journey: 232 Methods in 43 Experiments
+# The Journey: 232 Methods in 47 Experiments
 
 Historical record of all compression methods tested, organized by experimental phase. For current benchmark numbers, see [CLAUDE.md](../CLAUDE.md).
 
@@ -12,7 +12,7 @@ Pivoted to training-free codecs. Tested DCT, Haar wavelets, spectral fingerprint
 Discovered that chaining D-compression (RP512) + L-compression (DCT K=4) solves the fundamental tension: D-compression preserves per-residue, L-compression boosts retrieval. 14 codecs x 3 PLMs benchmarked. Best: rp512+dct_K4 -> Ret@1=0.780, SS3=0.815.
 
 ## Phase 7: Preprocessing + Quantization (Experiment 29)
-ABTT3 (remove top-3 PCs) discovered as a free retrieval boost (+0.004 Ret@1). int4 quantization verified lossless for retrieval. 10-seed variance analysis: RP std=0.004. **The V1 One Embedding**: ABTT3+RP512+int4+DCT K4 -> Ret@1=0.784, SS3=0.809, 48 KB.
+ABTT3 (remove top-3 PCs) discovered as a free retrieval boost (+0.006 Ret@1). int4 quantization verified lossless for retrieval. 10-seed variance analysis: RP std=0.004. **The V1 One Embedding**: ABTT3+RP512+int4+DCT K4 -> Ret@1=0.784, SS3=0.809, 48 KB.
 
 ## Phase 8: Extreme Compression (Experiment 28)
 45 methods on ProtT5: wavelets, CUR decomposition, channel pruning, product quantization, residual VQ, tensor train, NMF, SimHash. **All on raw 1024d**. PQ M=64 best at 0.701. Key insight missed at the time: should have tested on preprocessed space.
@@ -21,7 +21,7 @@ ABTT3 (remove top-3 PCs) discovered as a free retrieval boost (+0.004 Ret@1). in
 Re-tested all compression on ABTT3+RP512 (decorrelated, isotropic). Results dramatically better:
 
 - **Binary (1-bit) beats int4 for retrieval** (0.787 vs 0.784) — RaBitQ effect confirmed
-- **PQ M=128 matches V1 quality at 40% less storage** (33 vs 55 KB)
+- **PQ M=128 matches V1 quality at ~50% less storage** (23 vs 48 KB)
 - **PQ M=64 at 22 KB retains 93% SS3 quality**
 - **Pure VQ fails in 512d** — even K=16384 caps at 0.621 Ret@1
 - **RVQ fails in 512d** — residual norms barely decrease between levels
@@ -37,7 +37,7 @@ Built a rule-enforced benchmark framework (14 golden rules) to honestly validate
 - **Phase D**: Ablation — ABTT contributes +0.6pp retrieval, RP costs -0.3pp SS3, fp16 is 0.0pp (lossless). No length-dependent degradation
 - **ABTT Stability**: Cross-corpus stability test — PCs differ across corpora (subspace similarity 0.18-0.71) but downstream Ret@1 varies by only 0.20pp. ABTT fitting corpus choice is irrelevant for performance.
 
-782 tests, 12+ tasks, 8+ datasets, 2 PLMs. BCa CIs on everything.
+797 tests, 12+ tasks, 8+ datasets, 5 PLMs. BCa CIs on everything.
 
 ### V2 Extreme Compression — Rigorous Re-validation (512d, Exp 43)
 Replaced Exp 34 results (hardcoded C=1.0 probes) with Exp 43 framework (CV-tuned, BCa CIs, pooled disorder ρ). All 5 V2 modes on 512d benchmarked. Key finding: retrieval is **lossless across all modes** (100.2%). Binary matches full for disorder (90.0%) — RaBitQ effect.
@@ -53,7 +53,33 @@ Merged V1 (fp16) and V2 (quantized) into single `OneEmbeddingCodec` with three k
 | PQ M=128 | 23 KB | 30x | 97.1 ± 0.6% | 90.6 ± 2.9% | 100.2 ± 0.6% |
 | binary (768d) | 17 KB | 41x | 95.9 ± 0.7% | 92.5 ± 2.7% | 100.2 ± 0.6% |
 
-Key findings: int4 is indistinguishable from fp16 at 10x compression. Lossless (1024d, no RP) truly achieves ~100% on everything including disorder. Binary still beats PQ M=128 on disorder (RaBitQ on 768d). Default set to PQ M=192 (~20x) — 30x showed borderline disorder retention (90.6%, CI touching 87.7%).
+Key findings: int4 is indistinguishable from fp16 at 10x compression. Lossless (1024d, no RP) truly achieves ~100% on everything including disorder. Binary still beats PQ M=128 on disorder (RaBitQ on 768d). Default was PQ M=192 (~20x) — later changed to 896d PQ M=224 (~18x) after Exp 45 findings.
+
+### Phase 12: Disorder Information Loss Forensics (Experiment 45)
+Systematic investigation into why disorder retention (93-95%) lags behind all other tasks (97-100%).
+
+**Key finding: ABTT PC1 is 73% aligned with the disorder prediction direction.** ABTT removes the primary channel through which a Ridge probe predicts disorder Z-scores. Per-stage decomposition: ABTT causes 50% of total disorder loss, RP 26%, PQ 24%.
+
+Dropping ABTT recovers +3.3% disorder retention at 0.6pp retrieval cost. New default: center + RP 896d + PQ M=224 (~18x), `abtt_k=0`. ABTT still available via parameter for retrieval-focused use cases.
+
+VQ/RVQ retested with correct centering — confirmed genuinely bad (SS3 79%, Dis 59% at best). The ABTT centering bug did not cause their failure.
+
+### Phase 13: Multi-PLM Pipeline + 5-PLM Benchmark (Experiments 46-47)
+Built registry-based pipeline (`46_multi_plm_benchmark.py`) that extracts and benchmarks any PLM with one command. 5 extractors: ProtT5, ESM2 (fair-esm), ESM-C (EvolutionaryScale API), ProstT5 (T5), ANKH (T5 raw tokenizer).
+
+Extracted 30 embedding files across 5 PLMs × 6 datasets (~74 GB total).
+
+Full rigorous benchmarks with BCa CIs on all 5 PLMs:
+
+| PLM | SS3 raw | SS3 ret | Ret@1 raw | Dis ret |
+|-----|:-------:|:-------:|:---------:|:-------:|
+| ProstT5 | **0.869** | **99.2%** | 0.705 | 98.3% |
+| ProtT5-XL | 0.840 | 99.0% | **0.794** | 95.4% |
+| ESM-C 600M | 0.846 | 98.3% | 0.343 | 98.1% |
+| ANKH-large | 0.861 | 97.9% | 0.708 | 94.8% |
+| ESM2-650M | 0.836 | 97.6% | 0.589 | **98.8%** |
+
+Codec sweep (Exp 47) on ProtT5: 6 standard tiers (lossless to binary) + VQ/RVQ retest + old default comparison. All verified.
 
 ---
 

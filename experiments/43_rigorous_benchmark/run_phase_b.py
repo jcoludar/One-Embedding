@@ -87,7 +87,6 @@ from metrics.statistics import (
     bootstrap_ci,
     paired_bootstrap_retention,
     paired_cluster_bootstrap_retention,
-    multi_seed_summary,
 )
 
 # Dataset loaders (from experiment dir)
@@ -731,16 +730,11 @@ def main():
         print(fmt_metric("Spearman rho comp (CheZOD117)", dis_comp_chezod["spearman_rho"]))
         print(f"  Pooled rho comp: {dis_comp_chezod['pooled_spearman_rho'].value:.4f}")
 
-        from scipy.stats import spearmanr as _spearmanr
-        def _pooled_spearman(cluster_data):
-            all_true = np.concatenate([d["y_true"] for d in cluster_data])
-            all_pred = np.concatenate([d["y_pred"] for d in cluster_data])
-            rho, _ = _spearmanr(all_true, all_pred)
-            return float(rho) if not np.isnan(rho) else 0.0
+        from runners.per_residue import pooled_spearman
 
         chezod_ret_ci = paired_cluster_bootstrap_retention(
             dis_raw_chezod["per_protein_predictions"], dis_comp_chezod["per_protein_predictions"],
-            _pooled_spearman, n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+            pooled_spearman, n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
         )
         chezod_retention = chezod_ret_ci.value
         print(f"  Disorder retention (CheZOD117): {chezod_ret_ci.value:.1f} ± {(chezod_ret_ci.ci_upper - chezod_ret_ci.ci_lower) / 2:.1f}%")
@@ -833,7 +827,7 @@ def main():
 
                 trizod_ret_ci = paired_cluster_bootstrap_retention(
                     dis_raw_trizod["per_protein_predictions"], dis_comp_trizod["per_protein_predictions"],
-                    _pooled_spearman, n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
+                    pooled_spearman, n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
                 )
                 trizod_retention = trizod_ret_ci.value
                 print(f"  Disorder retention (TriZOD348): {trizod_ret_ci.value:.1f} ± {(trizod_ret_ci.ci_upper - trizod_ret_ci.ci_lower) / 2:.1f}%")

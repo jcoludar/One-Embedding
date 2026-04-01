@@ -15,6 +15,25 @@ wheels/
 # IDE
 .idea/
 .vscode/
+
+# Claude Code
+.claude/
+
+# Results (reproducible output, not source)
+results/
+
+# Large data files (embeddings, codebooks, structures)
+*.h5
+*.hdf5
+*.pkl
+*.npy
+*.bin
+data/residue_embeddings/
+data/benchmark_suite/plm_embeddings/
+data/codebooks/
+data/structures/pdb/
+data/benchmark_suite/per_residue/trizod/trizod_download.zip
+data/pdb_cache/
 *.swp
 *.swo
 

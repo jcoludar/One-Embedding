@@ -13,7 +13,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from rules import MetricResult, check_no_leakage, check_class_balance
-from metrics.statistics import bootstrap_ci, multi_seed_summary, averaged_multi_seed, cluster_bootstrap_ci
+from metrics.statistics import bootstrap_ci, averaged_multi_seed, cluster_bootstrap_ci
 from probes.linear import train_classification_probe, train_regression_probe
 
 
@@ -98,10 +98,10 @@ def _stack_residues(
 
 
 # ---------------------------------------------------------------------------
-# Per-protein Q3 scoring helper
+# Per-protein accuracy scoring helper (classification)
 # ---------------------------------------------------------------------------
 
-def _per_protein_q3(
+def _per_protein_accuracy(
     embeddings: dict,
     labels: dict,
     protein_ids: list,
@@ -109,7 +109,7 @@ def _per_protein_q3(
     max_len: int,
     label_map: dict,
 ) -> dict:
-    """Compute per-protein Q3 accuracy using a fitted probe.
+    """Compute per-protein classification accuracy using a fitted probe.
 
     Args:
         embeddings: {pid: (L, D)}
@@ -152,57 +152,6 @@ def _per_protein_q3(
 
 
 # ---------------------------------------------------------------------------
-# Per-protein Spearman rho helper
-# ---------------------------------------------------------------------------
-
-def _per_protein_spearman(
-    embeddings: dict,
-    scores_dict: dict,
-    protein_ids: list,
-    probe,
-    max_len: int,
-    min_residues: int = 5,
-) -> dict:
-    """Compute per-protein Spearman rho using a fitted probe.
-
-    Args:
-        embeddings: {pid: (L, D)}
-        scores_dict: {pid: (L,) float array}
-        protein_ids: IDs to score.
-        probe: Fitted sklearn estimator with .predict().
-        max_len: Maximum residues per protein.
-        min_residues: Minimum valid (non-NaN) residues required to include protein.
-
-    Returns:
-        {pid: float} — per-protein Spearman rho.
-    """
-    from scipy.stats import spearmanr
-
-    results = {}
-    for pid in protein_ids:
-        emb = embeddings[pid][:max_len]
-        lab = np.asarray(scores_dict[pid], dtype=np.float64)[:max_len]
-        n = min(len(emb), len(lab))
-
-        X_p, y_p = [], []
-        for i in range(n):
-            if not np.isnan(lab[i]):
-                X_p.append(emb[i])
-                y_p.append(lab[i])
-
-        if len(X_p) < min_residues:
-            continue
-
-        X_p = np.stack(X_p).astype(np.float32)
-        y_p = np.array(y_p, dtype=np.float64)
-        preds = probe.predict(X_p)
-        rho, _ = spearmanr(y_p, preds)
-        results[pid] = float(rho)
-
-    return results
-
-
-# ---------------------------------------------------------------------------
 # Per-protein prediction collector (for cluster bootstrap)
 # ---------------------------------------------------------------------------
 
@@ -215,9 +164,6 @@ def _collect_per_protein_predictions(
     min_residues: int = 5,
 ) -> dict:
     """Collect per-protein (y_true, y_pred) arrays from a fitted probe.
-
-    Unlike _per_protein_spearman which computes rho per protein, this
-    returns the raw arrays needed for pooled metrics and cluster bootstrap.
 
     Args:
         embeddings: {pid: (L, D)}
@@ -252,6 +198,28 @@ def _collect_per_protein_predictions(
         results[pid] = {"y_true": y_p, "y_pred": preds}
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# Shared pooled Spearman statistic (used by disorder and cross-module callers)
+# ---------------------------------------------------------------------------
+
+def pooled_spearman(cluster_data: list[dict]) -> float:
+    """Compute pooled residue-level Spearman rho across all clusters (proteins).
+
+    This is the standard metric used by SETH/ODiNPred/ADOPT/UdonPred.
+
+    Args:
+        cluster_data: list of {"y_true": ndarray, "y_pred": ndarray} dicts.
+
+    Returns:
+        Pooled Spearman rho, or 0.0 if computation fails.
+    """
+    from scipy.stats import spearmanr
+    all_true = np.concatenate([d["y_true"] for d in cluster_data])
+    all_pred = np.concatenate([d["y_pred"] for d in cluster_data])
+    rho, _ = spearmanr(all_true, all_pred)
+    return float(rho) if not np.isnan(rho) else 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -296,17 +264,14 @@ def run_ss3_benchmark(
     if seeds is None:
         seeds = [42, 43, 44]
 
-    # Rule 2: no leakage
     check_no_leakage(train_ids, test_ids)
 
-    # Stack residues
     X_train, y_train = _stack_residues(embeddings, labels, train_ids, max_len, SS3_MAP)
     X_test, y_test = _stack_residues(embeddings, labels, test_ids, max_len, SS3_MAP)
 
-    # Rule 6: class balance
     class_balance = check_class_balance(y_test)
 
-    seed_per_protein_scores = []  # list of {pid: q3} dicts
+    seed_per_protein_scores = []
     seed_probe_results = []
 
     for seed in seeds:
@@ -316,11 +281,9 @@ def run_ss3_benchmark(
         )
         seed_probe_results.append(probe_result)
 
-        fitted_probe = _get_fitted_logreg(
-            X_train, y_train, probe_result["best_C"], seed
-        )
-        per_protein_scores = _per_protein_q3(
-            embeddings, labels, test_ids, fitted_probe, max_len, SS3_MAP
+        per_protein_scores = _per_protein_accuracy(
+            embeddings, labels, test_ids,
+            probe_result["fitted_model"], max_len, SS3_MAP,
         )
         seed_per_protein_scores.append(per_protein_scores)
 
@@ -392,7 +355,7 @@ def run_ss8_benchmark(
 
     class_balance = check_class_balance(y_test)
 
-    seed_per_protein_scores = []  # list of {pid: q8} dicts
+    seed_per_protein_scores = []
     seed_probe_results = []
 
     for seed in seeds:
@@ -402,11 +365,9 @@ def run_ss8_benchmark(
         )
         seed_probe_results.append(probe_result)
 
-        fitted_probe = _get_fitted_logreg(
-            X_train, y_train, probe_result["best_C"], seed
-        )
-        per_protein_scores = _per_protein_q3(
-            embeddings, labels, test_ids, fitted_probe, max_len, SS8_MAP
+        per_protein_scores = _per_protein_accuracy(
+            embeddings, labels, test_ids,
+            probe_result["fitted_model"], max_len, SS8_MAP,
         )
         seed_per_protein_scores.append(per_protein_scores)
 
@@ -465,6 +426,11 @@ def run_disorder_benchmark(
 
     Supplementary: per-protein averaged Spearman rho (for transparency).
 
+    Note on multi-seed: Ridge regression is deterministic (closed-form
+    solution), so multi-seed averaging is effectively a no-op for this probe.
+    The infrastructure is kept for consistency and to support future
+    stochastic regression probes.
+
     Args:
         embeddings: {protein_id: (L, D) float32 array}
         scores: {protein_id: (L,) float array with possible NaN}
@@ -483,7 +449,7 @@ def run_disorder_benchmark(
             "pooled_spearman_rho": MetricResult — headline (cluster bootstrap CI).
             "auc_roc": MetricResult — AUC-ROC on binary Z<threshold (cluster bootstrap CI).
             "per_protein_spearman_rho": MetricResult — supplementary (averaged multi-seed).
-            "spearman_rho": MetricResult — backward-compat alias for per_protein_spearman_rho.
+            "spearman_rho": MetricResult — alias for per_protein_spearman_rho.
             "best_alpha": float from median seed.
             "n_train_residues": int.
             "n_test_residues": int.
@@ -514,15 +480,13 @@ def run_disorder_benchmark(
         )
         seed_probe_results.append(probe_result)
 
-        # Collect per-protein predictions for this seed
-        fitted_probe = _get_fitted_ridge(X_train, y_train, probe_result["best_alpha"])
         per_protein_preds = _collect_per_protein_predictions(
-            embeddings, scores, test_ids, fitted_probe, max_len, min_residues=5
+            embeddings, scores, test_ids,
+            probe_result["fitted_model"], max_len, min_residues=5,
         )
         seed_per_protein_preds.append(per_protein_preds)
 
     # --- Phase 2: Average predictions across seeds per-protein per-residue ---
-    # Use intersection of proteins present in all seeds
     common_pids = sorted(
         set.intersection(*[set(sp.keys()) for sp in seed_per_protein_preds])
     )
@@ -531,7 +495,6 @@ def run_disorder_benchmark(
     averaged_clusters = {}  # {pid: {"y_true": arr, "y_pred": arr}}
     for pid in common_pids:
         y_true = seed_per_protein_preds[0][pid]["y_true"]  # same across seeds
-        # Average predicted Z-scores across seeds
         y_pred_stacked = np.stack(
             [seed_per_protein_preds[s][pid]["y_pred"] for s in range(len(seeds))],
             axis=0,
@@ -540,14 +503,8 @@ def run_disorder_benchmark(
         averaged_clusters[pid] = {"y_true": y_true, "y_pred": y_pred_avg}
 
     # --- Phase 3: POOLED Spearman rho with cluster bootstrap CI (headline) ---
-    def _pooled_spearman(cluster_data: list[dict]) -> float:
-        all_true = np.concatenate([d["y_true"] for d in cluster_data])
-        all_pred = np.concatenate([d["y_pred"] for d in cluster_data])
-        rho, _ = _spearmanr(all_true, all_pred)
-        return float(rho) if not np.isnan(rho) else 0.0
-
     pooled_rho_result = cluster_bootstrap_ci(
-        averaged_clusters, _pooled_spearman,
+        averaged_clusters, pooled_spearman,
         n_bootstrap=n_bootstrap, seed=seeds[0],
     )
 
@@ -555,11 +512,8 @@ def run_disorder_benchmark(
     def _pooled_auc_roc(cluster_data: list[dict]) -> float:
         all_true = np.concatenate([d["y_true"] for d in cluster_data])
         all_pred = np.concatenate([d["y_pred"] for d in cluster_data])
-        # Z < threshold = disordered (positive class)
         binary_labels = (all_true < disorder_threshold).astype(int)
-        # Negate predicted Z-scores so higher = more disordered
         pred_disorder = -all_pred
-        # AUC-ROC requires both classes present
         if len(np.unique(binary_labels)) < 2:
             return 0.5
         return float(roc_auc_score(binary_labels, pred_disorder))
@@ -569,24 +523,24 @@ def run_disorder_benchmark(
         n_bootstrap=n_bootstrap, seed=seeds[0],
     )
 
-    # --- Phase 5: Per-protein Spearman rho (supplementary, backward compat) ---
-    seed_per_protein_rho_dicts = []
-    for sp_preds in seed_per_protein_preds:
-        rho_dict = {}
-        for pid, data in sp_preds.items():
-            rho, _ = _spearmanr(data["y_true"], data["y_pred"])
-            rho_dict[pid] = float(rho) if not np.isnan(rho) else 0.0
-        seed_per_protein_rho_dicts.append(rho_dict)
+    # --- Phase 5: Per-protein Spearman rho (supplementary) ---
+    # Average predictions across seeds first, then compute per-protein rho
+    # (consistent with headline methodology)
+    per_protein_rho_dict = {}
+    for pid in common_pids:
+        data = averaged_clusters[pid]
+        rho, _ = _spearmanr(data["y_true"], data["y_pred"])
+        per_protein_rho_dict[pid] = float(rho) if not np.isnan(rho) else 0.0
 
-    per_protein_rho_result = averaged_multi_seed(
-        seed_per_protein_rho_dicts, n_bootstrap=n_bootstrap, seed=seeds[0]
+    per_protein_rho_result = bootstrap_ci(
+        per_protein_rho_dict, n_bootstrap=n_bootstrap, seed=seeds[0]
     )
 
     # --- Select median seed for best_alpha reporting ---
     per_seed_pooled = []
     for sp_preds in seed_per_protein_preds:
         cluster_data = [sp_preds[pid] for pid in sorted(sp_preds.keys())]
-        per_seed_pooled.append(_pooled_spearman(cluster_data))
+        per_seed_pooled.append(pooled_spearman(cluster_data))
     sorted_idx = np.argsort(per_seed_pooled)
     median_idx = int(sorted_idx[len(sorted_idx) // 2])
     median_probe = seed_probe_results[median_idx]
@@ -596,30 +550,10 @@ def run_disorder_benchmark(
         "auc_roc": auc_result,
         "per_protein_spearman_rho": per_protein_rho_result,
         "per_protein_predictions": averaged_clusters,
-        "spearman_rho": per_protein_rho_result,  # backward compat alias
+        "spearman_rho": per_protein_rho_result,
         "best_alpha": median_probe["best_alpha"],
         "n_train_residues": int(len(y_train)),
         "n_test_residues": int(len(y_test)),
         "n_test_proteins": n_test_proteins,
         "disorder_threshold": disorder_threshold,
     }
-
-
-# ---------------------------------------------------------------------------
-# Internal helpers: refit probes for per-protein scoring
-# ---------------------------------------------------------------------------
-
-def _get_fitted_logreg(X_train, y_train, best_C, seed):
-    """Refit LogisticRegression with the given C (no CV overhead)."""
-    from sklearn.linear_model import LogisticRegression
-    model = LogisticRegression(C=best_C, max_iter=500, solver="lbfgs", random_state=seed)
-    model.fit(X_train, y_train)
-    return model
-
-
-def _get_fitted_ridge(X_train, y_train, best_alpha):
-    """Refit Ridge with the given alpha (no CV overhead)."""
-    from sklearn.linear_model import Ridge
-    model = Ridge(alpha=best_alpha)
-    model.fit(X_train, y_train)
-    return model

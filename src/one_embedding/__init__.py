@@ -1,23 +1,23 @@
 """One Embedding: universal codec for PLM per-residue embeddings.
 
-Compresses raw PLM output (L, D) into a self-contained float16 representation
-that serves both protein-level retrieval and per-residue structure prediction.
-The 1.0 codec defaults to 768d (2.5x compression, 100.1% mean retention).
+Compresses raw PLM output (L, D) via center + RP 896d + binary (~37x
+compression, 95–100% retention across 6 tasks on 5 PLMs).
 
 Quick start::
 
-    from src.one_embedding.codec import OneEmbeddingCodec
+    from src.one_embedding.codec_v2 import OneEmbeddingCodec
 
-    codec = OneEmbeddingCodec(d_out=768, dct_k=4)  # 768d float16 default
+    codec = OneEmbeddingCodec()       # default: 896d binary, ~37x, no codebook
+    codec.fit(training_embeddings)
     encoded = codec.encode(raw)       # raw: (L, 1024) -> {per_residue, protein_vec}
-    codec.save(encoded, "out.one.h5") # self-contained .one.h5 file (float16)
+    codec.save(encoded, "out.one.h5")
 
-    loaded = OneEmbeddingCodec.load("out.one.h5")
-    loaded["protein_vec"]             # (3072,) for UMAP / retrieval
+    loaded = OneEmbeddingCodec.load("out.one.h5")  # no codebook for binary
+    loaded["protein_vec"]             # (3072,) for retrieval / UMAP
     loaded["per_residue"]             # (L, 768) for SS3 / disorder probes
 
 Key classes:
-    OneEmbeddingCodec  -- encode/save/load compressed embeddings (codec.py)
+    OneEmbeddingCodec  -- encode/save/load compressed embeddings (codec_v2.py)
     OneEmbedding       -- dataclass for embedding + metadata (embedding.py)
 
 Transform modules:

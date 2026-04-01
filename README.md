@@ -1,13 +1,13 @@
 # One Embedding: Universal Compression for PLM Protein Embeddings
 
-A universal codec that compresses any protein language model's per-residue output into a compact, fixed-schema representation -- the **One Embedding**. Default: ABTT3 + RP 768d + PQ M=192 → **~34 KB/protein** (~20x compression) with **92.8–100% retention** across 12+ tasks on 8+ datasets (Exp 44, paired bootstrap CIs). Configurable from lossless (1024d fp16, 2x) to extreme (binary, 41x). Works with any PLM (ProtT5, ESM2, ESM-C). Receiver needs `h5py`, `numpy`, and codebook file.
+A universal codec that compresses any protein language model's per-residue output into a compact, fixed-schema representation -- the **One Embedding**. Default: center + RP 896d + binary → **~17 KB/protein** (~37x compression) with **95–100% retention** across 6 tasks on 5 PLMs (Exp 46/47, BCa CIs). No codebook needed for default binary mode. Configurable from lossless (1024d fp16, 2x) to max quality (PQ M=224, 18x). Works with any PLM (ProtT5, ESM2, ESM-C, ProstT5, ANKH). Receiver needs `h5py` and `numpy` only.
 
 ## TL;DR
 
-Protein language models produce large variable-length per-residue embedding matrices `(L, D)`. The unified codec compresses each using: All-but-the-Top (remove top-3 corpus PCs) → random projection to 768d → PQ quantization (M=192, 4d sub-vectors) → store in `.one.h5` format. A protein-level vector `(D*dct_k,)` is computed via DCT K=4 for retrieval/clustering. Three knobs: `d_out` (768), `quantization` ('pq'), `pq_m` (auto=192).
+Protein language models produce large variable-length per-residue embedding matrices `(L, D)`. The unified codec compresses each using: mean-centering → random projection to 896d → binary quantization (1-bit sign) → store in `.one.h5` format. A protein-level vector `(D*dct_k,)` is computed via DCT K=4 for retrieval/clustering. Four knobs: `d_out` (896), `quantization` ('binary'), `pq_m` (auto), `abtt_k` (0).
 
-- **Retrieval/clustering**: `protein_vec` → (3072,) vector. Cosine similarity. Lossless across all configs.
-- **Per-residue (SS3, disorder)**: `per_residue` → (L, 768) decoded embeddings.
+- **Retrieval/clustering**: `protein_vec` → (3584,) vector. Cosine similarity. Lossless across all configs.
+- **Per-residue (SS3, disorder)**: `per_residue` → (L, 896) decoded embeddings.
 
 232 compression methods benchmarked across 44 experiments to arrive at this design.
 
@@ -16,20 +16,21 @@ Protein language models produce large variable-length per-residue embedding matr
 ### Python API
 
 ```python
-from src.one_embedding.codec import OneEmbeddingCodec
+from src.one_embedding.codec_v2 import OneEmbeddingCodec
 
-# 1.0 codec: 768d float16 (default, ~275 KB/protein, 97-100% retention)
-codec = OneEmbeddingCodec(d_out=768, dct_k=4)
+# Unified codec: ~20x compression (default PQ M=192 on 768d)
+codec = OneEmbeddingCodec()
+codec.fit(training_embeddings)  # dict of {pid: (L, D) arrays}
+codec.save_codebook("codebook.h5")
 codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.one.h5")
 
-# Decode (receiver side -- h5py + numpy only)
-data = OneEmbeddingCodec.load("compressed.one.h5")
-data['per_residue']   # (L, 768) float16 for per-residue tasks
-data['protein_vec']   # (3072,) float16 for retrieval / clustering / UMAP
+# Decode batch (receiver side -- h5py + numpy + codebook)
+proteins = OneEmbeddingCodec.load_batch("compressed.one.h5", codebook_path="codebook.h5")
+proteins['P12345']['per_residue']   # (L, 768) for per-residue tasks
+proteins['P12345']['protein_vec']   # (3072,) for retrieval / clustering / UMAP
 
-# With pre-fitted ABTT for ProtT5 or ESM2
-codec = OneEmbeddingCodec.for_plm('prot_t5', d_out=768)
-codec.encode_h5_to_h5("raw_prot_t5.h5", "compressed.one.h5")
+# Lossless mode -- no RP, no quantization
+codec = OneEmbeddingCodec(d_out=1024, quantization=None)
 ```
 
 ### CLI
@@ -162,7 +163,7 @@ Raw PLM output (L, 1024)            -- any PLM, any protein
 - **RP 768d**: Johnson-Lindenstrauss dimensionality reduction. Preserves pairwise distances with high probability. Deterministic (fixed seed). ProtT5 has intrinsic dimensionality ~374, so 768d captures ~95% of variance with 97-100% task retention (Exp 43, BCa CIs). Configurable: use 512d for more compression.
 - **DCT K=4**: Discrete Cosine Transform on the sequence dimension, keeping the first 4 coefficients per channel. Creates a fixed-size protein-level vector from variable-length per-residue embeddings. DCT K=1 === mean pooling (mathematically).
 
-For extreme compression, PQ quantization can be applied on top of 512d projections (see Compression Tiers above).
+For extreme compression, PQ quantization can be applied on top of 768d projections (see Compression Tiers above). Use `quantization='pq'` (default) for ~20x or `quantization='binary'` for ~41x.
 
 ## Storage Comparison
 
@@ -295,19 +296,20 @@ Every codec is benchmarked against a comprehensive suite spanning retrieval, str
 
 **Training-free codecs are deterministic** -- no training randomness. RP/FH use fixed seed=42.
 
-## Base Codec (Training-Free, No Codebook)
+## Base Codec (fp16, No Codebook Required)
 
-The base codec requires no codebook fitting -- fully deterministic with zero dependencies beyond the RP seed:
+The fp16 mode requires no codebook for decoding -- fully deterministic with zero dependencies beyond the RP seed:
 
 ```python
-from src.one_embedding.codec import OneEmbeddingCodec
+from src.one_embedding.codec_v2 import OneEmbeddingCodec
 
-codec = OneEmbeddingCodec(d_out=768, dct_k=4)  # 768d default (1.0)
+codec = OneEmbeddingCodec(d_out=768, quantization=None)  # fp16 mode
+codec.fit(training_embeddings)  # fit ABTT corpus stats
 codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.one.h5")
 
-# Receiver needs only h5py + numpy -- no codec library, no codebook
+# Decode -- no PQ codebook needed for fp16
 data = OneEmbeddingCodec.load("compressed.one.h5")
-data['per_residue']   # (L, 768) float16
+data['per_residue']   # (L, 768) float32 (decoded from fp16)
 data['protein_vec']   # (3072,) float16
 ```
 
@@ -340,7 +342,7 @@ ABTT3 (remove top-3 PCs) discovered as a free retrieval boost (+0.006 Ret@1). in
 Re-tested all compression on ABTT3+RP512 (decorrelated, isotropic). Results dramatically better:
 
 - **Binary (1-bit) beats int4 for retrieval** (0.787 vs 0.784) -- RaBitQ effect
-- **PQ M=128 matches V1 quality at 50% less storage** (26 vs 52 KB payload)
+- **PQ M=128 matches V1 quality at ~50% less storage** (23 vs 48 KB)
 - **Pure VQ fails in 512d** -- even K=16384 caps at 0.621 Ret@1
 - **RVQ fails in 512d** -- residual norms barely decrease between levels
 - **OPQ doesn't help** -- RP already decorrelates

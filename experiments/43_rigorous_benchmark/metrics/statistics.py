@@ -43,10 +43,19 @@ def bootstrap_ci(
 
     Returns:
         MetricResult with value, ci_lower, ci_upper, n, ci_method.
+
+    Raises:
+        ValueError: If scores is empty or has fewer than 2 items.
     """
     ids = sorted(scores.keys())
     values = np.array([scores[k] for k in ids], dtype=np.float64)
     n = len(values)
+
+    if n == 0:
+        raise ValueError("scores must not be empty")
+    if n == 1:
+        v = float(values[0])
+        return MetricResult(value=v, ci_lower=v, ci_upper=v, n=1, ci_method="exact")
 
     observed = float(metric_fn(values))
 
@@ -197,10 +206,9 @@ def paired_bootstrap_metric(
 ) -> tuple[MetricResult, MetricResult]:
     """Bootstrap CIs on two systems evaluated on the same items.
 
-    Computes independent BCa bootstrap CIs for raw and compressed, using the
-    same seed for reproducibility. Each system gets its own CI (not paired
-    difference CIs). Use for pooled metrics (e.g., Spearman rho on pooled
-    residues) where you need CIs on both raw and compressed.
+    Computes independent BCa bootstrap CIs for raw and compressed, using
+    different seeds for independence. Each system gets its own CI (not paired
+    difference CIs).
 
     Falls back to percentile for n<25 or if BCa raises an exception.
 
@@ -257,7 +265,7 @@ def paired_bootstrap_metric(
         return ci_lo, ci_hi, ci_m
 
     raw_lo, raw_hi, raw_ci_m = _compute_ci(raw_arr, raw_obs, seed)
-    comp_lo, comp_hi, comp_ci_m = _compute_ci(comp_arr, comp_obs, seed)
+    comp_lo, comp_hi, comp_ci_m = _compute_ci(comp_arr, comp_obs, seed + 1)
 
     raw_result = MetricResult(
         value=raw_obs,
@@ -334,16 +342,19 @@ def cluster_bootstrap_ci(
             p_lo = float(norm.cdf(z0 + (z0 + z_lo) / (1 - a_hat * (z0 + z_lo))))
             p_hi = float(norm.cdf(z0 + (z0 + z_hi) / (1 - a_hat * (z0 + z_hi))))
 
-            ci_lower = float(np.percentile(boot_values, 100 * p_lo))
-            ci_upper = float(np.percentile(boot_values, 100 * p_hi))
+            ci_lower = float(np.nanpercentile(boot_values, 100 * p_lo))
+            ci_upper = float(np.nanpercentile(boot_values, 100 * p_hi))
             ci_method = "bca"
+
+            if np.isnan(ci_lower) or np.isnan(ci_upper):
+                raise ValueError("BCa produced NaN CIs")
         except (ValueError, ZeroDivisionError, FloatingPointError):
-            ci_lower = float(np.percentile(boot_values, 100 * alpha / 2))
-            ci_upper = float(np.percentile(boot_values, 100 * (1 - alpha / 2)))
+            ci_lower = float(np.nanpercentile(boot_values, 100 * alpha / 2))
+            ci_upper = float(np.nanpercentile(boot_values, 100 * (1 - alpha / 2)))
             ci_method = "percentile"
     else:
-        ci_lower = float(np.percentile(boot_values, 100 * alpha / 2))
-        ci_upper = float(np.percentile(boot_values, 100 * (1 - alpha / 2)))
+        ci_lower = float(np.nanpercentile(boot_values, 100 * alpha / 2))
+        ci_upper = float(np.nanpercentile(boot_values, 100 * (1 - alpha / 2)))
         ci_method = "percentile"
 
     return MetricResult(
@@ -434,16 +445,19 @@ def paired_cluster_bootstrap_retention(
             p_lo = float(norm.cdf(z0 + (z0 + z_lo) / (1 - a_hat * (z0 + z_lo))))
             p_hi = float(norm.cdf(z0 + (z0 + z_hi) / (1 - a_hat * (z0 + z_hi))))
 
-            ci_lower = float(np.percentile(boot_values, 100 * p_lo))
-            ci_upper = float(np.percentile(boot_values, 100 * p_hi))
+            ci_lower = float(np.nanpercentile(boot_values, 100 * p_lo))
+            ci_upper = float(np.nanpercentile(boot_values, 100 * p_hi))
             ci_method = "bca"
+
+            if np.isnan(ci_lower) or np.isnan(ci_upper):
+                raise ValueError("BCa produced NaN CIs")
         except (ValueError, ZeroDivisionError, FloatingPointError):
-            ci_lower = float(np.percentile(boot_values, 100 * alpha / 2))
-            ci_upper = float(np.percentile(boot_values, 100 * (1 - alpha / 2)))
+            ci_lower = float(np.nanpercentile(boot_values, 100 * alpha / 2))
+            ci_upper = float(np.nanpercentile(boot_values, 100 * (1 - alpha / 2)))
             ci_method = "percentile"
     else:
-        ci_lower = float(np.percentile(boot_values, 100 * alpha / 2))
-        ci_upper = float(np.percentile(boot_values, 100 * (1 - alpha / 2)))
+        ci_lower = float(np.nanpercentile(boot_values, 100 * alpha / 2))
+        ci_upper = float(np.nanpercentile(boot_values, 100 * (1 - alpha / 2)))
         ci_method = "percentile"
 
     return MetricResult(
@@ -452,41 +466,6 @@ def paired_cluster_bootstrap_retention(
         ci_upper=ci_upper,
         n=n,
         ci_method=ci_method,
-    )
-
-
-def multi_seed_summary(seed_results: list[MetricResult]) -> MetricResult:
-    """Aggregate results across multiple seeds (Rule 5) -- DEPRECATED.
-
-    Prefer averaged_multi_seed() which averages per-item predictions
-    across seeds before bootstrapping, properly capturing both probe
-    training variance and sampling variance.
-
-    This function selects the median-performing seed's CI, which ignores
-    probe training variability (Bouthillier et al. 2021).
-
-    Args:
-        seed_results: List of MetricResult, one per seed.
-
-    Returns:
-        MetricResult from the median seed, with seeds_mean and seeds_std populated.
-    """
-    values = [r.value for r in seed_results]
-    seeds_mean = float(np.mean(values))
-    seeds_std = float(np.std(values, ddof=1)) if len(values) > 1 else 0.0
-
-    # Select median seed
-    sorted_idx = np.argsort(values)
-    median_idx = sorted_idx[len(sorted_idx) // 2]
-    median_result = seed_results[median_idx]
-
-    return MetricResult(
-        value=median_result.value,
-        ci_lower=median_result.ci_lower,
-        ci_upper=median_result.ci_upper,
-        n=median_result.n,
-        seeds_mean=seeds_mean,
-        seeds_std=seeds_std,
     )
 
 
