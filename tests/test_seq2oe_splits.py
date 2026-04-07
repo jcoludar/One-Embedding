@@ -146,6 +146,14 @@ class TestCathClusterSplit:
         assert val == sorted(val)
         assert test == sorted(test)
 
+    def test_independent_of_dict_insertion_order(self):
+        """Same metadata in different insertion order must yield identical splits."""
+        meta = self._make_meta()
+        reversed_meta = dict(reversed(list(meta.items())))
+        r1 = cath_cluster_split(meta, level="H", fractions=(0.6, 0.2, 0.2), seed=42)
+        r2 = cath_cluster_split(reversed_meta, level="H", fractions=(0.6, 0.2, 0.2), seed=42)
+        assert r1 == r2
+
     def test_class_stratification_both_classes_represented(self):
         """With enough clusters, both classes should appear in every fold."""
         # Build a bigger synthetic set: 20 H-codes in class 1, 20 in class 3

@@ -118,24 +118,26 @@ def cath_cluster_split(
         class_to_groups[cls][cluster].append(pid)
 
     folds: list[list[str]] = [[], [], []]
-    fold_targets_frac = fractions  # type: ignore[assignment]
-
     rng = random.Random(seed)
 
     for cls in sorted(class_to_groups.keys()):
         groups = class_to_groups[cls]
-        # Deterministic shuffle of group codes (sorted first, then shuffle)
+        # Deterministic shuffle of group codes (sort first so the shuffle is
+        # immune to dict insertion order, then shuffle with the seeded RNG)
         group_codes = sorted(groups.keys())
         rng.shuffle(group_codes)
 
         # Total proteins in this class
         class_total = sum(len(groups[g]) for g in group_codes)
-        targets = [f * class_total for f in fold_targets_frac]
+        targets = [f * class_total for f in fractions]
         class_counts = [0, 0, 0]
 
         for g in group_codes:
             members = sorted(groups[g])
-            # Which fold is furthest below its target?
+            # Choose the fold furthest below its target population.
+            # Tie-break: list.index returns the lowest matching index, so
+            # equal deficits bias toward train, then val. Deterministic
+            # across Python versions.
             deficits = [t - c for t, c in zip(targets, class_counts)]
             chosen = deficits.index(max(deficits))
             folds[chosen].extend(members)
