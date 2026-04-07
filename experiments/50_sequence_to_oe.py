@@ -192,6 +192,7 @@ def train_stage(
     val_ids: set,
     device: torch.device,
     smoke_test: bool = False,
+    seed: int = 42,
     checkpoint_dir: Path | None = None,
 ):
     """Train a Seq2OE model for a given stage."""
@@ -199,6 +200,10 @@ def train_stage(
     if smoke_test:
         cfg["epochs"] = 2
         cfg["batch_size"] = 4
+
+    # Seed all RNGs that affect training reproducibility
+    torch.manual_seed(seed)
+    np.random.seed(seed)
 
     print(f"\n{'='*60}")
     print(f"STAGE {stage}: hidden={cfg['hidden']}, layers={cfg['n_layers']}")
@@ -219,7 +224,7 @@ def train_stage(
     train_ds = Seq2OEDataset(train_seqs, train_tgts, max_len=max_len)
     val_ds = Seq2OEDataset(val_seqs, val_tgts, max_len=max_len)
 
-    g = torch.Generator().manual_seed(42)
+    g = torch.Generator().manual_seed(seed)
     train_loader = DataLoader(train_ds, batch_size=cfg["batch_size"],
                               shuffle=True, drop_last=False, generator=g)
     val_loader = DataLoader(val_ds, batch_size=cfg["batch_size"], shuffle=False)
@@ -351,7 +356,7 @@ def train_stage(
     print(f"\n  Stage {stage} complete: best val acc={best_val_acc:.4f} "
           f"@ epoch {best_epoch} ({elapsed:.0f}s)")
 
-    return model, history
+    return model, history, elapsed
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -541,9 +546,10 @@ def main():
         print(f"  Saved split to {split_path}")
 
     # Train
-    model, history = train_stage(
+    model, history, train_seconds = train_stage(
         args.stage, sequences, all_targets,
         set(train_ids), set(val_ids), device, args.smoke_test,
+        seed=args.seed,
         checkpoint_dir=run_dir,
     )
 
@@ -568,6 +574,7 @@ def main():
     results["best_val_bit_acc"] = float(
         history["val_bit_acc"][results["best_epoch"] - 1]
     )
+    results["train_seconds"] = float(train_seconds)
 
     # Save results
     results_path = run_dir / "results.json"
