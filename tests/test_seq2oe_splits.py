@@ -174,3 +174,26 @@ class TestCathClusterSplit:
         for fold, name in [(train, "train"), (val, "val"), (test, "test")]:
             classes = {meta[p]["C"] for p in fold}
             assert classes == {1, 3}, f"{name} missing a class: {classes}"
+
+
+class TestSplitIO:
+    def test_roundtrip(self, tmp_path):
+        train = ["p1", "p2"]
+        val = ["p3"]
+        test = ["p4", "p5"]
+        meta_info = {"level": "H", "seed": 42, "fractions": [0.6, 0.2, 0.2]}
+
+        path = tmp_path / "split.json"
+        save_split(path, train, val, test, meta_info)
+        assert path.exists()
+
+        loaded_train, loaded_val, loaded_test, loaded_meta = load_split(path)
+        assert loaded_train == train
+        assert loaded_val == val
+        assert loaded_test == test
+        assert loaded_meta == meta_info
+
+    def test_save_creates_parent_dirs(self, tmp_path):
+        path = tmp_path / "nested" / "dir" / "split.json"
+        save_split(path, ["p1"], ["p2"], ["p3"], {"level": "T", "seed": 0})
+        assert path.exists()

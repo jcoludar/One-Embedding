@@ -149,9 +149,35 @@ def cath_cluster_split(
     return train, val, test
 
 
-# Stubs to be implemented in Task 3
-def save_split(*args, **kwargs):
-    raise NotImplementedError("Implemented in Task 3")
+def save_split(
+    path: Path | str,
+    train_ids: list[str],
+    val_ids: list[str],
+    test_ids: list[str],
+    meta: dict,
+) -> None:
+    """Save a split + its metadata to JSON for reproducibility."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "train_ids": list(train_ids),
+        "val_ids": list(val_ids),
+        "test_ids": list(test_ids),
+        "meta": meta,
+    }
+    with open(path, "w") as f:
+        json.dump(payload, f, indent=2)
 
-def load_split(*args, **kwargs):
-    raise NotImplementedError("Implemented in Task 3")
+
+def load_split(
+    path: Path | str,
+) -> tuple[list[str], list[str], list[str], dict]:
+    """Load a split saved by `save_split`."""
+    with open(path) as f:
+        payload = json.load(f)
+    return (
+        payload["train_ids"],
+        payload["val_ids"],
+        payload["test_ids"],
+        payload["meta"],
+    )
