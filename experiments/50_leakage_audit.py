@@ -12,6 +12,7 @@ Usage:
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -26,7 +27,10 @@ sys.path.insert(0, str(ROOT))
 from src.one_embedding.seq2oe_splits import parse_cath_fasta, cath_cluster_split
 
 DATA = ROOT / "data"
-MMSEQS = "/opt/homebrew/bin/mmseqs"
+# Resolve mmseqs2 binary at import time. Prefer $PATH; fall back to the common
+# Homebrew location on macOS so the script also works on machines without mmseqs
+# in the user's interactive shell PATH.
+MMSEQS = shutil.which("mmseqs") or "/opt/homebrew/bin/mmseqs"
 
 
 def write_fasta(sequences: dict, path: Path):
@@ -101,14 +105,16 @@ def main():
         if h["pident"] > query_max[h["query"]]:
             query_max[h["query"]] = h["pident"]
 
-    n_test = len(test_ids)
-    # Every test protein has at least identity-0 "hit" conceptually
+    # Test queries with no MMseqs hits get 0% max identity (treated as no leakage).
     max_per_query = [query_max.get(pid, 0.0) for pid in test_ids]
     arr = np.array(max_per_query)
 
+    # JSON serialization coerces int dict keys to strings, so build the dicts
+    # with str keys from the start — keeps the in-memory and on-disk schemas
+    # identical so downstream consumers can index uniformly.
     thresholds = [20, 25, 30, 40, 50, 60]
-    counts = {t: int((arr >= t).sum()) for t in thresholds}
-    pcts = {t: float((arr >= t).mean() * 100) for t in thresholds}
+    counts = {str(t): int((arr >= t).sum()) for t in thresholds}
+    pcts = {str(t): float((arr >= t).mean() * 100) for t in thresholds}
 
     report = {
         "split": level,
@@ -134,10 +140,10 @@ def main():
 
     print(f"\nLeakage audit written to {out_path}")
     print(f"  mean max-identity: {arr.mean():.1f}%")
-    print(f"  fraction >= 40% identity: {pcts[40]:.1f}%")
+    print(f"  fraction >= 40% identity: {pcts['40']:.1f}%")
 
-    if pcts[40] > 5.0:
-        print(f"WARNING: {pcts[40]:.1f}% of test proteins have a train hit "
+    if pcts["40"] > 5.0:
+        print(f"WARNING: {pcts['40']:.1f}% of test proteins have a train hit "
               f">= 40% identity — split may be leakier than expected")
 
 
