@@ -78,10 +78,76 @@ def parse_cath_fasta(path: Path | str) -> dict[str, dict]:
     return meta
 
 
-# Stubs to be implemented in Tasks 2 and 3
-def cath_cluster_split(*args, **kwargs):
-    raise NotImplementedError("Implemented in Task 2")
+def cath_cluster_split(
+    metadata: dict[str, dict],
+    level: str,
+    fractions: tuple[float, float, float],
+    seed: int,
+) -> tuple[list[str], list[str], list[str]]:
+    """Whole-cluster holdout split of CATH-labeled proteins.
 
+    Groups proteins by the chosen CATH level (H or T), then assigns whole
+    groups to train / val / test folds. Within each Class (C), groups are
+    shuffled deterministically from the seed and walked in order; each group
+    goes to whichever fold is currently furthest below its target fraction
+    (measured in number of proteins, not groups). This per-Class greedy
+    strategy keeps every class proportionally represented in every fold.
+
+    Args:
+        metadata: Output of `parse_cath_fasta` — dict of pid -> info dict with
+            keys "C", "T", "H" (among others).
+        level: "H" (homologous superfamily) or "T" (topology/fold).
+        fractions: (train, val, test) fractions. Must sum to 1.0.
+        seed: RNG seed controlling shuffle order.
+
+    Returns:
+        (train_ids, val_ids, test_ids), each sorted alphabetically.
+    """
+    if level not in ("H", "T"):
+        raise ValueError(f"level must be 'H' or 'T', got {level!r}")
+    if abs(sum(fractions) - 1.0) > 1e-6:
+        raise ValueError(f"fractions must sum to 1, got {fractions}")
+
+    # Group proteins by (class, cluster code)
+    class_to_groups: dict[int, dict[str, list[str]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
+    for pid, info in metadata.items():
+        cls = info["C"]
+        cluster = info[level]
+        class_to_groups[cls][cluster].append(pid)
+
+    folds: list[list[str]] = [[], [], []]
+    fold_targets_frac = fractions  # type: ignore[assignment]
+
+    rng = random.Random(seed)
+
+    for cls in sorted(class_to_groups.keys()):
+        groups = class_to_groups[cls]
+        # Deterministic shuffle of group codes (sorted first, then shuffle)
+        group_codes = sorted(groups.keys())
+        rng.shuffle(group_codes)
+
+        # Total proteins in this class
+        class_total = sum(len(groups[g]) for g in group_codes)
+        targets = [f * class_total for f in fold_targets_frac]
+        class_counts = [0, 0, 0]
+
+        for g in group_codes:
+            members = sorted(groups[g])
+            # Which fold is furthest below its target?
+            deficits = [t - c for t, c in zip(targets, class_counts)]
+            chosen = deficits.index(max(deficits))
+            folds[chosen].extend(members)
+            class_counts[chosen] += len(members)
+
+    train = sorted(folds[0])
+    val = sorted(folds[1])
+    test = sorted(folds[2])
+    return train, val, test
+
+
+# Stubs to be implemented in Task 3
 def save_split(*args, **kwargs):
     raise NotImplementedError("Implemented in Task 3")
 
