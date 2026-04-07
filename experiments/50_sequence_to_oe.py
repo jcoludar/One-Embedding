@@ -53,16 +53,68 @@ RESULTS_DIR = ROOT / "results" / "exp50"
 
 
 # ═══════════════════════════════════════════════════════════════════════
+# Target preparation (train-only fit to avoid centering-stat leakage)
+# ═══════════════════════════════════════════════════════════════════════
+
+def prepare_binary_targets_train_fit(
+    train_embeddings: dict,
+    all_embeddings: dict,
+    d_out: int = 896,
+    seed: int = 42,
+) -> dict:
+    """Fit OneEmbeddingCodec on train embeddings only, then encode all folds.
+
+    This prevents centering-stat leakage from val/test into the binary targets.
+    """
+    from src.one_embedding.codec_v2 import OneEmbeddingCodec
+
+    codec = OneEmbeddingCodec(d_out=d_out, quantization="binary", seed=seed)
+    codec.fit(train_embeddings)
+
+    targets = {}
+    for pid, raw in all_embeddings.items():
+        projected = codec._preprocess(raw)
+        means = projected.mean(axis=0)
+        centered = projected - means[np.newaxis, :]
+        bits = (centered > 0).astype(np.uint8)
+        targets[pid] = bits
+
+    return targets
+
+
+# ═══════════════════════════════════════════════════════════════════════
 # Data loading
 # ═══════════════════════════════════════════════════════════════════════
 
-def load_data(smoke_test: bool = False):
-    """Load sequences + ProtT5 embeddings, return train/val/test splits."""
-    fasta_path = DATA / "proteins" / "medium_diverse_5k.fasta"
-    h5_path = DATA / "residue_embeddings" / "prot_t5_xl_medium5k.h5"
+def load_data(
+    dataset: str,
+    split: str,
+    seed: int,
+    smoke_test: bool = False,
+):
+    """Load sequences + embeddings and build the requested split.
+
+    Returns:
+        (sequences, embeddings, train_ids, val_ids, test_ids, split_meta)
+        where `split_meta` is a dict recording the split strategy for JSON I/O.
+    """
+    if dataset == "cath20":
+        fasta_path = DATA / "external" / "cath20" / "cath20_labeled.fasta"
+        h5_path = DATA / "residue_embeddings" / "prot_t5_xl_cath20.h5"
+    elif dataset == "medium5k":
+        fasta_path = DATA / "proteins" / "medium_diverse_5k.fasta"
+        h5_path = DATA / "residue_embeddings" / "prot_t5_xl_medium5k.h5"
+    else:
+        raise ValueError(f"Unknown dataset: {dataset}")
 
     print(f"Loading sequences from {fasta_path}")
-    sequences = read_fasta(fasta_path)
+    if dataset == "cath20":
+        from src.one_embedding.seq2oe_splits import parse_cath_fasta
+        cath_meta = parse_cath_fasta(fasta_path)
+        sequences = {pid: info["seq"] for pid, info in cath_meta.items()}
+    else:
+        sequences = read_fasta(fasta_path)
+        cath_meta = None
 
     print(f"Loading ProtT5 embeddings from {h5_path}")
     embeddings = {}
@@ -73,27 +125,53 @@ def load_data(smoke_test: bool = False):
         for pid in keys:
             embeddings[pid] = f[pid][:].astype(np.float32)
 
-    # Filter to common keys
+    # Keep only proteins with both seq and embedding
     common = sorted(set(sequences) & set(embeddings))
     sequences = {k: sequences[k] for k in common}
     embeddings = {k: embeddings[k] for k in common}
     print(f"  {len(common)} proteins with both sequence + embedding")
 
-    # Split: 80/10/10
-    rng = np.random.RandomState(42)
-    ids = np.array(common)
-    rng.shuffle(ids)
-    n = len(ids)
-    n_train = int(0.8 * n)
-    n_val = int(0.1 * n)
+    # Build the split
+    if split == "random":
+        rng = np.random.RandomState(seed)
+        ids = np.array(common)
+        rng.shuffle(ids)
+        n = len(ids)
+        n_train = int(0.8 * n)
+        n_val = int(0.1 * n)
+        train_ids = list(ids[:n_train])
+        val_ids = list(ids[n_train:n_train + n_val])
+        test_ids = list(ids[n_train + n_val:])
+        split_meta = {
+            "strategy": "random",
+            "dataset": dataset,
+            "seed": seed,
+            "fractions": [0.8, 0.1, 0.1],
+        }
+    elif split in ("h", "t"):
+        from src.one_embedding.seq2oe_splits import cath_cluster_split
+        assert cath_meta is not None, "CATH metadata required for h/t split"
+        # Restrict cath_meta to proteins that also have embeddings
+        filt_meta = {k: cath_meta[k] for k in common if k in cath_meta}
+        level = split.upper()
+        fractions = (0.8, 0.1, 0.1) if not smoke_test else (0.6, 0.2, 0.2)
+        train_ids, val_ids, test_ids = cath_cluster_split(
+            filt_meta, level=level, fractions=fractions, seed=seed,
+        )
+        split_meta = {
+            "strategy": f"cath_{level}",
+            "dataset": dataset,
+            "seed": seed,
+            "fractions": list(fractions),
+            "level": level,
+        }
+    else:
+        raise ValueError(f"Unknown split: {split}")
 
-    train_ids = set(ids[:n_train])
-    val_ids = set(ids[n_train:n_train + n_val])
-    test_ids = set(ids[n_train + n_val:])
+    print(f"  Split ({split}): "
+          f"{len(train_ids)} train, {len(val_ids)} val, {len(test_ids)} test")
 
-    print(f"  Split: {len(train_ids)} train, {len(val_ids)} val, {len(test_ids)} test")
-
-    return sequences, embeddings, train_ids, val_ids, test_ids
+    return sequences, embeddings, train_ids, val_ids, test_ids, split_meta
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -114,6 +192,7 @@ def train_stage(
     val_ids: set,
     device: torch.device,
     smoke_test: bool = False,
+    checkpoint_dir: Path | None = None,
 ):
     """Train a Seq2OE model for a given stage."""
     cfg = STAGE_CONFIGS[stage].copy()
@@ -160,7 +239,8 @@ def train_stage(
     history = {"epoch": [], "train_loss": [], "val_loss": [],
                "train_bit_acc": [], "val_bit_acc": []}
 
-    checkpoint_dir = RESULTS_DIR / f"stage{stage}"
+    if checkpoint_dir is None:
+        checkpoint_dir = RESULTS_DIR / f"stage{stage}"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     start = time.time()
@@ -385,14 +465,35 @@ def main():
     parser = argparse.ArgumentParser(description="Exp 50: Sequence to One Embedding")
     parser.add_argument("--stage", type=int, default=1, choices=[1, 2],
                         help="Model stage (1=baseline CNN, 2=deeper)")
+    parser.add_argument("--dataset", choices=["cath20", "medium5k"],
+                        default="cath20",
+                        help="Which embeddings + sequences to use")
+    parser.add_argument("--split", choices=["h", "t", "random"],
+                        default="h",
+                        help="Split strategy: h/t = CATH cluster level, "
+                             "random = shuffled 80/10/10")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Seed for split and training RNGs")
+    parser.add_argument("--output-root", type=str,
+                        default="results/exp50_rigorous",
+                        help="Root dir for all outputs")
     parser.add_argument("--smoke-test", action="store_true",
                         help="Quick run with tiny data + 2 epochs")
     parser.add_argument("--eval", action="store_true",
                         help="Run downstream evaluation after training")
     args = parser.parse_args()
 
+    # Validate dataset/split combinations
+    if args.dataset == "medium5k" and args.split in ("h", "t"):
+        parser.error(
+            "--dataset medium5k does not have CATH labels; "
+            "use --split random or --dataset cath20"
+        )
+
     device = get_device()
     print(f"Device: {device}")
+    print(f"Config: dataset={args.dataset} split={args.split} "
+          f"seed={args.seed} stage={args.stage}")
 
     # Check system load
     load1, load5, _ = os.getloadavg()
@@ -400,44 +501,82 @@ def main():
     if load1 > 10:
         print("WARNING: System load >10, consider waiting before training")
 
-    # Load data
-    sequences, embeddings, train_ids, val_ids, test_ids = load_data(args.smoke_test)
+    # Load data + build split
+    sequences, embeddings, train_ids, val_ids, test_ids, split_meta = load_data(
+        dataset=args.dataset,
+        split=args.split,
+        seed=args.seed,
+        smoke_test=args.smoke_test,
+    )
 
-    # Prepare binary targets from ProtT5 embeddings
-    print("\nPreparing binary targets (center + RP896 + sign)...")
+    # Prepare binary targets — codec centering fit on TRAIN EMBEDDINGS ONLY
+    print("\nPreparing binary targets (center + RP896 + sign, train-only fit)...")
     t0 = time.time()
-    all_targets = prepare_binary_targets(embeddings, d_out=896, seed=42)
+    train_embeddings = {pid: embeddings[pid] for pid in train_ids if pid in embeddings}
+    all_targets = prepare_binary_targets_train_fit(
+        train_embeddings=train_embeddings,
+        all_embeddings=embeddings,
+        d_out=896,
+        seed=args.seed,
+    )
     print(f"  Done in {time.time() - t0:.1f}s")
 
-    # Sanity: class balance
+    # Sanity: class balance on a sample
     sample_pid = next(iter(all_targets))
-    sample = all_targets[sample_pid]
-    balance = sample.mean()
+    balance = all_targets[sample_pid].mean()
     print(f"  Class balance (sample): {balance:.3f} (ideal=0.5)")
+
+    # Output dir per (split, stage, seed)
+    output_root = Path(args.output_root)
+    run_dir = output_root / f"{args.split}_split" / f"stage{args.stage}" / f"seed{args.seed}"
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    # Persist split for reproducibility
+    splits_dir = output_root / "splits"
+    splits_dir.mkdir(parents=True, exist_ok=True)
+    split_path = splits_dir / f"{args.split}_seed{args.seed}.json"
+    if not split_path.exists():
+        from src.one_embedding.seq2oe_splits import save_split
+        save_split(split_path, train_ids, val_ids, test_ids, split_meta)
+        print(f"  Saved split to {split_path}")
 
     # Train
     model, history = train_stage(
         args.stage, sequences, all_targets,
-        train_ids, val_ids, device, args.smoke_test,
+        set(train_ids), set(val_ids), device, args.smoke_test,
+        checkpoint_dir=run_dir,
     )
 
     # Test evaluation
-    results = evaluate_bit_accuracy(model, sequences, all_targets, test_ids, device)
+    results = evaluate_bit_accuracy(
+        model, sequences, all_targets, set(test_ids), device
+    )
 
     # Per-dimension analysis
-    dim_results = analyze_per_dimension(model, sequences, all_targets, test_ids, device)
+    dim_results = analyze_per_dimension(
+        model, sequences, all_targets, set(test_ids), device
+    )
     results["dim_accuracies"] = dim_results["dim_accuracies"]
+    results["config"] = {
+        "stage": args.stage,
+        "dataset": args.dataset,
+        "split": args.split,
+        "seed": args.seed,
+    }
+    results["best_epoch"] = int(np.argmin(history["val_loss"]) + 1)
+    results["best_val_loss"] = float(min(history["val_loss"]))
+    results["best_val_bit_acc"] = float(
+        history["val_bit_acc"][results["best_epoch"] - 1]
+    )
 
     # Save results
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    results_path = RESULTS_DIR / f"stage{args.stage}_results.json"
+    results_path = run_dir / "results.json"
     with open(results_path, "w") as f:
         json.dump(results, f, indent=2)
     print(f"\nResults saved to {results_path}")
 
     if args.eval:
         print("\n[TODO] Downstream evaluation (SS3, disorder, retrieval)")
-        print("  This will be added once we see if bit accuracy is above random.")
 
 
 if __name__ == "__main__":
