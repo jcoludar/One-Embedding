@@ -87,11 +87,13 @@ def cath_cluster_split(
     """Whole-cluster holdout split of CATH-labeled proteins.
 
     Groups proteins by the chosen CATH level (H or T), then assigns whole
-    groups to train / val / test folds. Within each Class (C), groups are
-    shuffled deterministically from the seed and walked in order; each group
-    goes to whichever fold is currently furthest below its target fraction
-    (measured in number of proteins, not groups). This per-Class greedy
-    strategy keeps every class proportionally represented in every fold.
+    groups to train / val / test folds using a Largest-Fit-Decreasing
+    heuristic with a fill-ratio metric: within each Class, clusters are
+    seeded-shuffled (to break size ties deterministically), then sorted in
+    descending size order, then walked. Each cluster is assigned to whichever
+    fold currently has the lowest fill ratio (count / target). This handles
+    classes with a few giant clusters — the alternative absolute-deficit
+    metric slams big clusters into train and overshoots its target by 5+ pp.
 
     Args:
         metadata: Output of `parse_cath_fasta` — dict of pid -> info dict with
@@ -123,9 +125,14 @@ def cath_cluster_split(
     for cls in sorted(class_to_groups.keys()):
         groups = class_to_groups[cls]
         # Deterministic shuffle of group codes (sort first so the shuffle is
-        # immune to dict insertion order, then shuffle with the seeded RNG)
+        # immune to dict insertion order, then shuffle with the seeded RNG).
         group_codes = sorted(groups.keys())
         rng.shuffle(group_codes)
+
+        # Largest-first: stable sort by descending size, ties broken by the
+        # seeded shuffle order above. This is the standard LPT heuristic for
+        # multi-bin packing with whole indivisible items.
+        group_codes.sort(key=lambda g: -len(groups[g]))
 
         # Total proteins in this class
         class_total = sum(len(groups[g]) for g in group_codes)
@@ -134,12 +141,16 @@ def cath_cluster_split(
 
         for g in group_codes:
             members = sorted(groups[g])
-            # Choose the fold furthest below its target population.
-            # Tie-break: list.index returns the lowest matching index, so
-            # equal deficits bias toward train, then val. Deterministic
-            # across Python versions.
-            deficits = [t - c for t, c in zip(targets, class_counts)]
-            chosen = deficits.index(max(deficits))
+            # Choose the fold with the lowest fill ratio (count / target).
+            # When a target is 0 the fill ratio is treated as +inf so that
+            # fold is never chosen until everyone else is also at +inf.
+            # Tie-break: min returns the lowest matching index, biasing
+            # toward train, then val. Deterministic across Python versions.
+            fill_ratios = [
+                (c / t) if t > 0 else float("inf")
+                for c, t in zip(class_counts, targets)
+            ]
+            chosen = fill_ratios.index(min(fill_ratios))
             folds[chosen].extend(members)
             class_counts[chosen] += len(members)
 

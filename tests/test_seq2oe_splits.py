@@ -154,6 +154,43 @@ class TestCathClusterSplit:
         r2 = cath_cluster_split(reversed_meta, level="H", fractions=(0.6, 0.2, 0.2), seed=42)
         assert r1 == r2
 
+    def test_giant_cluster_does_not_blow_up_train_fraction(self):
+        """A class containing one cluster much bigger than val+test target
+        must still produce a balanced split (LPT regression test).
+
+        With 1000 proteins target-split 80/10/10, a single 200-protein cluster
+        must not push train above 85% even though that cluster cannot fit in
+        either val or test (val/test target = 100 each)."""
+        meta = {}
+        # 1 giant cluster of 200 proteins
+        for i in range(200):
+            meta[f"big{i}"] = {
+                "seq": "A", "C": 1, "A": 10,
+                "T": "1.10.999", "H": "1.10.999.10",
+            }
+        # 80 small clusters of 10 proteins each
+        for c in range(80):
+            for i in range(10):
+                meta[f"sm{c}_{i}"] = {
+                    "seq": "A", "C": 1, "A": 10,
+                    "T": f"1.10.{c}", "H": f"1.10.{c}.10",
+                }
+        n = len(meta)  # 1000
+        train, val, test = cath_cluster_split(
+            meta, level="H", fractions=(0.8, 0.1, 0.1), seed=42
+        )
+        train_frac = len(train) / n
+        val_frac = len(val) / n
+        test_frac = len(test) / n
+        # Tolerance ±5pp on train fraction
+        assert abs(train_frac - 0.8) <= 0.05, (
+            f"train fraction {train_frac:.3f} out of ±5pp tolerance "
+            f"(val={val_frac:.3f} test={test_frac:.3f})"
+        )
+        # Val and test must each have at least 5% of the proteins
+        assert val_frac >= 0.05, f"val fraction {val_frac:.3f} too small"
+        assert test_frac >= 0.05, f"test fraction {test_frac:.3f} too small"
+
     def test_class_stratification_both_classes_represented(self):
         """With enough clusters, both classes should appear in every fold."""
         # Build a bigger synthetic set: 20 H-codes in class 1, 20 in class 3
