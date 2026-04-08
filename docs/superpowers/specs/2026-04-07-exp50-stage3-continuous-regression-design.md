@@ -105,7 +105,13 @@ deferred. Multi-PLM teacher (ESM, ANKH) deferred.
 ### Combined training pool
 
 - `train_pool = cath20_h_train ∪ deeploc_filtered`
-- All proteins shuffled together each epoch.
+- All proteins shuffled together each epoch (single `DataLoader` over the
+  union).
+- **Merge strategy:** load the CATH20 H5 and the DeepLoc H5 into a single
+  `embeddings: dict[str, np.ndarray]` keyed by protein ID. CATH20 IDs
+  (`12asA00` style) and DeepLoc IDs (UniProt, `P12345` style) are disjoint,
+  so there's no collision risk — a simple dict update is sufficient. The
+  same pattern applies to the sequences dict.
 - Targets for both pools are computed using the **same** codec (fit on CATH20
   train only).
 
@@ -163,13 +169,19 @@ residues across all test proteins. Confidence intervals are seed-level
 |---|---|---|
 | `cosine_sim` | mean cosine similarity per residue | how aligned predicted and target embeddings are. 1.0 = perfect, 0.0 = orthogonal. Closest to "is this useful for retrieval". |
 | `cosine_distance` | `1 - cosine_sim` | for early stopping. |
-| `mse_per_dim` | mean MSE averaged over 896 dims and all residues | "how far off in absolute magnitude". Lower is better. |
-| `euclidean_per_residue` | mean of `‖pred - target‖_2` per residue | distance metric for clustering use cases. |
-| `bit_accuracy` | re-binarize predicted vector via per-protein sign(pred - mean(pred)) and compare to binarized target | direct comparability with Stages 1 and 2. |
-| `dims_above_60_intersect` | dims where every seed had bit acc > 0.60 individually | matches Stage 2 reporting. |
+| `mse` | mean squared error per element, averaged over 896 dims and all residues | magnitude fidelity. Equal to `euclidean_per_residue² / 896`, so they carry the same information — we report MSE because it's also in the loss. |
+| `bit_accuracy` | re-binarize predicted vector via per-protein `sign(pred - mean(pred))` and compare to the binarized target | apples-to-apples comparison with Stages 1 and 2. |
+| `dims_above_60_intersect` | dims where every seed had per-dim bit acc > 0.60 individually | matches Stage 2 reporting. |
 
-The headline result for the paper / memory entry is the cosine similarity
-mean ± std across 3 seeds, plus the bit accuracy delta vs Stage 2.
+**Direct Stage 2 comparison** is on **bit accuracy** only. Stage 2 outputs
+pre-sigmoid logits, not continuous projected vectors, so their cosine
+similarity with the Stage 3 target is not a fair comparison (different
+output space). Cosine similarity is a **new primary metric** established in
+Stage 3 as the baseline for Stage 4+.
+
+The headline result for the memory entry is the Stage 3 cosine similarity
+mean ± std across 3 seeds, plus the bit-accuracy delta against Stage 2's
+69.28 ± 0.02% on the same H-split test set.
 
 ## Aggregation
 
@@ -177,7 +189,7 @@ For each (split, stage) — only `(h, 3)` in this spec since we're not
 re-running T-split or Stages 1 / 2:
 
 - `cosine_sim_mean`, `cosine_sim_std` across seeds (ddof=1)
-- Same for `mse_per_dim`, `euclidean_per_residue`, `bit_accuracy`
+- Same for `mse`, `bit_accuracy`
 - `dims_above_60_intersect`, `dims_above_60_mean` (Stage 2 reporting style)
 
 Written to `results/exp50_stage3/h_split/stage3/summary.json` and
@@ -282,14 +294,20 @@ any of the Stage 1/2 code. Stage 3 is fully additive.
 
 ## Compute budget (rough)
 
-- Stage 2 took ~38 min per seed on 14K CATH20 proteins.
-- Stage 3 trains on ~25K proteins (CATH20 train + DeepLoc filtered), so ~1.8×
-  per epoch.
-- Cosine + MSE losses are slightly cheaper than 896-output BCE.
-- Net per-seed estimate: **~50–70 min**.
-- 3 seeds × ~60 min = **~3 hours total wall-clock**.
-- Plus a one-time MMseqs2 leakage filter run: ~3 minutes per seed.
-- Total: **~3.5–4 hours overnight**.
+- Stage 2 took ~38 min per seed on 11,544 CATH20 train proteins (with
+  early-stop at ~epoch 18 of 100).
+- Stage 3 trains on ~25,000 proteins (~2.17× more), and DeepLoc proteins
+  are longer on average (median 354 vs CATH20's 144), so the per-epoch
+  forward/backward cost increases proportionally. Net per-epoch scale
+  factor ≈ 2×.
+- The loss scalar cost is comparable to Stage 2's per-bit BCE
+  (cosine + MSE on 896 dims is similar FLOP count to 896-way BCE).
+- Per-seed estimate: **~60–90 min** depending on early-stop behavior under
+  the new loss.
+- 3 seeds × ~75 min ≈ **~3.75 hours training wall-clock**.
+- Plus a one-time MMseqs2 leakage filter run: ~3 minutes per seed × 3 =
+  ~10 minutes.
+- **Total: ~3–5 hours overnight.**
 
 ## Risks
 
@@ -311,26 +329,37 @@ any of the Stage 1/2 code. Stage 3 is fully additive.
 - **Leakage filter may exclude > 5 % of DeepLoc.** If so, that's interesting
   (real overlap exists) but doesn't break the experiment. The filter list is
   saved for inspection.
-- **Cosine similarity is bounded above by some "irreducible noise" floor**
-  set by the random projection — even a perfect predictor cannot exactly
-  match the projected embedding, only its cosine direction. We expect cosine
-  similarity to plateau somewhere below 1.0 even with infinite capacity. The
-  Stage 2 → Stage 3 delta is what we care about.
+- **Cosine similarity ceiling is set by capacity + data, not by the
+  projection.** The random projection is a deterministic linear operation,
+  so a student that perfectly approximates ProtT5 would reach
+  `cosine_sim = 1.0` on the projected target. Realistically we'll plateau
+  well below 1.0 because the 4.2M-param CNN has limited capacity and CATH20
+  + DeepLoc is still a small distillation corpus. The Stage 3 number
+  establishes what this architecture can reach; the headroom to 1.0 is the
+  budget for Stage 4+ (transformer, more data, distillation at scale).
 
 ## Success criteria
 
 A clean three-seed measurement on CATH20 H-split test that lets us answer:
 
-1. Does continuous regression + 2× data improve cosine similarity vs Stage 2?
-   By how much (mean ± std across seeds)?
-2. Does it improve bit accuracy after re-binarization vs Stage 2's 69.3%?
-3. Does it improve on the per-dim "every seed > 60%" intersection count?
-4. What is the cosine similarity floor at this architecture scale (i.e. how
-   much headroom is there for a Stage 4 transformer)?
+1. **Primary:** does re-binarized Stage 3 bit accuracy beat Stage 2's
+   **69.28 ± 0.02%** on the same H-split? Target: at least +1.0 pp (i.e.
+   ≥ 70.3%). A smaller improvement or a regression triggers the ablation.
+2. **Primary:** what cosine similarity does this architecture reach on the
+   H-test set? Establishes the baseline for Stage 4+.
+3. **Secondary:** is the per-seed std on bit accuracy comparable to Stage 2
+   (< 0.1 pp)? And is cosine sim std < 0.01? If variance balloons, something
+   is unstable and we need to debug before trusting the numbers.
+4. **Secondary:** per-dim `dims_above_60_intersect` stays at 896/896 (we
+   don't regress on any single dim).
 
-If cosine similarity improves materially (say, +0.05 over whatever Stage 2's
-implicit cosine number is — Stage 2 outputs binary so cosine has to be
-re-computed by binarizing the target, but it's a fixed-baseline anyway), we
-declare Stage 3 a win and move on to Stage 4. If it's flat, we ablate (run
-A1 = continuous on CATH20 alone) to determine which lever (loss or data)
-mattered.
+**Decision tree after the sweep:**
+- **≥ +1.0 pp bit accuracy AND tight std:** declare Stage 3 a clean win.
+  Move on to Stage 4 (transformer architecture) or the downstream-retention
+  measurement experiment we discussed.
+- **< +1.0 pp (flat or small improvement):** run the ablation — a Stage 3
+  variant that uses continuous regression on CATH20 **only** (no DeepLoc).
+  This isolates whether the loss change or the data expansion was the lever.
+- **Regression (worse than Stage 2):** debug loss weighting first (drop
+  `λ_mse` to 0.01 or 0), then codec-fit path (is DeepLoc's off-distribution
+  centering hurting?), then learning rate.
