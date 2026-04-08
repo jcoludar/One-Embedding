@@ -1,7 +1,7 @@
 # Exp 50 Rigorous Re-run — Sequence → Binary OE with CATH-level Splits
 
 **Date:** 2026-04-06
-**Status:** Approved — proceeding to implementation plan
+**Status:** Done — see `results/exp50_rigorous/final_comparison.md`. Stage 1 H 67.68 ± 0.04%, Stage 1 T 67.73 ± 0.02%, Stage 2 H 69.28 ± 0.02%, Stage 2 T 69.65 ± 0.09% (3 seeds each, all 896/896 dims > 60% on every run).
 **Supersedes:** Naive random-split run in `results/exp50/stage1_results.json` (2493 proteins, 80/10/10 random)
 
 ## Motivation
