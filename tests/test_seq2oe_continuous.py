@@ -84,3 +84,75 @@ class TestPrepareContinuousTargets:
             train_embeddings, train_embeddings, d_out=896, seed=42
         )
         np.testing.assert_array_equal(t1["p1"], t2["p1"])
+
+
+class TestCosineDistanceLoss:
+    def test_perfect_match_is_zero(self):
+        # 2 proteins, length 4, 896 dim
+        torch.manual_seed(0)
+        target = torch.randn(2, 4, 896)
+        pred = target.clone()
+        mask = torch.ones(2, 4)
+        loss = cosine_distance_loss(pred, target, mask)
+        assert abs(loss.item()) < 1e-5, f"expected 0, got {loss.item()}"
+
+    def test_opposite_direction_is_two(self):
+        torch.manual_seed(0)
+        target = torch.randn(1, 3, 896)
+        pred = -target
+        mask = torch.ones(1, 3)
+        loss = cosine_distance_loss(pred, target, mask)
+        # 1 - cos(x, -x) = 1 - (-1) = 2.0
+        assert abs(loss.item() - 2.0) < 1e-4
+
+    def test_mask_excludes_padding(self):
+        torch.manual_seed(0)
+        target = torch.randn(1, 10, 896)
+        # First 5 positions: perfect match
+        # Last 5 positions: opposite direction, should be IGNORED by mask
+        pred = target.clone()
+        pred[0, 5:] = -pred[0, 5:]
+        mask = torch.zeros(1, 10)
+        mask[0, :5] = 1.0  # only first 5 valid
+        loss = cosine_distance_loss(pred, target, mask)
+        assert abs(loss.item()) < 1e-5, \
+            f"masked-out positions leaked into loss: {loss.item()}"
+
+    def test_gradient_flows(self):
+        torch.manual_seed(0)
+        pred = torch.randn(2, 4, 896, requires_grad=True)
+        target = torch.randn(2, 4, 896)
+        mask = torch.ones(2, 4)
+        loss = cosine_distance_loss(pred, target, mask)
+        loss.backward()
+        assert pred.grad is not None
+        assert not torch.isnan(pred.grad).any()
+
+
+class TestMSELoss:
+    def test_perfect_match_is_zero(self):
+        target = torch.randn(2, 4, 896)
+        pred = target.clone()
+        mask = torch.ones(2, 4)
+        loss = mse_loss(pred, target, mask)
+        assert abs(loss.item()) < 1e-8
+
+    def test_symmetry(self):
+        torch.manual_seed(0)
+        a = torch.randn(1, 3, 896)
+        b = torch.randn(1, 3, 896)
+        mask = torch.ones(1, 3)
+        loss_ab = mse_loss(a, b, mask)
+        loss_ba = mse_loss(b, a, mask)
+        assert abs(loss_ab.item() - loss_ba.item()) < 1e-6
+
+    def test_mask_excludes_padding(self):
+        torch.manual_seed(0)
+        target = torch.zeros(1, 10, 896)
+        pred = torch.zeros(1, 10, 896)
+        pred[0, 5:] = 100.0  # huge error on masked-out positions
+        mask = torch.zeros(1, 10)
+        mask[0, :5] = 1.0
+        loss = mse_loss(pred, target, mask)
+        assert abs(loss.item()) < 1e-6, \
+            f"masked-out positions leaked into loss: {loss.item()}"

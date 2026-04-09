@@ -52,14 +52,62 @@ def prepare_continuous_targets(
     return targets
 
 
-# Stubs to be implemented in Tasks 2 and 3
-def cosine_distance_loss(*args, **kwargs):
-    raise NotImplementedError("Implemented in Task 2")
+def cosine_distance_loss(
+    pred: Tensor,
+    target: Tensor,
+    mask: Tensor,
+    eps: float = 1e-8,
+) -> Tensor:
+    """Masked per-residue cosine distance, averaged over valid positions.
+
+    For each (batch, residue) position, compute
+        1 - cos(pred[b, r, :], target[b, r, :])
+    then average over positions where mask == 1.
+
+    Args:
+        pred: (B, L, D) continuous predictions.
+        target: (B, L, D) continuous targets.
+        mask: (B, L) float, 1.0 for valid positions, 0.0 for padding.
+        eps: Numerical stability floor on the norms.
+
+    Returns:
+        Scalar tensor in [0, 2]. 0 = perfect alignment, 2 = antiparallel.
+    """
+    # (B, L) cosine similarity per residue
+    pred_norm = pred.norm(dim=-1).clamp_min(eps)
+    target_norm = target.norm(dim=-1).clamp_min(eps)
+    cos_sim = (pred * target).sum(dim=-1) / (pred_norm * target_norm)
+    cos_dist = 1.0 - cos_sim  # (B, L)
+
+    # Masked average
+    n_valid = mask.sum().clamp_min(1.0)
+    return (cos_dist * mask).sum() / n_valid
 
 
-def mse_loss(*args, **kwargs):
-    raise NotImplementedError("Implemented in Task 2")
+def mse_loss(
+    pred: Tensor,
+    target: Tensor,
+    mask: Tensor,
+) -> Tensor:
+    """Masked per-element MSE, averaged over valid positions AND all D dims.
+
+    Args:
+        pred: (B, L, D) continuous predictions.
+        target: (B, L, D) continuous targets.
+        mask: (B, L) float, 1.0 for valid positions, 0.0 for padding.
+
+    Returns:
+        Scalar tensor. Mean squared error over valid (b, r, d) cells.
+    """
+    # (B, L, D) squared error
+    sq = (pred - target) ** 2
+    # Broadcast mask to (B, L, 1)
+    mask_3d = mask.unsqueeze(-1)
+    # Total valid cells = valid_residues * D
+    d = pred.shape[-1]
+    n_valid = mask.sum().clamp_min(1.0) * d
+    return (sq * mask_3d).sum() / n_valid
 
 
-def evaluate_continuous(*args, **kwargs):
+def evaluate_continuous(*args, **kwargs):  # implemented in Task 3
     raise NotImplementedError("Implemented in Task 3")
