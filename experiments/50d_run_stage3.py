@@ -99,6 +99,10 @@ def aggregate_seeds(output_root: Path) -> dict | None:
     mean_55 = int((mean_dims > 0.55).sum())
 
     def pack(arr):
+        # ddof=1 sample std with n=3 is a rough seed-variance bar, NOT a
+        # confidence interval. The real test-set CIs live in each per-seed
+        # results.json (BCa bootstrap from the eval pipeline). This std
+        # only tells you whether 3 different RNG seeds agree.
         return {
             "mean": float(arr.mean()),
             "std": float(arr.std(ddof=1)) if len(arr) > 1 else 0.0,
@@ -195,7 +199,9 @@ def main():
     parser.add_argument("--aggregate-only", action="store_true")
     args = parser.parse_args()
 
-    output_root = Path(args.output_root)
+    # Resolve to absolute so the per-seed subprocess invocations all see
+    # the same target dir regardless of cwd.
+    output_root = Path(args.output_root).resolve()
     total_wall_clock_start = time.time()
     n_ok, n_failed, n_skipped = 0, 0, 0
 

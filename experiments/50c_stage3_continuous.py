@@ -155,7 +155,17 @@ def train_continuous(
     smoke_test: bool = False,
 ) -> tuple:
     """Train a Seq2OE_CNN with cosine + MSE loss. Returns (model, history,
-    elapsed_seconds)."""
+    elapsed_seconds).
+
+    NOTE: this function is structurally a sibling of `train_stage` in
+    `experiments/50_sequence_to_oe.py`. They share the same overall flow
+    (DataLoader + AdamW + cosine schedule + grad clip + nan_to_num + early
+    stop on val + best-checkpoint reload), but differ in the loss
+    (cosine + MSE vs masked BCE) and the early-stop signal (val cosine
+    distance vs val loss). Intentionally duplicated rather than abstracted,
+    so the Stage 1/2 sweep stays frozen and reproducible. If you fix a bug
+    in either copy, fix it in both.
+    """
     cfg = CONFIG.copy()
     if smoke_test:
         cfg["epochs"] = 2
@@ -330,7 +340,9 @@ def main():
     if load1 > 10:
         print("WARNING: System load >10, consider waiting before training")
 
-    output_root = Path(args.output_root)
+    # Resolve to absolute path so subprocess (leakage filter) and parent
+    # both see the same target dir regardless of cwd at invocation time.
+    output_root = Path(args.output_root).resolve()
     output_root.mkdir(parents=True, exist_ok=True)
 
     # Step 1: ensure leakage filter exists
@@ -372,6 +384,13 @@ def main():
     sample_pid = next(iter(targets_all))
     print(f"  Sample target shape: {targets_all[sample_pid].shape}, "
           f"dtype: {targets_all[sample_pid].dtype}")
+
+    # Free raw embeddings — targets_all supersedes them for the rest of
+    # training. CATH H5 ~9GB + DeepLoc H5 ~22GB as float32; releasing them
+    # here drops peak RAM by ~31 GB before training begins.
+    import gc
+    del embeddings_all, cath_embs, deeploc_embs, cath_train_embeddings
+    gc.collect()
 
     # Step 7: persist the CATH H-split for reproducibility
     splits_dir = output_root / "splits"
@@ -436,8 +455,10 @@ def main():
         "n_test": len(test_ids),
         "n_deeploc_excluded": len(excluded),
     }
-    metrics["best_epoch"] = int(np.argmin(history["val_loss"]) + 1)
-    metrics["best_val_loss"] = float(min(history["val_loss"]))
+    # best_epoch is the epoch with the highest val cosine_sim (matches the
+    # checkpoint guard, which saves on lowest val_cos_dist).
+    metrics["best_epoch"] = int(np.argmax(history["val_cosine_sim"]) + 1)
+    metrics["best_val_loss"] = float(history["val_loss"][metrics["best_epoch"] - 1])
     metrics["best_val_cosine_sim"] = float(max(history["val_cosine_sim"]))
     metrics["train_seconds"] = float(train_seconds)
 
