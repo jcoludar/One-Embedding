@@ -1778,6 +1778,322 @@ The memory file lives outside the repo, so it's already saved from Step 6 and do
 
 ---
 
+### Task 9: RNS (Random Neighbor Score) evaluation
+
+**Reference:** Prabakaran & Bromberg, "Quantifying uncertainty in protein representations across models and tasks", Nature Methods 23, 796–804 (April 2026). doi:10.1038/s41592-026-03028-7.
+
+**What RNS is:** For each protein, find its k nearest neighbors in embedding space (using a combined index of real + randomly-shuffled "junkyard" sequences). RNS = fraction of those k neighbors that are junkyard. High RNS = the embedding is indistinguishable from random noise (low confidence). Low RNS = the embedding sits in a biologically structured region (high confidence). Model-agnostic, task-agnostic, biologically grounded.
+
+**Why it matters for us:** Bit accuracy and cosine similarity tell us how well the predicted embedding MATCHES ProtT5. RNS tells us whether the predicted embedding is BIOLOGICALLY MEANINGFUL. A model could achieve decent bit accuracy while placing proteins in the "junkyard" region of latent space — RNS catches that failure mode. It also directly probes the disorder retention gap (the paper shows IDPs have higher RNS across all PLMs — the signal is inherently uncertain for disordered proteins, which explains our persistent ~95% retention on disorder).
+
+**Files:**
+- Create: `src/one_embedding/rns.py`
+- Create: `tests/test_rns.py`
+- Create: `experiments/50_rns_evaluation.py`
+
+- [ ] **Step 1: Generate shuffled junkyard sequences**
+
+Write a helper `generate_junkyard_fasta(sequences, n_shuffles=5, seed=42)` in `src/one_embedding/rns.py` that takes a dict of `{pid: sequence}` and returns a dict of `{"{pid}_shuf{i}": shuffled_sequence}` for i in range(n_shuffles). Each shuffled sequence is a random permutation of the original's residues. Seed for reproducibility.
+
+```python
+# src/one_embedding/rns.py
+"""Random Neighbor Score (RNS) for embedding quality evaluation.
+
+Implements the RNS metric from Prabakaran & Bromberg (Nat Methods 2026):
+for each protein, RNS_k = fraction of k nearest neighbors in the
+embedding space that are randomly-shuffled (non-biological) sequences.
+
+RNS ∈ [0, 1]. Lower = higher confidence (embedding is in a biologically
+structured region). Higher = lower confidence (embedding is
+indistinguishable from random noise).
+"""
+
+from __future__ import annotations
+
+import random
+from collections import defaultdict
+
+import numpy as np
+
+
+def generate_junkyard_sequences(
+    sequences: dict[str, str],
+    n_shuffles: int = 5,
+    seed: int = 42,
+) -> dict[str, str]:
+    """Generate residue-shuffled copies of each sequence.
+
+    For each protein, create n_shuffles random permutations of its amino
+    acid sequence. The shuffled sequences have the same composition but
+    no biological order — they serve as the 'junkyard' reference for RNS.
+
+    Args:
+        sequences: {pid: aa_sequence} real protein sequences.
+        n_shuffles: Number of shuffled copies per protein.
+        seed: RNG seed for reproducibility.
+
+    Returns:
+        {"{pid}_shuf{i}": shuffled_sequence} for all proteins and copies.
+    """
+    rng = random.Random(seed)
+    junkyard: dict[str, str] = {}
+    for pid in sorted(sequences):  # sorted for determinism
+        residues = list(sequences[pid])
+        for i in range(n_shuffles):
+            shuffled = residues.copy()
+            rng.shuffle(shuffled)
+            junkyard[f"{pid}_shuf{i}"] = "".join(shuffled)
+    return junkyard
+
+
+def compute_rns(
+    query_vectors: dict[str, np.ndarray],
+    real_vectors: dict[str, np.ndarray],
+    junkyard_vectors: dict[str, np.ndarray],
+    k: int = 1000,
+) -> dict[str, float]:
+    """Compute RNS_k for each query protein.
+
+    Builds a FAISS index over the union of real + junkyard protein vectors,
+    then for each query finds its k nearest neighbors and reports the
+    fraction that are junkyard.
+
+    Args:
+        query_vectors: {pid: (D,) float32} proteins to score. Typically
+            the test set, embedded by the model being evaluated.
+        real_vectors: {pid: (D,) float32} biologically real protein vectors
+            (the 'anchor' set — typically the same test proteins embedded
+            by ProtT5 or another trusted source, PLUS the training set).
+        junkyard_vectors: {pid: (D,) float32} shuffled-sequence embeddings.
+        k: Number of nearest neighbors. Paper recommends k > 100.
+
+    Returns:
+        {pid: rns_score} for each query. rns ∈ [0, 1].
+    """
+    import faiss
+
+    # Build combined index: real + junkyard
+    all_ids = []
+    is_junkyard = []
+    vecs = []
+    for pid, vec in real_vectors.items():
+        all_ids.append(pid)
+        is_junkyard.append(False)
+        vecs.append(vec.astype(np.float32))
+    for pid, vec in junkyard_vectors.items():
+        all_ids.append(pid)
+        is_junkyard.append(True)
+        vecs.append(vec.astype(np.float32))
+
+    matrix = np.stack(vecs)  # (N, D)
+    d = matrix.shape[1]
+    index = faiss.IndexFlatL2(d)
+    index.add(matrix)
+
+    is_junk_arr = np.array(is_junkyard)  # (N,) bool
+
+    # Query
+    query_ids = sorted(query_vectors.keys())
+    query_mat = np.stack([query_vectors[pid].astype(np.float32)
+                          for pid in query_ids])
+
+    # k+1 because the query itself may be in the index (self-match)
+    _, indices = index.search(query_mat, k + 1)
+
+    scores: dict[str, float] = {}
+    for i, pid in enumerate(query_ids):
+        neighbors = indices[i]
+        # Exclude self-match if present
+        neighbor_mask = np.array([all_ids[j] != pid for j in neighbors])
+        valid_neighbors = neighbors[neighbor_mask][:k]
+        if len(valid_neighbors) == 0:
+            scores[pid] = 1.0  # no valid neighbors → worst case
+            continue
+        n_junk = is_junk_arr[valid_neighbors].sum()
+        scores[pid] = float(n_junk / len(valid_neighbors))
+
+    return scores
+```
+
+- [ ] **Step 2: Write tests for junkyard generation + RNS computation**
+
+```python
+# tests/test_rns.py
+"""Tests for RNS (Random Neighbor Score) evaluation."""
+
+import sys
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.one_embedding.rns import generate_junkyard_sequences, compute_rns
+
+
+class TestGenerateJunkyardSequences:
+    def test_count_and_naming(self):
+        seqs = {"p1": "ACDEF", "p2": "GHIKLMN"}
+        junk = generate_junkyard_sequences(seqs, n_shuffles=3, seed=42)
+        assert len(junk) == 6  # 2 proteins × 3 shuffles
+        assert "p1_shuf0" in junk
+        assert "p1_shuf2" in junk
+        assert "p2_shuf0" in junk
+
+    def test_same_composition(self):
+        seqs = {"p1": "AACDEF"}
+        junk = generate_junkyard_sequences(seqs, n_shuffles=5, seed=42)
+        for pid, seq in junk.items():
+            assert sorted(seq) == sorted("AACDEF")
+
+    def test_deterministic(self):
+        seqs = {"p1": "ACDEFGHIKLMNPQRSTVWY"}
+        j1 = generate_junkyard_sequences(seqs, seed=42)
+        j2 = generate_junkyard_sequences(seqs, seed=42)
+        assert j1 == j2
+
+    def test_different_from_original(self):
+        # With a 20-residue sequence, random shuffle ≠ original with high probability
+        seqs = {"p1": "ACDEFGHIKLMNPQRSTVWY"}
+        junk = generate_junkyard_sequences(seqs, n_shuffles=5, seed=42)
+        n_different = sum(1 for s in junk.values() if s != seqs["p1"])
+        assert n_different >= 4  # at least 4 of 5 should differ
+
+
+class TestComputeRNS:
+    def test_perfect_real_neighbors_gives_zero(self):
+        """If a query's neighbors are all real proteins, RNS = 0."""
+        d = 16
+        rng = np.random.RandomState(0)
+        # 10 real proteins in a tight cluster
+        real = {f"r{i}": rng.randn(d).astype(np.float32) * 0.1
+                for i in range(10)}
+        # 10 junkyard proteins FAR away
+        junk = {f"j{i}": (rng.randn(d).astype(np.float32) + 100.0)
+                for i in range(10)}
+        # Query = one of the real proteins
+        query = {"r0": real["r0"]}
+        scores = compute_rns(query, real, junk, k=5)
+        assert scores["r0"] < 0.01  # essentially 0
+
+    def test_junkyard_neighbor_gives_high_rns(self):
+        """If a query sits among junkyard vectors, RNS ≈ 1."""
+        d = 16
+        rng = np.random.RandomState(0)
+        # 10 real proteins in one region
+        real = {f"r{i}": rng.randn(d).astype(np.float32) * 0.1
+                for i in range(10)}
+        # 10 junkyard in another region
+        junk_center = rng.randn(d).astype(np.float32) * 0.1 + 50.0
+        junk = {f"j{i}": junk_center + rng.randn(d).astype(np.float32) * 0.1
+                for i in range(10)}
+        # Query sits right in the junkyard cluster
+        query = {"q": junk_center.copy()}
+        scores = compute_rns(query, real, junk, k=5)
+        assert scores["q"] > 0.8
+
+    def test_returns_score_for_every_query(self):
+        d = 8
+        rng = np.random.RandomState(0)
+        real = {f"r{i}": rng.randn(d).astype(np.float32) for i in range(5)}
+        junk = {f"j{i}": rng.randn(d).astype(np.float32) for i in range(5)}
+        query = {f"r{i}": real[f"r{i}"] for i in range(3)}
+        scores = compute_rns(query, real, junk, k=3)
+        assert set(scores.keys()) == {"r0", "r1", "r2"}
+        for v in scores.values():
+            assert 0.0 <= v <= 1.0
+```
+
+- [ ] **Step 3: Run tests — expect pass**
+
+Run: `uv run pytest tests/test_rns.py -v`
+Expected: 7 passed.
+
+- [ ] **Step 4: Commit the RNS module + tests**
+
+```bash
+git add src/one_embedding/rns.py tests/test_rns.py
+git commit -m "feat(exp50): RNS (Random Neighbor Score) module for embedding quality evaluation
+
+Implements the RNS metric from Prabakaran & Bromberg (Nat Methods 2026):
+for each protein, RNS_k = fraction of k nearest neighbors that are
+randomly-shuffled junkyard sequences. Model-agnostic embedding quality
+metric that detects whether embeddings are biologically meaningful."
+```
+
+- [ ] **Step 5: Write the RNS evaluation script**
+
+Create `experiments/50_rns_evaluation.py`:
+
+This script computes RNS for multiple embedding sources on the CATH20 H-test
+set, using shuffled CATH20 test sequences as the junkyard. Steps:
+
+1. Load CATH20 H-test protein IDs + sequences (from the seed-42 H-split)
+2. Generate 5 shuffled copies per test protein (7,220 junkyard sequences)
+3. Check if junkyard ProtT5 embeddings exist at
+   `data/residue_embeddings/prot_t5_xl_cath20_junkyard.h5`; if not, run
+   the ProtT5 extraction script on the junkyard FASTA (**~1-3h MPS**)
+4. Pool all embeddings to protein-level vectors (mean-pool across residues)
+5. For each embedding source (raw ProtT5, Stage 2 binary OE decoded,
+   Stage 3 continuous OE, seq2oe Stage 2 predicted, seq2oe Stage 3
+   predicted), compute RNS at k = 100, 500, 1000
+6. Report RNS distributions: mean, median, fraction with RNS=0, fraction
+   with RNS > 0.5
+7. Write `results/exp50_rns/rns_comparison.json` + `.md`
+
+CLI: `--seed INT` (default 42), `--k INT` (default 1000),
+     `--output-root PATH` (default `results/exp50_rns`),
+     `--skip-extraction` (use cached junkyard embeddings only, don't run ProtT5)
+
+**Implementation note:** the junkyard ProtT5 extraction is the only expensive
+step (~1-3h on MPS for ~7K short sequences). Once cached, subsequent RNS
+evaluations for new model checkpoints reuse the same junkyard and cost
+seconds. The script should cache the junkyard FASTA and embeddings H5
+aggressively so we never re-extract.
+
+**What RNS evaluates (the comparison table the script produces):**
+
+| Source | Description | Expected RNS |
+|---|---|---|
+| Raw ProtT5 | Baseline: ProtT5 per-residue embeddings, mean-pooled | Low (~0.05–0.10 per paper Fig 4a) |
+| OE binary 896d decoded | Stage 2's binary codec, decoded back to float | Slightly higher than raw (compression adds noise) |
+| OE Stage 3 continuous | Stage 3's continuous model output, mean-pooled | Similar to raw if the model works well |
+| Seq2OE Stage 2 predicted | Stage 2 CNN's test-set predictions, mean-pooled | Unknown — the key new number |
+| Seq2OE Stage 3 predicted | Stage 3 CNN's test-set predictions, mean-pooled | Unknown — should be better than Stage 2 if continuous helps |
+
+This task does NOT write the full script (that depends on which model checkpoints
+exist and what the ProtT5 extraction pipeline looks like). Instead, it:
+
+1. Creates `src/one_embedding/rns.py` with the core logic (done in Steps 1-4)
+2. Documents the evaluation script's design here so the implementer can build it
+   once Stage 3 training results are available.
+
+The actual evaluation script (`experiments/50_rns_evaluation.py`) should be written
+AFTER Stage 3 training completes and we have checkpoints to evaluate.
+
+- [ ] **Step 6: Run the evaluation (after Stage 3 training is done)**
+
+Pre-requisites:
+- Stage 2 checkpoints at `results/exp50_rigorous/h_split/stage2/seed42/best_model.pt` (already exist)
+- Stage 3 checkpoints at `results/exp50_stage3/h_split/stage3/seed42/best_model.pt` (from Task 7)
+- Junkyard ProtT5 embeddings cached (generated once, ~1-3h)
+
+Run:
+```bash
+PYTHONUNBUFFERED=1 uv run python experiments/50_rns_evaluation.py --seed 42
+```
+
+Expected output: a comparison table with RNS at k=1000 for each embedding source.
+The headline number: **does Seq2OE Stage 3's RNS match raw ProtT5?**
+
+- [ ] **Step 7: Save RNS results to the Stage 3 memory entry**
+
+Append the RNS comparison table to the Stage 3 section of
+`project_exp50_seq2oe.md`, alongside the cosine_sim / bit_accuracy / mse numbers.
+
+---
+
 ## Self-review notes (checked against spec)
 
 - ✅ Dataset loader uses `prot_t5_xl_cath20.h5` + `cath20_labeled.fasta` AND `prot_t5_xl_deeploc.h5` + `tools/reference/LightAttention/data_files/deeploc_complete_dataset.fasta` (spec §Training data)
