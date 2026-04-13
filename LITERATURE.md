@@ -27,20 +27,49 @@ family-discriminative structure, not our compressor's learning. The compressor m
 (or destroy less of) pre-existing signal. We adopt the inherent/extractable framework for
 evaluation.
 
-### Prabakaran & Bromberg (2025)
-**"Quantifying uncertainty in Protein Representations Across Models and Tasks."**
-bioRxiv 10.1101/2025.04.30.651545
+### Prabakaran & Bromberg (2026)
+**"Quantifying uncertainty in protein representations across models and tasks."**
+Nature Methods 23, 796–804 (April 2026). doi:10.1038/s41592-026-03028-7.
+(Published version of bioRxiv 10.1101/2025.04.30.651545.)
 
 Proposes **Random Neighbor Score (RNS)**: fraction of a protein's K nearest neighbors in
-embedding space that are random (unrelated) sequences.
+embedding space that are random (shuffled) sequences. Model-agnostic embedding quality metric.
 
 - RNS > 0.6 indicates unreliable embeddings
-- Tested on Astral40, IDPs, metagenomic sequences, hallucinated sequences
-- Variant impact prediction degrades beyond RNS threshold
+- Tested on Astral40 (14,711 domains), IDPs, metagenomic sequences, hallucinated sequences
+- 19.1% of ProtT5 and 46.2% of ESM-2 human proteome embeddings are "un(der)learned" (RNS > 0)
+- IDPs have systematically higher RNS across ALL PLMs — disordered regions have inherently uncertain embeddings
+- Variant impact prediction (VEP) AUROC degrades sharply at RNS > 0.6 (Fig. 5)
+- RNS inversely correlates with TM score (Pearson ρ = −0.70 at k=500 for ESM-2)
 
-**Relevance**: We implement RNS on compressed embeddings to measure whether compression
-destroys biological signal. If AttnPool's compressed embeddings have high RNS, the collapse
-is explained — compression destroys meaningful information.
+**Relevance (updated 2026-04-13)**: RNS is now Task 9 in our Stage 3 plan. Three applications:
+1. **Codec retention metric**: does compression push proteins toward the junkyard?
+2. **Seq2OE evaluation**: are CNN-predicted embeddings biologically plausible?
+3. **Disorder gap explanation**: the paper's IDP finding directly explains our persistent
+   94.9% disorder retention — disordered regions have inherently uncertain ProtT5 embeddings.
+Implementation: `src/one_embedding/rns.py` (generate_junkyard_sequences + compute_rns),
+needs ~7K shuffled-sequence ProtT5 embeddings as junkyard (~1-3h MPS).
+
+### Dinh et al. (2026)
+**"Compressing the collective knowledge of ESM into a single protein language model."**
+Nature Methods 2026. doi:10.1038/s41592-026-03050-9.
+
+Proposes **VESM**: co-distill multiple ESM variants into a single sequence-only PLM that
+achieves SOTA variant effect prediction without requiring structure or MSA.
+
+- Weights public: huggingface.co/ntranoslab/VESM (MIT license for ESM2 variants)
+- Variants: VESM_35M, VESM_150M, VESM_650M, VESM_3B (all ESM2-based), VESM3 (ESM3, non-commercial)
+- Code: github.com/ntranoslab/vesm
+- Benchmarks: ProteinGym DMS, ProteinGym ClinVar, UniProt Balanced ClinVar
+- Precomputed scores: huggingface.co/datasets/ntranoslab/vesm_scores
+
+**Relevance**: Three angles for our project:
+1. **Multi-teacher precedent**: validates that co-distilling multiple PLMs into one model works
+   for proteins. Our multi-teacher earmark (Exp 54) would apply the same idea to
+   embedding prediction rather than VEP scoring.
+2. **VEP benchmark competitor**: if we add VEP to our eval suite, VESM scores are the bar.
+3. **Potential teacher**: VESM_650M could serve as an additional teacher signal alongside
+   ProtT5 — it already encodes the "consensus" of multiple ESM variants.
 
 ### Hermann et al. (2024)
 **"Beware of Data Leakage from Protein LLM Pretraining."** MLCB 2024.
@@ -217,10 +246,13 @@ well-established architecture. The problem is not architectural.
 2. **Validation-loss checkpointing** — prevents overfitting to training set
 3. **Multiple seeds** — variance estimation
 4. **Held-out evaluation** — no train-set metrics
-5. **RNS** — detects when compression destroys biological signal
+5. **RNS** — detects when compression destroys biological signal.
+   **STATUS (2026-04-13)**: now Task 9 in Stage 3 plan. Module at `src/one_embedding/rns.py` (planned). Uses shuffled-sequence junkyard + FAISS kNN.
 6. **Inherent vs extractable information** — separates what's in the embeddings
-   from what training adds
-7. **Late interaction retrieval** — uses all K tokens instead of collapsing to one vector
+   from what training adds. *Earmarked, not pursued.*
+7. **Late interaction retrieval** — uses all K tokens instead of collapsing to one vector. *Earmarked, not pursued.*
+8. **VEP benchmark** — added 2026-04-13. ProteinGym/ClinVar variant effect prediction.
+   RNS paper (Prabakaran 2026) shows RNS → VEP AUROC correlation. VESM (Dinh 2026) provides SOTA baseline + precomputed scores. *Earmarked, not pursued.*
 
 ### Key Insight
 The critical question is not "does our compressor work?" but rather "does our compressor
