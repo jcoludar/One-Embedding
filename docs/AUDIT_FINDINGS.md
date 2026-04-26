@@ -31,6 +31,51 @@ What I currently expect the audit to find:
 
 ## Posterior (filled by audit, Tasks C.1–C.10)
 
+### Final cumulative totals (C.1 – C.9)
+
+| Subsection | GREEN | YELLOW | RED |
+|---|---:|---:|---:|
+| Repo hygiene (C.1) | 5 | 3 | 2 |
+| Code correctness (C.2) | 6 | 3 | 0 |
+| Splits (C.3) | 6 | 3 | 0 |
+| Statistics (C.4) | 9 | 1 | 0 |
+| Phylo (C.5) | 4 | 2 | 0 |
+| Parameters (C.6) | 4 | 4 | 0 |
+| Claims register (C.7) | 8 | 11 | 4&dagger; |
+| Tooling (C.8) | 1 | 6 | 1 |
+| Dependencies (C.9) | 6 | 3 | 2 |
+| **Total** | **49** | **36** | **9**&dagger; |
+
+&dagger; **The "9 RED" cell counts distinct line-item findings.** Of these, the
+4 README-drift items in C.7 (line items 1–4) are sub-instances of the same
+README drift root cause flagged once in C.1, so the **true root-cause RED count
+is 6**: README drift, MEMORY.md `one_embedding/` confusion (C.1), `marp-cli`
+missing (C.8), `faiss-cpu` undeclared (C.9), `tmtools` undeclared (C.9), and the
+"package not at top level" framing carried in user auto-memory. Of those 6,
+**3 will be fixed in Phase D** (README rewrite, marp install, deps declaration);
+the other 3 are documented and presented honestly in the talk.
+
+The cumulative ratio (~52 % green / 38 % yellow / 10 % red on line items) is
+slightly more yellow than the prior predicted (~70/20/10). Reason: C.6 / C.7
+surfaced "loosely-defined or commit-message-only" claims (232 methods, 6 tasks,
+8 datasets, 1500 proteins/s, L=175) that were not anticipated as a class.
+**No Exp 43/44/46/47 retention or CI is invalidated** — the
+methodologically-rigorous half of the docs is bit-perfect against its source
+JSONs. The drift is concentrated in (a) older README narrative,
+(b) marketing-layer count claims, (c) the L=175 reference-protein assumption,
+and (d) tooling / dep manifests that were never set up to professional-repo
+standard (Phase D fixes).
+
+### Claims-register vs cumulative-table — note on counts
+
+The Claims register (C.7) reports **78 claims** that were checked, with severity
+distribution 50 GREEN / 24 YELLOW / 4 RED. The cumulative table above only counts
+the **28 most material findings** from C.7 (8/11/4) to keep the cumulative
+totals comparable to the other tracks (which report 5–10 items each, not 70+).
+The 78-vs-28 discrepancy is **classification by materiality**, not double-counting.
+The full 78-cell trace lives in `docs/_audit/claims.md`; the 28 most material
+ones are surfaced in the per-track Posterior section above.
+
 ### Repo hygiene (Task C.1, evidence: `docs/_audit/hygiene.md`)
 
 - [GREEN] `git status --short` is clean at audit start (HEAD `7cc2e72`).
@@ -70,12 +115,6 @@ What I currently expect the audit to find:
 - [GREEN] No RED findings in this section. Code is in good shape.
 
 **Distribution:** 6 GREEN / 3 YELLOW / 0 RED.
-
-### Combined posterior so far (C.1 + C.2)
-
-11 GREEN / 6 YELLOW / 2 RED.
-
-Distribution mostly matches the prior prediction (~70 % green / 20 % yellow / 10 % red). The two REDs are exactly what I anticipated — README drift and `one_embedding/` package-location confusion in MEMORY.md — both Phase D.1 fixes.
 
 ### Splits (Task C.3, evidence: `docs/_audit/splits.md`)
 
@@ -166,36 +205,6 @@ Distribution mostly matches the prior prediction (~70 % green / 20 % yellow / 10
 
 The 4 REDs are all the same "README is out of date" item (already a single RED in C.1 — the 4 line items here are distinct **numeric** claims that all share that root cause).
 
-### Combined Posterior so far (C.1 + C.2 + C.3 + C.4 + C.5 + C.6 + C.7)
-
-| Subsection | GREEN | YELLOW | RED |
-|---|---:|---:|---:|
-| Repo hygiene (C.1) | 5 | 3 | 2 |
-| Code correctness (C.2) | 6 | 3 | 0 |
-| Splits (C.3) | 6 | 3 | 0 |
-| Statistics (C.4) | 9 | 1 | 0 |
-| Phylo (C.5) | 4 | 2 | 0 |
-| Parameters (C.6) | 4 | 4 | 0 |
-| Claims register (C.7) | 8 | 11 | 4 |
-| **Total** | **42** | **27** | **6** |
-
-(C.7 RED items 1–4 are sub-instances of the same C.1 RED #1 — the README is one drift hotspot
-generating multiple distinct numeric mismatches. The "true" RED *count* is 2 (README drift +
-MEMORY.md `one_embedding/` confusion); the table totals show 6 line items because we count each
-distinct numeric claim separately.)
-
-The cumulative ratio (~56 % green / 36 % yellow / 8 % red after C.7) is more
-yellow than the prior predicted (~70/20/10). Reason: C.6/C.7 surface a class
-of "loosely-defined or commit-message-only" claims that were not anticipated.
-None invalidate a headline result — but they show that several of the "round
-numbers" in the docs (232 methods, 6 tasks, 8 datasets, 1500 proteins/s, L=175)
-are presentation conveniences rather than measured quantities.
-
-**No Exp 43/44/46/47 retention or CI is invalidated.** The methodologically-rigorous
-half of the docs is bit-perfect against its source JSONs. The drift is all
-in (a) older README narrative, (b) marketing-layer count claims, and (c)
-the L=175 reference-protein assumption.
-
 ### Tooling (Task C.8, evidence: `docs/_audit/tooling.md`)
 
 - [GREEN] **`pytest`** — declared (`>=9.0.2` in `[dependency-groups].dev`), installed (9.0.2), runnable. 813/813 tests pass (C.2).
@@ -227,3 +236,122 @@ The single RED gates slide production, not any benchmark claim. All YELLOWs are 
 **Distribution:** 6 GREEN / 3 YELLOW / 2 RED.
 
 Both REDs are missing `[project.optional-dependencies]` entries for OPTIONAL paths (FAISS index / TM-score). **Neither breaks the headline codec / Exp 43–47 retention numbers**, which only need the already-declared `numpy`, `h5py`, `scipy`, `scikit-learn`, `torch`, `transformers`. A Rost-lab clone-and-encode test for the binary default (`numpy + h5py` only on receive side) succeeds without `faiss` / `tmtools`.
+
+## Final triage table
+
+Single-row-per-distinct-finding executive summary across C.1 – C.9. Sorted by
+color (RED first, then YELLOW). Every YELLOW and RED from the per-track
+Posterior subsections appears here; per-track GREENs are summarised in the
+"GREENs (consolidated)" footnote rather than enumerated.
+
+Color: **R** = red (must fix or honestly demote in talk), **Y** = yellow
+(clarify or document), **G** = green (no action; consolidated below).
+
+Owner column: D.1 / D.2 / etc. = scheduled Phase D task; "talk" = preempt with
+one sentence in the slides; "n/a" = no fix required.
+
+| # | Track | Finding | Color | Fix plan | Owner |
+|---|-------|---------|:---:|----------|-------|
+| 1 | hygiene (C.1) | README.md describes OLD codec defaults: "44 experiments" (line 12), "PQ M=192 768d ~20x" (Quick Start), "h5py + numpy + codebook" (receiver), tier table 768d/PQ-anchored, ABTT k=3 in pipeline diagram | R | rewrite Quick Start, tiers, pipeline narrative; switch to binary 896d ~37x default; receiver = `h5py + numpy` (no codebook) | D.1 |
+| 2 | hygiene (C.1) | User auto-memory `~/.claude/projects/.../MEMORY.md` (lines 91–96, 113, 175) treats `one_embedding/` as top-level package | R | not in repo (cannot fix); add note to future-session prompt | n/a (annotated) |
+| 3 | claims (C.7) | README "44 experiments" — should be 47 (sub-instance of #1) | R | covered by #1 rewrite | D.1 |
+| 4 | claims (C.7) | README "default PQ M=192 on 768d, ~20x" — sub-instance of #1 | R | covered by #1 rewrite | D.1 |
+| 5 | claims (C.7) | README "ABTT3 + RP 768d + PQ M=192 → ~20x, ~34 KB/protein" — sub-instance of #1 | R | covered by #1 rewrite | D.1 |
+| 6 | claims (C.7) | README tier table "PQ M=192 (default)" cell — sub-instance of #1 | R | covered by #1 rewrite | D.1 |
+| 7 | tooling (C.8) | `marp-cli` missing AND blocks Phase H.1 slide deck. `npx` IS available | R | `npm install -g @marp-team/marp-cli` (or use `npx --yes`) | D.4 |
+| 8 | deps (C.9) | `faiss-cpu` imported in `src/one_embedding/structural_similarity.py` (5 sites) but not declared anywhere; fresh-clone install path is broken for FAISS retrieval | R | add to `[project.optional-dependencies].structural` | D.5 |
+| 9 | deps (C.9) | `tmtools` imported in `src/evaluation/structural_validation.py` but not declared; TM-score path broken on fresh clone | R | add to `[project.optional-dependencies].structural` | D.5 |
+| 10 | hygiene (C.1) | CLAUDE.md presents both 768d (Exp 44) and 896d (Exp 47) tables without "legacy" tag on the 768d table | Y | annotate Exp 44 table as "legacy 768d sweep" | D.1 |
+| 11 | hygiene (C.1) | Test count drift: CLAUDE.md "798", MEMORY.md "795 / 632"; actual is 813 | Y | reconcile to 813 in CLAUDE.md / MEMORY.md | D.1 |
+| 12 | hygiene (C.1) | `data/benchmarks/embedding_phylo_results.json` n_taxa was 156 → 24 (resolved in C.5 by restoring 156-taxon version, but worth re-confirming on talk day) | Y | restore-and-verify already done in C.5; re-confirm | D.1 |
+| 13 | code (C.2) | `compute_corpus_stats(n_pcs=5)` hardcoded; setting `abtt_k=10` silently uses only 5 PCs (slice truncation) | Y | param-pass `n_pcs=abtt_k` from caller; OR raise on `abtt_k > n_pcs` | D.1 |
+| 14 | code (C.2) | `_preprocess` silently SKIPS centering when `is_fitted=False` and quantization is binary/int4 — works but inconsistent with class docstring | Y | either fit() implicitly, or docstring should reflect "centered if fitted" | D.1 |
+| 15 | code (C.2) | `version=4` hardcoded in `.one.h5` writer; no upgrade path for older files | Y | add `__version__` constant + load() check; document in CHANGELOG | D.5 |
+| 16 | code (C.2) | Self-contained binary decoder snippet missing from docs (bit-unpacking layout undocumented; receiver needs to know `bit 7 → col 0` column-major within byte) | Y | ship 15-line standalone snippet in CLAUDE.md / paper appendix | D.1 |
+| 17 | code (C.2) | Two informational `RuntimeWarning`s during pytest (BCa degenerate-data, "catastrophic cancellation" on a constant matrix) — both verify degenerate-input handling | Y | document in `pytest_baseline.txt` notes; suppress with `pytest.warns()` if desired | D.1 |
+| 18 | splits (C.3) | CB513 train/test is within-CB513 random split (408/103, seed=42). CB513 is `<25% id` by construction — bounded leakage but inspector will probe | Y | one-sentence preempt in talk: "CB513 is `<25% id` by construction; we use the published 408/103 random split with seed=42" | talk |
+| 19 | splits (C.3) | Exp 46 split filename `esm2_650m_5k_split.json` is misleading — it's PLM-agnostic | Y | rename + loader update | D.5 |
+| 20 | splits (C.3) | Exp 50 uses random 80/10/10 split; rigorous CATH-cluster re-run is planned but not run (Task 6 of `2026-04-06-exp50-rigorous-cath-split.md`) | Y | cite Exp 50 as in-progress, not final | talk |
+| 21 | stats (C.4) | Exp 37 legacy lDDT 100.7% / contact 106.5% reported WITHOUT BCa CIs (predates rigorous framework) | Y | re-run through `metrics.statistics` OR caveat as "Exp 37 sigma not reported" in talk | talk |
+| 22 | phylo (C.5) | Both versions of `embedding_phylo_results.json` use trivial-test config (20K gens × 1 run × 2 chains; ASDSF=0.0). Don't claim it's the rigorous run | Y | cite per-dataset `_consensus.nwk` files instead; don't reference this single JSON | talk |
+| 23 | phylo (C.5) | `BENCH_PATH` in `experiments/35_embedding_phylogenetics.py:2086` is hardcoded (not `--dataset`-parameterized) → each run overwrites previous | Y | parameterize `embedding_phylo_{ds}_results.json`; add note to `EXPECTED_QA.md` | D.1 |
+| 24 | params (C.6) | `d_out=896` defensible but interpolated (no clean d_out ∈ {512, 768, 896, 1024} sweep at fixed quantization) | Y | one-sentence preempt: "896 chosen for PQ divisibility + Exp 47 direct test; not measured against 512/1024" | talk |
+| 25 | params (C.6) | `dct_k=4` weaker evidence than implied — Exp 22 raw shows K=8 Ret@1 > K=4 (0.712 vs 0.666) on a different proxy. No formal K-sweep on current pipeline | Y | reframe as STORAGE choice (K=4 → 7 KB protein_vec; K=8 → 14 KB), not measured quality optimum | talk |
+| 26 | params (C.6) | Hidden defaults (n_pcs=5, version=4, _preprocess centering skip) — same as C.2 items 13–15 | Y | covered by D.1 fixes for #13–15 | D.1 |
+| 27 | params (C.6) | Commit-message drift — current defaults landed in `34e159a` (titled "chore: gitignore"); rationale is in sibling commit `8b1fbf1`. `git blame` would mislead | Y | docs-only; mention in CHANGELOG or paper Methods | D.1 |
+| 28 | claims (C.7) | "232 compression methods" is roll-up estimate; no script outputs 232 | Y | soften to "200+" or list explicitly on slide | talk |
+| 29 | claims (C.7) | "6 tasks" — Exp 46 actually 4 tasks (SS3/SS8/Ret@1/Disorder); the "6" rolls up CB513/TS115/CASP12 SS variants. Inspector will count tables | Y | reframe: "4 task families × 8 datasets" or list explicitly | talk |
+| 30 | claims (C.7) | "8 datasets" — actually 9 in cited tables (CB513, TS115, CASP12, CheZOD, TriZOD, SCOPe 5K, CATH20, DeepLoc test, DeepLoc setHARD) | Y | correct to 9 | D.1 |
+| 31 | claims (C.7) | "L=175" reference protein length is design-spec assumption, not measured (Exp 45 reports actual mean 156) | Y | label as "(reference, not empirical)" in tier tables | D.1 |
+| 32 | claims (C.7) | "1500 proteins/s encoding" / "20x faster than PQ" speed claims live only in commit `8b1fbf1`; binary timing has no JSON record | Y | re-time in Phase D and record to JSON; OR caveat in talk | D.1 / talk |
+| 33 | claims (C.7) | fp16-896 compression "2.3x" doc vs JSON label "2x" — both correct (2.286 → 2.3 doc, 2 rounded). Cosmetic | Y | unify rounding rule | D.1 |
+| 34 | claims (C.7) | AUC retention "98.6%" vs computed `0.877/0.890 = 98.54%` — off 0.06pp (rounded intermediates) | Y | recompute from raw values | D.1 |
+| 35 | claims (C.7) | Pre-rigorous numbers in README L208–L213, L330–L352, Addendum (V2 full/balanced/binary; ChannelCompressor `Ret@1=0.795 ± 0.012`) — older result files NOT re-verified cell-by-cell | Y | disclaim as "pre-rigorous, no BCa CIs" in talk; or move to "history" section | D.1 / talk |
+| 36 | claims (C.7) | TM-score Spearman 0.5742 (Exp 37) NOT cited anywhere despite living in same JSON as headline lDDT 100.7%. Inspector will probe | Y | either disclose 57% retention OR explicitly note "TM-score retention low; lDDT/contact preserved" | talk |
+| 37 | claims (C.7) | Phylo "FastTree 4/12, IQ-TREE 5/12, BM MCMC 11/12" in README L138–L143 — MCMC traceable, FastTree/IQ-TREE numbers don't have explicit script trace | Y | trace to source script OR add citation | D.1 |
+| 38 | tooling (C.8) | `ruff` not declared, not installed | Y | add to `[dependency-groups].dev` + `[tool.ruff]` block (line-length 100, py312) | D.4 |
+| 39 | tooling (C.8) | `mypy` not declared, not installed | Y | add to dev group + `[tool.mypy]` lenient block | D.4 |
+| 40 | tooling (C.8) | `pytest-cov` not declared; coverage not measured | Y | add to dev group; report coverage in next baseline | D.4 |
+| 41 | tooling (C.8) | `pre-commit` not installed; no `.pre-commit-config.yaml` | Y | add minimal config (trailing-ws, eof-fix, check-yaml, large-files, ruff format) | D.4 |
+| 42 | tooling (C.8) | `jupyter` / `jupytext` not installed; `experiments/45_disorder_forensics.ipynb` would not re-execute on clean clone | Y | add to dev group; pair `.ipynb` ↔ `.py` for diff/review | D.4 |
+| 43 | deps (C.9) | `uv sync --dry-run` would uninstall 16 venv-only packages (drift from earlier `uv pip install`) | Y | run `uv sync` (no `--dry-run`); document removed packages | D.5 |
+| 44 | deps (C.9) | `scipy` imported in 16 files but only available as transitive of sklearn / pot / ripser | Y | promote to `[project].dependencies` | D.5 |
+| 45 | deps (C.9) | `click` imported in `cli.py` and `test_cli.py` but only available as transitive of typer ← huggingface-hub ← transformers | Y | promote to `[project].dependencies` | D.5 |
+
+### GREENs (consolidated, no action required)
+
+The 49 GREEN findings across C.1–C.9 collectively support these talk-ready
+claims:
+
+- **Repo state is clean** at audit start (HEAD `7cc2e72`, then `83d21ef` after
+  audit logging commits): `git status` empty, `.gitignore` covers 67 GB of
+  excluded data, no large binary pollution (≤700 KB), import-path consistency.
+- **813/813 tests pass** in 90 s. Zero TODO/FIXME/HACK/XXX markers in `src/`.
+- **Receiver-side decode VERIFIED** as `numpy + h5py` only for binary, int4,
+  fp16, lossless. Only PQ requires the codebook (matches docs).
+- **Splits are leakage-controlled.** Exp 46 single split shared across all
+  PLMs, SCOPe split has zero family/superfamily overlap, `rules.check_no_leakage`
+  asserts at runtime, codec fit corpus disjoint from all test sets,
+  cross-corpus ABTT stability < 0.2 pp Ret@1.
+- **Statistics protocol is rigorous.** BCa B=10,000 with percentile fallback
+  for n<25, paired bootstrap for retention, cluster bootstrap for disorder
+  (Davison & Hinkley 1997), multi-seed averaging BEFORE bootstrap (Bouthillier
+  2021), CV-tuned probes (`GridSearchCV` on C/alpha grids), same
+  `metrics.statistics` module across Exp 43/44/46/47.
+- **All cited Exp 43/44/46/47 cells are bit-perfect** against source JSONs.
+  Sample sizes (n=2493, 9518, 2768, 490, 117, 348, 103, 115, 20) match.
+  Bibliographic citations (DiCiccio & Efron 1996; Bouthillier 2021;
+  Davison & Hinkley 1997) are real and accurate.
+- **All 4 default knobs have evidence.** `quantization='binary'` (Exp 47
+  binary 94.9% disorder vs PQ128 91.4%); `abtt_k=0` (Exp 45 disorder forensics:
+  PC1 73% aligned with disorder direction); `pq_m='auto'` (= `d_out//4` rule);
+  `seed=42` (Exp 29 part_D: 10-RP-seed std=0.004).
+- **Phylo provenance traced.** Restored 156-taxa `embedding_phylo_results.json`
+  via `git show 8b1fbf1`; zero downstream consumers.
+- **`uv lock --check` passes.** No phantom deps, no yanked packages,
+  `requires-python = ">=3.12"` consistent.
+
+### Top 3 Phase D priorities (from triage table)
+
+1. **D.1: README.md rewrite** — covers triage rows 1, 3, 4, 5, 6 (one root
+   cause, 5 line items). The single biggest correctness gap and the
+   highest-visibility one for a Rost-lab inspector. Estimated <4h.
+2. **D.4: install `marp-cli`** — covers row 7. The only RED that gates a
+   downstream task on the talk-prep critical path (Phase H.1 slide deck).
+   Estimated <30 min (one `npm install -g`).
+3. **D.5: declare `faiss-cpu` and `tmtools`** — covers rows 8 and 9. Small
+   `[project.optional-dependencies].structural` block. Estimated <30 min.
+   Bundling the venv-drift cleanup (row 43) and the scipy/click promotion
+   (rows 44–45) here is natural — same pyproject edit.
+
+### Counts re-check
+
+- 9 RED line items / 6 root-cause REDs (4 README sub-instances collapse to 1).
+- 36 YELLOW line items.
+- 49 GREEN line items (consolidated above).
+- Total: **49 G / 36 Y / 9 R** = 94 line items across all 9 audit tasks.
+
+The "true root-cause" RED count of **6** is what a lab-talk listener should
+hear: README drift, MEMORY.md `one_embedding/` confusion, marp-cli missing,
+faiss-cpu undeclared, tmtools undeclared, plus the user-auto-memory framing
+issue (which is not in the repo and cannot be fixed there).
