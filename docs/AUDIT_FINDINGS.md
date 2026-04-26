@@ -209,3 +209,21 @@ the L=175 reference-protein assumption.
 **Distribution:** 1 GREEN / 6 YELLOW / 1 RED.
 
 The single RED gates slide production, not any benchmark claim. All YELLOWs are repo-hygiene gaps that D.4 will close (declare in `[dependency-groups].dev`, add minimal `[tool.ruff]` and `[tool.mypy]` blocks, add a basic `.pre-commit-config.yaml`). No code change required.
+
+### Dependencies (Task C.9, evidence: `docs/_audit/deps.md`)
+
+- [GREEN] **`uv lock --check` exits 0** — `uv.lock` is in sync with `pyproject.toml` (97 packages resolved without re-locking).
+- [GREEN] **No phantom deps.** Every dep in `[project].dependencies` and the `biocentral` / `extreme` extras maps to a real top-level import in `src/` or `experiments/`.
+- [GREEN] **No yanked / EOL packages** in the lock (`grep -i yank uv.lock` empty).
+- [GREEN] **`requires-python = ">=3.12"` consistent** across `pyproject.toml`, `uv.lock`, and `.venv` (Python 3.12.12).
+- [GREEN] **False-positive `datasets` is a local subpackage**, not the HuggingFace library — at `experiments/43_rigorous_benchmark/datasets/{netsurfp,trizod}.py`.
+- [GREEN] **`deptry` deferred to D.5.** Manual import-grep used as fallback (limitation noted; CI-enforced check is a Phase D recommendation).
+- [YELLOW] **`uv sync --dry-run` would uninstall 16 venv-only packages** — `numba`, `umap-learn`, `dgl`, `e3nn`, `faiss-cpu`, `opt-einsum*`, `pyarrow`, `psutil`, `protobuf`, `pynndescent`, `requests`, `torchdata`, `llvmlite`, `charset-normalizer`, `urllib3`. Drift from earlier ad-hoc `uv pip install`. Cleanup = run `uv sync` (no `--dry-run`) in D.5.
+- [YELLOW] **`scipy` is imported in 16 files but not declared in pyproject.** Available as transitive of `scikit-learn`/`pot`/`ripser`. Fragile if any parent drops it. Promote to direct dep in D.5.
+- [YELLOW] **`click` is imported in 2 files but not declared in pyproject.** Available as transitive of `typer` ← `huggingface-hub` ← `transformers`. Same fragility class as `scipy`. Promote to direct dep in D.5.
+- [RED] **`faiss-cpu` is imported in `src/one_embedding/structural_similarity.py` (5 sites) but not declared in `pyproject.toml` or `uv.lock`.** A fresh clone + `uv sync` would NOT install it; the FAISS retrieval index path is broken on a clean install. Declare as `[project.optional-dependencies].structural`.
+- [RED] **`tmtools` is imported in `src/evaluation/structural_validation.py` (TM-score path) but not declared.** Fresh clone + `uv sync` would not install it. Currently lazy-imported with a graceful error message; should still be declared.
+
+**Distribution:** 6 GREEN / 3 YELLOW / 2 RED.
+
+Both REDs are missing `[project.optional-dependencies]` entries for OPTIONAL paths (FAISS index / TM-score). **Neither breaks the headline codec / Exp 43–47 retention numbers**, which only need the already-declared `numpy`, `h5py`, `scipy`, `scikit-learn`, `torch`, `transformers`. A Rost-lab clone-and-encode test for the binary default (`numpy + h5py` only on receive side) succeeds without `faiss` / `tmtools`.
