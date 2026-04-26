@@ -91,3 +91,19 @@ Distribution mostly matches the prior prediction (~70 % green / 20 % yellow / 10
 - [RED] None.
 
 **Distribution:** 6 GREEN / 3 YELLOW / 0 RED.
+
+### Statistics (Task C.4, evidence: `docs/_audit/stats.md`)
+
+- [GREEN] **Bootstrap is BCa B=10,000 with percentile fallback** for n<25 and on NaN / exception. Implemented via `scipy.stats.bootstrap(method="BCa")` for plain & paired cases (`metrics/statistics.py:69–104, 158–196`), and via manual BCa with jackknife acceleration for the cluster-bootstrap cases (`metrics/statistics.py:319–366, 423–469`). Constant `BOOTSTRAP_N=10_000` in `config.py`.
+- [GREEN] **Paired bootstrap is correct for retention.** `paired_bootstrap_retention` calls `scipy.stats.bootstrap(..., paired=True)` so the same protein-id resample drives raw and compressed in every iteration — correlated noise cancels. Used by Exp 43 / 44 / 46 / 47 for SS3 / SS8 / Ret@1 retention.
+- [GREEN] **Disorder uses cluster bootstrap, not residue bootstrap.** `cluster_bootstrap_ci` resamples at the protein (cluster) level then recomputes the pooled Spearman ρ over all residues from the selected proteins (Davison & Hinkley 1997). For retention, `paired_cluster_bootstrap_retention` jointly resamples the same cluster IDs for raw and compressed.
+- [GREEN] **Multi-seed predictions averaged BEFORE bootstrap (Bouthillier 2021).** `averaged_multi_seed` averages per-item scores across seeds, then bootstraps the averaged dict — NOT a CI of CIs. For disorder, residue-level predictions are averaged across seeds in `run_disorder_benchmark` (lines 489–503) before the cluster bootstrap.
+- [GREEN] **Probes are CV-tuned, not hardcoded.** Classification: `LogisticRegression` wrapped in `GridSearchCV(param_grid={"C": [0.01,0.1,1.0,10.0]}, cv=3, scoring="accuracy")`. Regression: `RidgeCV(alphas=[0.01,0.1,1.0,10.0,100.0], cv=3)`. `random_state=seed` is plumbed through.
+- [GREEN] **Same `metrics.statistics` module backs Exp 43, 44, 46, 47.** No shadow implementation. Verified by import statements: each experiment script imports from `experiments/43_rigorous_benchmark/metrics/statistics.py` (via `sys.path` insert).
+- [GREEN] **Retrieval baselines are fair (DCT K=4 on both raw and compressed).** Exp 43 Phase A1 reports three explicit raw baselines (mean / DCT-K=4 / ABTT+DCT-K=4) and computes retention against the most stringent (Baseline C). Exp 44/46/47 use DCT K=4 on both raw and compressed throughout.
+- [GREEN] **Train/test leakage assertion `rules.check_no_leakage` runs at the top of every per-residue benchmark** (`runners/per_residue.py:267, 351, 467`) — raises if any ID appears in both lists.
+- [GREEN] **Per-table conformance verified for all 7 cited CLAUDE.md tables** (Exp 43 SS/Ret/Localization, Exp 43 Disorder, Exp 43 Phase B ESM2, Exp 43 Phase D Ablation, Exp 44, Exp 46, Exp 47). Every cell is produced by the same audited code path.
+- [YELLOW] **Exp 37 legacy lDDT / contact precision numbers** (CLAUDE.md "Legacy benchmarks (Exp 37)" — `lDDT 100.7 %`, `contact precision 106.5 %`) predate the Exp 43 rigorous framework and are reported WITHOUT BCa CIs. Either re-run through `metrics.statistics` or explicitly say "Exp 37 sigma not reported" in the talk.
+- [RED] None.
+
+**Distribution:** 9 GREEN / 1 YELLOW / 0 RED.
