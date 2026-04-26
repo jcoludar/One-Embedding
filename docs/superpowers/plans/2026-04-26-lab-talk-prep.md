@@ -32,6 +32,9 @@
 | Path | Modified at | Reason |
 |------|------------|--------|
 | `data/benchmarks/embedding_phylo_results.json` | Task A.1 | Commit current modified state |
+| `pyproject.toml` | Tasks D.4, D.5 | Add dev deps + tool configs; declare undeclared deps |
+| `uv.lock` | Tasks D.4, D.5 | Regenerated after pyproject changes |
+| `.pre-commit-config.yaml` | Task D.4 | New pre-commit hooks (created if absent) |
 | `README.md` | Task E.3 | Final rewrite (real, not stub) |
 | `CLAUDE.md`, `MEMORY.md` | Tasks D.* | Only if claims register flags untraceable numbers |
 
@@ -813,7 +816,131 @@ git commit -m "audit(claims): traceability register for CLAUDE/README numbers"
 
 ---
 
-### Task C.8: Final AUDIT_FINDINGS.md roll-up
+### Task C.8: Tooling inventory
+
+**Files:**
+- Create: `docs/_audit/tooling.md`
+- Modify: `docs/AUDIT_FINDINGS.md`
+
+**Context:** The repo is a research codebase. We want it to look professional to a Rost-lab inspector — declared dev tooling, installed and runnable, even if we don't enforce strict linting. This task only *inventories*; install happens in Task D.4.
+
+- [ ] **Step 1: Read declared deps**
+
+```bash
+cat pyproject.toml
+```
+Note: which tools are declared under `[project.optional-dependencies.dev]` or equivalent.
+
+- [ ] **Step 2: Compare against expected baseline for a professional Python repo**
+
+Expected tools (categories):
+- **Linter + formatter:** `ruff` (covers both, modern default).
+- **Type checker:** `mypy` (lenient mode acceptable; goal is the tool exists and runs, not strict typing).
+- **Test:** `pytest` + `pytest-cov` (coverage report).
+- **Pre-commit:** `pre-commit` (template config; basic checks only — trailing whitespace, large files, valid YAML).
+- **Notebooks:** `jupyter` + `jupytext` (we have `experiments/45_disorder_forensics.ipynb`).
+- **Slides:** `marp-cli` (Node, not Python — separate path).
+
+Record per-tool status in `docs/_audit/tooling.md`:
+```markdown
+| Tool | Declared in pyproject? | Installed in venv? | Runnable? | Action |
+|------|----------------------|-------------------|-----------|--------|
+| ruff | yes/no | yes/no | yes/no | install/skip |
+| mypy | ... | ... | ... | ... |
+| pytest | yes (assumed) | yes | yes | none |
+| pytest-cov | ... | ... | ... | ... |
+| pre-commit | ... | ... | ... | ... |
+| jupyter | ... | ... | ... | ... |
+| jupytext | ... | ... | ... | ... |
+| marp-cli (npm) | n/a | which marp || npm list -g @marp-team/marp-cli | ... | install/skip |
+```
+
+- [ ] **Step 3: Roll up to AUDIT_FINDINGS.md**
+
+Append `## Tooling` section with green/yellow/red items. "Yellow" if tool is missing but not blocking; "Red" if missing AND needed by a downstream task (e.g. marp-cli needed by H.1).
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add docs/_audit/tooling.md docs/AUDIT_FINDINGS.md
+git commit -m "audit(tooling): dev-tool inventory + gap list"
+```
+
+---
+
+### Task C.9: Dependency + uv.lock audit
+
+**Files:**
+- Create: `docs/_audit/deps.md`
+- Modify: `docs/AUDIT_FINDINGS.md`
+
+**Context:** A clean Python repo has (a) a manifest declaring direct deps, (b) a lock file pinning the resolved tree, and (c) used-and-declared dep parity. This task audits all three. Fixes are in Task D.5.
+
+- [ ] **Step 1: Verify uv.lock is in sync with pyproject.toml**
+
+```bash
+uv lock --check 2>&1 | tee /tmp/uv-lock-check.txt
+echo "Exit code: $?" >> /tmp/uv-lock-check.txt
+```
+Expected: exit 0 ("lock file is up-to-date"). Anything else = red.
+
+- [ ] **Step 2: Resolve fresh and dry-run install**
+
+```bash
+uv sync --dry-run 2>&1 | tee /tmp/uv-sync-dryrun.txt
+```
+Note any unresolvable versions or yanked packages.
+
+- [ ] **Step 3: Detect phantom + undeclared deps**
+
+Phantom (declared but never imported):
+```bash
+# If pip-tools / pipreqs / deptry not installed yet, skip and mark as deferred to D.5
+which deptry && uv run deptry . 2>&1 | tee /tmp/deptry.txt || echo "deptry not installed; defer to D.5"
+```
+
+Undeclared (imported but not in pyproject):
+- Same `deptry` run reports both.
+- If `deptry` not installed yet, manual pass: grep `^import |^from .* import` over `src/ experiments/` and check each top-level module against `pyproject.toml` deps.
+
+- [ ] **Step 4: Write dep audit report**
+
+```markdown
+# Dependency Audit
+
+## uv.lock sync status
+- `uv lock --check`: <pass|fail>
+- `uv sync --dry-run`: <clean|N warnings>
+
+## Phantom deps (declared, never imported)
+- <list, or "none">
+
+## Undeclared deps (imported, not declared)
+- <list, or "none">
+
+## Yanked / EOL packages in lock
+- <list, or "none">
+
+## Python version constraint
+- pyproject `requires-python`: <value>
+- venv Python: <`uv run python --version`>
+- Match? <yes|no>
+```
+
+- [ ] **Step 5: Roll up to AUDIT_FINDINGS.md**
+
+Append `## Dependencies` section. Phantom = yellow (cleanup nice-to-have). Undeclared = red (would break a fresh clone). Lock-out-of-sync = red.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add docs/_audit/deps.md docs/AUDIT_FINDINGS.md
+git commit -m "audit(deps): pyproject + uv.lock + import/declare parity"
+```
+
+---
+
+### Task C.10: Final AUDIT_FINDINGS.md roll-up
 
 **Files:**
 - Modify: `docs/AUDIT_FINDINGS.md`
@@ -926,6 +1053,172 @@ If a worktree should remain in place: leave it. Just document in `docs/_audit/wo
 ```bash
 git add docs/AUDIT_FINDINGS.md docs/_audit/worktrees.md
 git commit -m "audit(curate): branch + worktree disposition"
+```
+
+---
+
+### Task D.4: Install missing professional tooling
+
+**Files:**
+- Modify: `pyproject.toml` (add dev dependencies)
+- Modify: `uv.lock` (regenerated)
+- Possibly create: `.pre-commit-config.yaml`
+- Possibly create: `pyproject.toml`'s `[tool.ruff]` and `[tool.mypy]` sections
+
+**Context:** Based on Task C.8, install whatever's missing from the expected baseline. Goal: tools exist and run in the venv. **Not a goal:** strict enforcement (no fixing every ruff finding now). Strict enforcement is post-talk.
+
+- [ ] **Step 1: Add to pyproject.toml dev dependencies**
+
+For each tool flagged "install" in `docs/_audit/tooling.md`, add to `[project.optional-dependencies]` (or whichever group convention this repo uses — confirm from current pyproject):
+```toml
+dev = [
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pre-commit>=3.7",
+    "jupyter",
+    "jupytext",
+    "deptry>=0.16",   # for the dep-parity check (Task D.5)
+]
+```
+
+- [ ] **Step 2: Lock + sync**
+
+```bash
+uv lock
+uv sync --extra dev
+```
+Expected: clean lock + install. Capture any warnings.
+
+- [ ] **Step 3: Add minimal tool configs to pyproject.toml**
+
+```toml
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Lenient default — enable basic checks only.
+select = ["E", "F", "W", "I"]   # pycodestyle errors/warnings, pyflakes, isort
+ignore = ["E501"]                # line length handled by formatter, not linter
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true
+# Lenient — types are aspirational, not enforced
+strict = false
+```
+
+- [ ] **Step 4: Add minimal pre-commit config**
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.7
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+```
+
+Install hooks:
+```bash
+uv run pre-commit install
+```
+
+- [ ] **Step 5: Verify each tool runs (don't fix findings)**
+
+```bash
+uv run ruff --version
+uv run mypy --version
+uv run pytest --version
+uv run pre-commit --version
+uv run jupyter --version
+which marp || npm list -g @marp-team/marp-cli || npx --yes @marp-team/marp-cli@latest --version
+```
+
+Run each tool once on the codebase to capture baseline output to `docs/_audit/tooling_baseline.md`:
+```bash
+{
+  echo "## ruff check"; uv run ruff check src/ experiments/ tests/ 2>&1 | head -50
+  echo "## mypy"; uv run mypy src/ 2>&1 | head -50
+  echo "## pytest --collect-only"; uv run pytest --collect-only -q 2>&1 | tail -20
+} > docs/_audit/tooling_baseline.md
+```
+
+Note: findings are baseline only. Do NOT fix them in this task.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add pyproject.toml uv.lock .pre-commit-config.yaml docs/_audit/tooling_baseline.md
+git commit -m "chore(tooling): add ruff/mypy/pytest-cov/pre-commit/jupytext/deptry to dev deps"
+```
+
+---
+
+### Task D.5: Fix dependency + lock issues
+
+**Files:**
+- Modify: `pyproject.toml` (declare any undeclared deps; remove phantoms only with care)
+- Modify: `uv.lock` (regenerated)
+
+**Context:** Based on Task C.9 findings. Undeclared deps = red, must fix. Phantom deps = yellow, fix only if confident they're truly unused.
+
+- [ ] **Step 1: Re-run deptry now that it's installed**
+
+```bash
+uv run deptry . 2>&1 | tee /tmp/deptry-final.txt
+```
+
+- [ ] **Step 2: Add every undeclared dep to pyproject.toml**
+
+For each `DEP002` (undeclared) in the deptry report:
+- Read its `import` location to confirm it's a real runtime dep, not a transitive.
+- Add to the appropriate group in `pyproject.toml` (`dependencies` if used in `src/`, `dev` if used only in `tests/` or `experiments/`).
+
+- [ ] **Step 3: For phantoms, verify before removal**
+
+For each `DEP001` (declared but unused):
+```bash
+uv run grep -rE "^(import|from) <package>" src/ experiments/ tests/
+```
+Only remove if zero hits AND not a test/build tool with implicit usage (e.g. pytest plugins).
+
+- [ ] **Step 4: Regenerate lock + verify**
+
+```bash
+uv lock
+uv sync --extra dev
+uv lock --check
+```
+Expected: exit 0.
+
+- [ ] **Step 5: Re-run deptry to confirm clean**
+
+```bash
+uv run deptry .
+```
+Expected: no errors (or only deferred yellow items, documented).
+
+- [ ] **Step 6: Update AUDIT_FINDINGS.md to mark these reds as resolved**
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add pyproject.toml uv.lock docs/AUDIT_FINDINGS.md
+git commit -m "fix(deps): declare undeclared deps + clean phantoms"
 ```
 
 ---
@@ -1586,6 +1879,9 @@ git tag -a lab-talk-2026-04-XX -m "State at the time of the lab seminar"
 - [ ] Pytest baseline (Task C.2) is documented; no test that passed at audit time fails at talk time.
 - [ ] `docs/CALIBRATION.md` has one paragraph per doc + global summary.
 - [ ] Talk dry-run timing is within 14:00–15:30 inclusive.
+- [ ] `uv lock --check` exits 0; `uv sync --extra dev` completes cleanly.
+- [ ] `uv run deptry .` reports no DEP002 (undeclared) errors.
+- [ ] All baseline dev tools (`ruff`, `mypy`, `pytest`, `pre-commit`, `jupyter`, `marp-cli`) are runnable in the venv (or via npx for marp).
 
 ---
 
