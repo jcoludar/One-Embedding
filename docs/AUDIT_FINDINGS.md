@@ -120,7 +120,24 @@ Distribution mostly matches the prior prediction (~70 % green / 20 % yellow / 10
 
 **Distribution:** 4 GREEN / 2 YELLOW / 0 RED.
 
-### Combined Posterior so far (C.1 + C.2 + C.3 + C.4 + C.5)
+### Parameters (Task C.6, evidence: `docs/_audit/params.md`)
+
+- [GREEN] **`quantization='binary'`** is the best-evidenced default. Exp 47 directly compares binary-896 (37x) vs PQ128-896 (32x): binary wins on disorder (94.9% vs 91.4%), is decoder-self-contained (no codebook), and matches PQ on SS3/Ret. Exp 44 (`exp44_unified_results.json`) confirms RaBitQ effect on the older 768d sweep too.
+- [GREEN] **`abtt_k=0`** justified by Exp 45 disorder forensics: ABTT PC1 73 % aligned with the Ridge disorder direction; per-stage decomposition shows ABTT alone causes 50 % of total disorder loss; dropping it recovers +3.3 pp disorder for −0.6 pp retrieval. Headline-defensible.
+- [GREEN] **`pq_m='auto'` (= d_out//4)** rule documented in code (codec_v2.py:46–57); selection target is "~4d sub-vectors per subquantizer". Both d_out=768→M=192 (Exp 44) and d_out=896→M=224 (Exp 47) used the rule and are directly validated.
+- [GREEN] **`seed=42`** — Exp 29 part_D formally tested 10 RP seeds: Ret@1 std=0.004, max-min=0.015. Seed=42 sits within 1 SD of the mean. Choice is irrelevant beyond reproducibility.
+- [YELLOW] **`d_out=896`** is **defensible but interpolated.** No clean d_out ∈ {512, 768, 896, 1024} sweep at fixed quantization exists. The 896 choice is justified by (a) divisibility for PQ subquantizers, (b) avoiding ABTT3+768d's ProstT5 catastrophe (SS3 → 85.6 %), and (c) Exp 47 directly testing PQ M=224 at 896d. The "why 896 not 1024 or 768?" probe has only an inferred answer, not a measured one. Pre-empt with one sentence in the talk.
+- [YELLOW] **`dct_k=4`** has weaker evidence than implied. EXPERIMENTS.md states "DCT K=4 is the sweet spot. Higher K hurts" — but Exp 22 raw `path_geometry_results.json` shows K=8 Ret@1 > K=4 Ret@1 (0.712 vs 0.666) on a displacement-DCT proxy. No formal K-sweep on the current preprocessed pipeline (center → RP896 → binary → DCT K). The right framing is **storage**: K=4 → protein_vec = D×4 fp16 (7 KB); K=8 doubles that. Frame as a compression choice, not a measured quality optimum.
+- [YELLOW] **Hidden defaults** flagged in C.2 (`codec_review.md`) confirmed here:
+  - `compute_corpus_stats(n_pcs=5)` is hardcoded — setting `abtt_k=10` would silently use only 5 PCs (slice truncation, no warning).
+  - `version=4` is hardcoded with no documented upgrade path.
+  - `_preprocess` silently skips centering when `is_fitted=False` and quantization is binary/int4 (caught in C.2).
+- [YELLOW] **Commit-message drift** — current defaults landed in commit `34e159a` (titled `chore: gitignore results/, .claude/, large data files`) but the rationale lives in the **sibling** commit `8b1fbf1` (`feat: Exp 45-47 — disorder forensics, 5-PLM pipeline, binary default`) which doesn't touch `codec_v2.py` itself. A Rost-lab reader using `git blame` on the default lines would land on a misleadingly-named hygiene commit. Documentation, not correctness; no fix in audit.
+- [RED] None — every default has at least an inferred-but-defensible evidence chain. No "someone just picked it" cases.
+
+**Distribution:** 4 GREEN / 4 YELLOW / 0 RED.
+
+### Combined Posterior so far (C.1 + C.2 + C.3 + C.4 + C.5 + C.6)
 
 | Subsection | GREEN | YELLOW | RED |
 |---|---:|---:|---:|
@@ -129,11 +146,12 @@ Distribution mostly matches the prior prediction (~70 % green / 20 % yellow / 10
 | Splits (C.3) | 6 | 3 | 0 |
 | Statistics (C.4) | 9 | 1 | 0 |
 | Phylo (C.5) | 4 | 2 | 0 |
-| **Total** | **30** | **12** | **2** |
+| Parameters (C.6) | 4 | 4 | 0 |
+| **Total** | **34** | **16** | **2** |
 
-The cumulative ratio (~68 % green / 27 % yellow / 5 % red) tracks the prior
-prediction (~70/20/10) reasonably well, with REDs concentrated in the doc-drift
-hotspot (README + MEMORY one_embedding/ references — both Phase D.1 fixes).
+The cumulative ratio (~65 % green / 31 % yellow / 4 % red) shifts slightly more
+yellow, driven by the commit-message-drift and `d_out`/`dct_k` evidence-chain
+weaknesses. REDs still concentrated in the doc-drift hotspot.
 
 **No headline claim was invalidated by this audit phase.** The Rost-lab-critical
 elements all hold: 5-PLM splits identical, BCa B=10,000 with paired retention,
