@@ -1,7 +1,8 @@
-# Presentation Prep — Three-Day Lab Talk Sprint with Calibration
+# Lab Talk Prep — Audit, Write-Up, Slides, Calibration
 
 **Date:** 2026-04-26
-**Status:** Approved — proceeding to implementation plan
+**Status:** Design approved verbally; pending user review of this written spec before plan-writing.
+**Budget:** ~3 days of work (no per-day allocation; steps end on output, not the clock).
 **Owner:** Ivan
 **Audience for the talk:** Full Rost lab (incl. Burkhard Rost, Michael Heinzinger). Field-aware, will probe deeply on benchmarking rigor, error bars, architecture, parameter intentionality.
 **Slot:** 15 min talk + 10 min Q&A.
@@ -47,8 +48,8 @@ All committed under `docs/` (or repo root for README). Slides under `slides/`.
 | 5 | `docs/HANDOFF.md` | onboarding | A labmate can run the codec and reproduce a benchmark in 15 min |
 | 6 | `docs/EXPECTED_QA.md` | talk prep | 10–15 sharpest anticipated probes + crisp answers |
 | 7 | `docs/CALIBRATION.md` | meta | Per-doc: prior vs. posterior — where we were right, where wrong, why |
-| 8 | `slides/2026-04-29-lab-talk/` | talk | Marp markdown → PDF |
-| 9 | (done) `~/CascadeProjects/students/embedding_information_loss/README.md` | student stub | Already written and committed |
+| 8 | `slides/lab-talk/` (date pinned at Step 10) | talk | Marp markdown → PDF |
+| 9 | (done) `~/CascadeProjects/students/embedding_information_loss/README.md` | student stub | Written; outside this repo, not under VCS yet (decide at hand-off) |
 
 ## Calibration loop (the meta-deliverable)
 
@@ -152,7 +153,7 @@ First solo (record audio if useful). Second with a watcher and the clock. Captur
 
 ### Step 12 — `CALIBRATION.md`
 
-Per doc (1–7): one paragraph. Where the prior was right; where wrong; what changed materially; why our prior was wrong (overconfidence, blind spot, missing data). Closes the loop.
+Written between the first and second dry runs. Per doc (1–7): one paragraph. Where the prior was right; where wrong; what changed materially; why our prior was wrong (overconfidence, blind spot, missing data). Closes the loop.
 
 ## Risk policy
 
@@ -180,4 +181,4 @@ Steps end when their committed output reflects their actual work, not when a clo
 - Every number on a slide has a slide-private "source: <experiment + commit + file>" comment in the Marp source.
 - `git status` clean on `main` at the time of the talk.
 - `CALIBRATION.md` written; every prior commit has a posterior counterpart in the diff.
-- Tests pass (`pytest tests/`).
+- `pytest tests/` baseline recorded in `AUDIT_FINDINGS.md` (Step 2). Final state: every test that passed at audit time still passes at talk time. Pre-existing failures are documented, not silently inherited.
