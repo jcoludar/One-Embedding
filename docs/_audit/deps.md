@@ -125,11 +125,11 @@ group (e.g. `structural` or extend `extreme`) so installs are explicit.
 
 Two more imports worth noting (both **OK as-is**, listed for completeness):
 
-3. **`scipy`** — imported in 16 files (`src/`, `experiments/`, `tests/`) but
-   NOT in `pyproject.toml`. `scipy 1.17.1` IS in `uv.lock` as a transitive of
-   `scikit-learn`, `pot`, `ripser`. Currently works but **fragile**: if any of
-   the transitive parents drops `scipy`, the explicit imports break. Should be
-   promoted to a direct dependency in D.5. [YELLOW]
+3. **`scipy`** — imported in 24 files (13 in `src/`, 10 in `experiments/`,
+   1 in `tests/`) but NOT in `pyproject.toml`. `scipy 1.17.1` IS in `uv.lock`
+   as a transitive of `scikit-learn`, `pot`, `ripser`. Currently works but
+   **fragile**: if any of the transitive parents drops `scipy`, the explicit
+   imports break. Should be promoted to a direct dependency in D.5. [YELLOW]
 4. **`click`** — imported in `src/one_embedding/cli.py:8` and
    `tests/test_cli.py:7` (CliRunner). NOT in `pyproject.toml`. `click 8.3.1` IS
    in `uv.lock` as a transitive of `typer` ← `huggingface-hub` ← `transformers`.

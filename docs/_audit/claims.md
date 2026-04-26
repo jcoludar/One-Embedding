@@ -208,7 +208,11 @@ Both reported WITHOUT BCa CIs (already flagged YELLOW in C.4).
 
 ## Summary
 
-**Total claims traced: 78** (excluding trivial repeats — every cell of every cited table = 1 claim).
+**Total rows in this register: 101** (counting every cited cell). **Distinct
+claim categories: 78** — the 23-row gap is intra-table cell repeats (e.g. one
+SS3 result row contributes a raw-Q3 cell, a compressed-Q3 cell, and a retention
+cell — 3 rows but 1 underlying claim ["this row of the SS3 table"]). Severity
+distribution below counts distinct categories.
 
 Distribution:
 - **GREEN**: 50 (64 %)

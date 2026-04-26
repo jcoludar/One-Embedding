@@ -41,10 +41,10 @@ What I currently expect the audit to find:
 | Statistics (C.4) | 9 | 1 | 0 |
 | Phylo (C.5) | 4 | 2 | 0 |
 | Parameters (C.6) | 4 | 4 | 0 |
-| Claims register (C.7) | 8 | 11 | 4&dagger; |
-| Tooling (C.8) | 1 | 6 | 1 |
+| Claims register (C.7) | 8 | 10 | 4&dagger; |
+| Tooling (C.8) | 1 | 5 | 1 |
 | Dependencies (C.9) | 6 | 3 | 2 |
-| **Total** | **49** | **36** | **9**&dagger; |
+| **Total** | **49** | **34** | **9**&dagger; |
 
 &dagger; **The "9 RED" cell counts distinct line-item findings.** Of these, the
 4 README-drift items in C.7 (line items 1–4) are sub-instances of the same
@@ -55,7 +55,7 @@ missing (C.8), `faiss-cpu` undeclared (C.9), `tmtools` undeclared (C.9), and the
 **3 will be fixed in Phase D** (README rewrite, marp install, deps declaration);
 the other 3 are documented and presented honestly in the talk.
 
-The cumulative ratio (~52 % green / 38 % yellow / 10 % red on line items) is
+The cumulative ratio (~53 % green / 37 % yellow / 10 % red on line items) is
 slightly more yellow than the prior predicted (~70/20/10). Reason: C.6 / C.7
 surfaced "loosely-defined or commit-message-only" claims (232 methods, 6 tasks,
 8 datasets, 1500 proteins/s, L=175) that were not anticipated as a class.
@@ -295,7 +295,7 @@ one sentence in the slides; "n/a" = no fix required.
 | 41 | tooling (C.8) | `pre-commit` not installed; no `.pre-commit-config.yaml` | Y | add minimal config (trailing-ws, eof-fix, check-yaml, large-files, ruff format) | D.4 |
 | 42 | tooling (C.8) | `jupyter` / `jupytext` not installed; `experiments/45_disorder_forensics.ipynb` would not re-execute on clean clone | Y | add to dev group; pair `.ipynb` ↔ `.py` for diff/review | D.4 |
 | 43 | deps (C.9) | `uv sync --dry-run` would uninstall 16 venv-only packages (drift from earlier `uv pip install`) | Y | run `uv sync` (no `--dry-run`); document removed packages | D.5 |
-| 44 | deps (C.9) | `scipy` imported in 16 files but only available as transitive of sklearn / pot / ripser | Y | promote to `[project].dependencies` | D.5 |
+| 44 | deps (C.9) | `scipy` imported in 24 files (13 src/, 10 experiments/, 1 tests/) but only available as transitive of sklearn / pot / ripser | Y | promote to `[project].dependencies` | D.5 |
 | 45 | deps (C.9) | `click` imported in `cli.py` and `test_cli.py` but only available as transitive of typer ← huggingface-hub ← transformers | Y | promote to `[project].dependencies` | D.5 |
 
 ### GREENs (consolidated, no action required)
@@ -347,9 +347,9 @@ claims:
 ### Counts re-check
 
 - 9 RED line items / 6 root-cause REDs (4 README sub-instances collapse to 1).
-- 36 YELLOW line items.
+- 34 YELLOW line items.
 - 49 GREEN line items (consolidated above).
-- Total: **49 G / 36 Y / 9 R** = 94 line items across all 9 audit tasks.
+- Total: **49 G / 34 Y / 9 R** = 92 line items across all 9 audit tasks.
 
 The "true root-cause" RED count of **6** is what a lab-talk listener should
 hear: README drift, MEMORY.md `one_embedding/` confusion, marp-cli missing,
