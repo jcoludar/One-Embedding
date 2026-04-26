@@ -76,3 +76,18 @@ What I currently expect the audit to find:
 11 GREEN / 6 YELLOW / 2 RED.
 
 Distribution mostly matches the prior prediction (~70 % green / 20 % yellow / 10 % red). The two REDs are exactly what I anticipated — README drift and `one_embedding/` package-location confusion in MEMORY.md — both Phase D.1 fixes.
+
+### Splits (Task C.3, evidence: `docs/_audit/splits.md`)
+
+- [GREEN] **Exp 46 multi-PLM split fairness VERIFIED.** Both `cb513_80_20.json` and `esm2_650m_5k_split.json` are loaded once per benchmark call (lines 456–461 of `46_multi_plm_benchmark.py`) and applied to whichever PLM's H5 file is being tested — the train/test ID list never depends on PLM identity. Single source of truth. The headline "5-PLM, same split" claim holds.
+- [GREEN] **SCOPe split is strictly cluster-controlled.** `data/benchmark_suite/splits/esm2_650m_5k_split.json` records `superfamily_overlap=0` and `family_overlap=0` in its `statistics` block — no train/test family or superfamily collision. The codec is fitted on the train half only; test families are unseen during ABTT/PQ fitting.
+- [GREEN] **Train/test uniqueness is asserted at runtime.** `rules.check_no_leakage` raises on any ID appearing in both; it is called at the top of `run_ss3_benchmark`, `run_ss8_benchmark`, `run_disorder_benchmark` (`runners/per_residue.py:267, 351, 467`).
+- [GREEN] **Disorder splits use predefined non-redundant partitions.** CheZOD = SETH (Dass et al. 2020) split; TriZOD = TriZOD348 (Haak 2025) split — both cluster-curated by their original publications.
+- [GREEN] **Codec fit corpus is external to all test sets.** All Exp 43 / 44 / 46 / 47 results fit ABTT/PQ on the SCOPe 5K train subset and evaluate on CB513 / CheZOD / TriZOD / SCOPe-test — distinct datasets or held-out IDs. Exp 43's `run_abtt_stability.py` separately verifies cross-corpus ABTT stability (variance < 0.2 pp Ret@1 across 4 fitting corpora).
+- [GREEN] Exp 44 and Exp 47 inherit Exp 43's split files via shared `config.py`; verified by file-path identity (no per-experiment shadow splits).
+- [YELLOW] **CB513 train/test is a within-CB513 random split** (408/103, seed=42). CB513 is already `<25 % seq id` by dataset design, so additional structural leakage from the random split is bounded — but a lab-Q probe will land here first. **Pre-empt with one sentence in the talk:** "CB513 is `<25 % id` by construction; we use the published 408/103 random split with seed=42." Not a real defect, but a presentation choice.
+- [YELLOW] **Exp 46 SCOPe split filename is misleading.** It is named `esm2_650m_5k_split.json` (historical artifact from Exp ~17), but the split is PLM-agnostic — used by ProtT5, ESM2, ESM-C, ProstT5, ANKH alike. Phase D rename + loader-update.
+- [YELLOW] **Exp 50 sighting results use a random 80/10/10 split** (`50_sequence_to_oe.py:82–94`). The design spec at `docs/superpowers/specs/2026-04-06-exp50-rigorous-design.md` explicitly identifies this and the rigorous CATH-cluster re-run plan (`docs/superpowers/plans/2026-04-06-exp50-rigorous-cath-split.md`) is the planned fix; Task 6 (MMseqs2 leakage audit) of that plan has not been executed (`results/exp50_rigorous/` does not exist). **Talk should cite Exp 50 as in-progress, not as a final number.**
+- [RED] None.
+
+**Distribution:** 6 GREEN / 3 YELLOW / 0 RED.
