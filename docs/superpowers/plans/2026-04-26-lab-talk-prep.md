@@ -1892,3 +1892,4 @@ git tag -a lab-talk-2026-04-XX -m "State at the time of the lab seminar"
 - **Stop and ask** if Phase C surfaces something that invalidates the talk's spine (e.g. a leakage bug in Exp 46). Replan with the user.
 - **Worktree:** this plan runs in `main`, not in an isolated worktree. The exp50-rigorous worktree is left alone (Task A.2).
 - **Tooling:** Marp via `npx @marp-team/marp-cli@latest` (no global install required if npx is available).
+- **Subagent reports.** Every subagent dispatch (implementer + spec review + code review) saves its full report to `docs/_audit/logs/NN_<phase>_<role>.md` (controller writes; subagent doesn't need to know about logging). See `docs/_audit/logs/README.md` for the naming convention. This makes the entire dispatch history reproducible and re-litigable.
