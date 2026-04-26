@@ -195,3 +195,17 @@ are presentation conveniences rather than measured quantities.
 half of the docs is bit-perfect against its source JSONs. The drift is all
 in (a) older README narrative, (b) marketing-layer count claims, and (c)
 the L=175 reference-protein assumption.
+
+### Tooling (Task C.8, evidence: `docs/_audit/tooling.md`)
+
+- [GREEN] **`pytest`** — declared (`>=9.0.2` in `[dependency-groups].dev`), installed (9.0.2), runnable. 813/813 tests pass (C.2).
+- [YELLOW] **`ruff`** missing — no linter declared, no `[tool.ruff]` section, no `.ruff.toml`. Not a blocker, but a clone-and-look inspector will notice the absence.
+- [YELLOW] **`mypy`** missing — no type checker, no `mypy.ini`, no `[tool.mypy]`. No `py.typed` marker either. Same severity as `ruff`: optics, not correctness.
+- [YELLOW] **`pytest-cov`** missing — coverage is not measured. The "813 tests" claim is undercut by having no coverage figure.
+- [YELLOW] **`pre-commit`** missing — no `.pre-commit-config.yaml`, no hooks installed. Visible to anyone who clones; not blocking.
+- [YELLOW] **`jupyter` / `jupytext`** missing — `experiments/45_disorder_forensics.ipynb` exists in the repo and would fail to re-execute on a fresh clone. Not on talk critical path.
+- [RED] **`marp-cli`** missing AND blocks Task H.1 (slide deck production). `marp` is not on `PATH`; `npx` IS available (`/opt/homebrew/bin/npx` v11.6.2), so install path is `npm install -g @marp-team/marp-cli` in D.4. This is the only tool gap with a concrete downstream block.
+
+**Distribution:** 1 GREEN / 6 YELLOW / 1 RED.
+
+The single RED gates slide production, not any benchmark claim. All YELLOWs are repo-hygiene gaps that D.4 will close (declare in `[dependency-groups].dev`, add minimal `[tool.ruff]` and `[tool.mypy]` blocks, add a basic `.pre-commit-config.yaml`). No code change required.
