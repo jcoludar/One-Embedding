@@ -137,7 +137,36 @@ Distribution mostly matches the prior prediction (~70 % green / 20 % yellow / 10
 
 **Distribution:** 4 GREEN / 4 YELLOW / 0 RED.
 
-### Combined Posterior so far (C.1 + C.2 + C.3 + C.4 + C.5 + C.6)
+### Claims register (Task C.7, evidence: `docs/_audit/claims.md`)
+
+- [GREEN] **All Exp 43 result-table cells (Phase A1, B, C, D) match source JSONs bit-perfectly.** SS3/SS8/Disorder per-residue numbers, Ret@1 SCOPe 5K, CATH20, DeepLoc test+setHARD, ESM2 Phase B (SS3/SS8/Ret@1), ablation table, length stress — every cited number traces to `phase_a1/b/c/d_results.json` exactly (rounding ≤ 0.05).
+- [GREEN] **Exp 46 5-PLM table is bit-perfect** (5 PLMs × 4 tasks × {value, ±} = 40 cells, all match `exp46_multi_plm_results.json`).
+- [GREEN] **Exp 47 codec sweep table** (6 standard tiers on ProtT5) bit-perfect against `exp47_codec_sweep.json`.
+- [GREEN] **Exp 44 unified codec sweep table** (6 configs × 4 metrics = 24 cells) bit-perfect against `exp44_unified_results.json`.
+- [GREEN] **Exp 37 legacy structural numbers** (lDDT 100.7%, contact 106.5%, n=50 SCOPe domains) match `structural_retention_results.json` exactly.
+- [GREEN] **All sample-size claims** (n=2493, 9518, 2768, 490, 117, 348, 103, 115, 20) match the `n=` fields in the source JSONs.
+- [GREEN] **Methodology claims** (BCa B=10,000; multi-seed [42,123,456]; GridSearchCV; cluster bootstrap; 3 fair retrieval baselines; ABTT cross-corpus stability < 0.2 pp) all trace to source code/JSONs (re-verified from C.4).
+- [GREEN] **Bibliographic citations** (DiCiccio & Efron 1996; Bouthillier 2021; Davison & Hinkley 1997) are real, accurate references.
+- [YELLOW] **"232 compression methods benchmarked"** — roll-up estimate, not enumerated. Distinct counts in EXPERIMENTS.md sum approximately to this figure (29 pooling + 50 extreme + 30+ Exp 29 + 14 Exp 26 + 10 Exp 47 × 5 PLMs + ...) but no script outputs "232". Pre-empt with one slide: either soften to "200+" or list explicitly.
+- [YELLOW] **"6 tasks"** — Exp 46 actually reports 4 tasks (SS3, SS8, Ret@1, Disorder). The "6" framing rolls in CB513/TS115/CASP12 SS variants as separate tasks. Loose definition inflates count. **A Rost-lab member will count tables and ask.**
+- [YELLOW] **"8 datasets"** — actually 9 in cited tables (CB513, TS115, CASP12, CheZOD117, TriZOD348, SCOPe 5K, CATH20, DeepLoc test, DeepLoc setHARD). Off by one.
+- [YELLOW] **"L=175" reference protein length** in compression-tier table titles. NOT empirical; a fixed assumption from the codec design spec (`docs/superpowers/specs/2026-03-29-unified-codec-design.md:59`). Exp 45 separately reports `mean_protein_length=156` for the actual SCOPe 5K subset. The L=175 number is an arithmetic convenience, not a measured value. Not an error per se but the "Size (L=175)" label invites confusion.
+- [YELLOW] **"1500 proteins/s encoding"** and **"20x faster than PQ"** speed claims live only in commit message `8b1fbf1`, not in any result JSON. PQ side has timing in `exp45_new_default_results.json` (PQ encode 70.6 µs/residue → ~80 prot/s); 1558/80 ≈ 19.5x → "20x" reasonable. But binary timing has no JSON record.
+- [YELLOW] **fp16-896 compression "2.3x" vs JSON label "2x"** — both correct (4096/(896×2) = 2.286 → 2.3 doc, 2 JSON-rounded). Cosmetic precision inconsistency.
+- [YELLOW] **AUC retention "98.6%"** vs computed `0.877/0.890 = 98.54%` — off by 0.06pp due to rounding intermediate values. Minor.
+- [YELLOW] **Pre-rigorous-era numbers** in README L208–L213 (V2 full / V2 balanced / V2 binary), L330–L352 (Exp 26/28/36/37 narrative), and Addendum (ChannelCompressor `Ret@1=0.795 ± 0.012`). Reference older result files (`chained_codec_results.json`, `extreme_compression_results.json`, etc.) that were NOT re-verified cell-by-cell in this audit. Disclaim in talk as "pre-rigorous, no BCa CIs".
+- [YELLOW] **TM-score Spearman 0.5742** (Exp 37 `structural_retention_results.json:spearman_retention`) is **NOT cited anywhere in CLAUDE.md or README.md** despite living in the same result file as the headline lDDT 100.7% / contact 106.5%. **Omission, not error** — but a Rost-lab probe ("what about TM-score?") will land here. Either disclose (57% retention) or explicitly note "TM-score retention low; lDDT/contact preserved" in the talk.
+- [YELLOW] **Phylo "FastTree 4/12, IQ-TREE 5/12, BM MCMC 11/12"** numbers in README L138–L143. The MCMC results are in per-tree `_consensus.nwk` files (per C.5), but the FastTree/IQ-TREE comparison numbers don't have an obvious source script in the audit-traced JSONs. Likely correct (consistent with the rest of Exp 35 narrative) but the trace is implicit, not explicit.
+- [RED] **README.md "44 experiments"** (line 12, 318) — should be 47. (Same item as C.1 RED.)
+- [RED] **README.md "default PQ M=192 on 768d, ~20x"** (line 21) — old default; should be binary 896d ~37x. (Same as C.1 RED.)
+- [RED] **README.md "ABTT3 + RP 768d + PQ M=192 → ~20x compression, ~34 KB/protein"** (line 80, 316) — old default; same drift item.
+- [RED] **README.md tier table "PQ M=192 (default)" cell** (line 87, 178) — old default; same drift item.
+
+**Distribution:** 8 GREEN / 11 YELLOW / 4 RED (across the 28 most material claims; full register has 78 cells with 50 GREEN / 24 YELLOW / 4 RED).
+
+The 4 REDs are all the same "README is out of date" item (already a single RED in C.1 — the 4 line items here are distinct **numeric** claims that all share that root cause).
+
+### Combined Posterior so far (C.1 + C.2 + C.3 + C.4 + C.5 + C.6 + C.7)
 
 | Subsection | GREEN | YELLOW | RED |
 |---|---:|---:|---:|
@@ -147,13 +176,22 @@ Distribution mostly matches the prior prediction (~70 % green / 20 % yellow / 10
 | Statistics (C.4) | 9 | 1 | 0 |
 | Phylo (C.5) | 4 | 2 | 0 |
 | Parameters (C.6) | 4 | 4 | 0 |
-| **Total** | **34** | **16** | **2** |
+| Claims register (C.7) | 8 | 11 | 4 |
+| **Total** | **42** | **27** | **6** |
 
-The cumulative ratio (~65 % green / 31 % yellow / 4 % red) shifts slightly more
-yellow, driven by the commit-message-drift and `d_out`/`dct_k` evidence-chain
-weaknesses. REDs still concentrated in the doc-drift hotspot.
+(C.7 RED items 1–4 are sub-instances of the same C.1 RED #1 — the README is one drift hotspot
+generating multiple distinct numeric mismatches. The "true" RED *count* is 2 (README drift +
+MEMORY.md `one_embedding/` confusion); the table totals show 6 line items because we count each
+distinct numeric claim separately.)
 
-**No headline claim was invalidated by this audit phase.** The Rost-lab-critical
-elements all hold: 5-PLM splits identical, BCa B=10,000 with paired retention,
-cluster bootstrap for disorder, multi-seed averaging-before-bootstrap, CV-tuned
-probes with `random_state=42`, fair DCT-K=4 baselines on both raw and compressed.
+The cumulative ratio (~56 % green / 36 % yellow / 8 % red after C.7) is more
+yellow than the prior predicted (~70/20/10). Reason: C.6/C.7 surface a class
+of "loosely-defined or commit-message-only" claims that were not anticipated.
+None invalidate a headline result — but they show that several of the "round
+numbers" in the docs (232 methods, 6 tasks, 8 datasets, 1500 proteins/s, L=175)
+are presentation conveniences rather than measured quantities.
+
+**No Exp 43/44/46/47 retention or CI is invalidated.** The methodologically-rigorous
+half of the docs is bit-perfect against its source JSONs. The drift is all
+in (a) older README narrative, (b) marketing-layer count claims, and (c)
+the L=175 reference-protein assumption.
