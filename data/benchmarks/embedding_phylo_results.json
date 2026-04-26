@@ -1,11 +1,11 @@
 {
-  "n_taxa": 156,
+  "n_taxa": 24,
   "n_dims": 512,
   "mode": "per_protein",
   "n_generations": 20000,
   "n_runs": 1,
   "n_chains": 2,
-  "mcmc_time_s": 89.81124186515808,
+  "mcmc_time_s": 7.877190113067627,
   "asdsf": 0.0,
   "converged": true
 }
