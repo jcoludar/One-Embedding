@@ -1,7 +1,7 @@
 # Protein Embedding Codec
 
 ## Project Overview
-Universal codec for PLM per-residue embeddings. **232 compression methods benchmarked** across 47 experiments, validated on **5 PLMs** (ProtT5, ESM2, ESM-C, ProstT5, ANKH). The unified codec uses center + RP 896d + binary by default, achieving **~17 KB/protein** (~37x compression) with **95–100% retention** across 6 tasks on 5 PLMs (Exp 46/47, BCa CIs). Binary is 20x faster to encode than PQ and needs no codebook. Configurable: `d_out` (896), `quantization` ('binary'), `pq_m` (auto), `abtt_k` (0). Use `quantization='pq', pq_m=224` for maximum quality at 18x.
+Universal codec for PLM per-residue embeddings. **200+ compression methods benchmarked** across 47 experiments, validated on **5 PLMs** (ProtT5, ESM2, ESM-C, ProstT5, ANKH). The unified codec uses center + RP 896d + binary by default, achieving **~17 KB/protein** (~37x compression) with **95–100% retention** across **4 task families** (SS3, SS8, retrieval, disorder) on **9 datasets** and 5 PLMs (Exp 46/47, BCa CIs). Binary skips the PQ codebook fit at encode time (~20× faster than PQ; precise per-PLM timing in Exp 47 logs). Configurable: `d_out` (896), `quantization` ('binary'), `pq_m` (auto), `abtt_k` (0). Use `quantization='pq', pq_m=224` for maximum quality at 18x.
 
 ## Quick Start
 
@@ -13,7 +13,7 @@ from src.one_embedding.codec_v2 import OneEmbeddingCodec
 codec = OneEmbeddingCodec()  # default: 896d binary, ~37x, no codebook
 codec.fit(training_embeddings)  # dict of {pid: (L, D) arrays} — for centering stats
 
-# Encode (binary: no codebook needed, 1500 proteins/s)
+# Encode (binary: no codebook needed, ~1500 proteins/s on M3 Max — see Exp 47)
 encoded = codec.encode(raw_embeddings)  # (L, 1024) -> compressed dict
 codec.save(encoded, "protein.one.h5")
 
@@ -64,9 +64,20 @@ uv run python experiments/13_robust_validation.py --step R1
 ## One Embedding 1.0 (Recommended)
 
 Pipeline: center → RP to d_out (896 default, skip if d_out≥D_in) → quantize → DCT K=4 protein vector.
-Four knobs: `d_out` (896), `quantization` ('binary'), `pq_m` (auto), `abtt_k` (0). Binary is the default: 37x compression, no codebook needed, 1500 proteins/s encoding. Use `quantization='pq'` for max quality (18x). ABTT off by default — Exp 45 showed it destroys disorder signal.
+Four knobs: `d_out` (896), `quantization` ('binary'), `pq_m` (auto), `abtt_k` (0). Binary is the default: 37x compression, no codebook needed, ~1500 proteins/s encoding (M3 Max). Use `quantization='pq'` for max quality (18x). ABTT off by default — Exp 45 showed it destroys disorder signal.
 
-| Config | Quantization | Size (L=175) | Compression | SS3 Ret | SS8 Ret | Dis Ret | Ret Ret |
+#### Exp 44 sweep (legacy 768d codec)
+
+Numbers below are from the **earlier d_out=768 codec sweep** (Exp 44). The current
+default is d_out=896 — see the **Exp 47 codec sweep** table further down for the
+shipping numbers. Exp 44 retained because its 6-config × 4-task grid is the
+densest single-PLM measurement we have; it informs design choices but is not
+the cited final.
+
+`Size (L=175)` columns use a fixed reference protein length L=175 (not the
+empirical mean — Exp 45 reports SCOPe-5K mean L=156).
+
+| Config | Quantization | Size (L=175 ref) | Compression | SS3 Ret | SS8 Ret | Dis Ret | Ret Ret |
 |--------|-------------|:----------:|:-----------:|:-------:|:-------:|:-------:|:-------:|
 | lossless (1024d) | fp16 | 366 KB | 2x | 100.0 ± 0.2% | 100.0 ± 0.3% | 99.9 ± 0.1% | 100.4 ± 0.5% |
 | fp16 (768d) | fp16 | 275 KB | 2.7x | 99.1 ± 0.5% | 98.7 ± 0.6% | 95.0 ± 2.1% | 100.2 ± 0.6% |
@@ -112,7 +123,7 @@ All numbers include 95% BCa bootstrap CIs (DiCiccio & Efron 1996, second-order a
 | SS8 (Q8) | per-residue | CASP12 (20) | 0.662 [0.629, 0.695] | 0.647 [0.611, 0.682] | **97.6 ± 1.7%** |
 | Disorder (pooled ρ) | per-residue | CheZOD117 (117) | 0.663 [0.585, 0.723] | 0.629 [0.548, 0.691] | **94.9 ± 2.0%** |
 | Disorder (pooled ρ) | per-residue | TriZOD348 (348) | 0.506 [0.461, 0.566] | 0.471 [0.426, 0.533] | **93.0 ± 2.6%** |
-| Disorder (AUC-ROC) | per-residue | CheZOD117 (117) | 0.890 [0.836, 0.922] | 0.877 [0.826, 0.909] | **98.6%** |
+| Disorder (AUC-ROC) | per-residue | CheZOD117 (117) | 0.890 [0.836, 0.922] | 0.877 [0.826, 0.909] | **98.5%** |
 
 Disorder uses **pooled residue-level** Spearman ρ (matching SETH/ODiNPred/ADOPT/UdonPred standard) with cluster bootstrap CIs (resample proteins, recompute pooled statistic — Davison & Hinkley 1997). AUC-ROC computed on binary Z<8 threshold (CAID standard).
 
@@ -149,13 +160,16 @@ Cross-dataset consistency: SS3 max 1.1pp, SS8 max 1.2pp (both OK < 3pp threshold
 fp16 quantization: **0.0pp** effect (completely lossless).
 Length stress test: no degradation (short 99.8%, medium 100.7%, long 101.3%).
 
-#### Legacy benchmarks (Exp 37, 512d codec)
-| Structural lDDT | 100.7% | Exp 37 |
-| Contact precision | 106.5% | Exp 37 |
+#### Legacy benchmarks (Exp 37, 512d codec — pre-rigorous, no BCa CIs)
+| Metric | Retention | Source | Note |
+|---|:---:|---|---|
+| Structural lDDT | 100.7% | Exp 37 | pre-rigorous; not re-validated through `metrics.statistics` |
+| Contact precision | 106.5% | Exp 37 | same |
+| TM-score Spearman | **57.4%** | Exp 37 (`structural_retention_results.json`) | same; **lower than lDDT/contact**, disclosed for completeness |
 
 ## Experiment History & Methodology
 
-See [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) for the full journey (232 methods, 47 experiments, idea space).
+See [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) for the full journey (200+ methods rolled up across 47 experiments — exact enumeration in `EXPERIMENTS.md`).
 
 **Benchmark methodology (Nature-level, Exp 43):**
 - Bootstrap: BCa (DiCiccio & Efron 1996), B=10,000, percentile fallback for n<25
@@ -165,7 +179,7 @@ See [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) for the full journey (232 methods
 - Probes: CV-tuned (GridSearchCV on train set, 3-fold, C/alpha grids)
 - ABTT leakage: formally tested — PCs differ across corpora but downstream Ret@1 varies <0.2pp (irrelevant)
 
-798 tests, 6 tasks, 8 datasets, 5 PLMs. BCa CIs on everything.
+813 tests, 4 task families (SS3 / SS8 / retrieval / disorder), 9 datasets (CB513, TS115, CASP12, CheZOD117, TriZOD348, SCOPe 5K, CATH20, DeepLoc test, DeepLoc setHARD), 5 PLMs. BCa CIs on everything.
 
 **Multi-PLM validation (Exp 46, center + RP896 + PQ224, ~18x):**
 
