@@ -47,8 +47,9 @@ def auto_pq_m(d_out: int) -> int:
     """Compute default PQ M targeting ~4d sub-vectors (~20x compression).
 
     Finds the largest factor of d_out that is <= d_out // 4.
-    For d_out=768: returns 192 (4d sub-vectors, 20x compression).
-    For d_out=512: returns 128 (4d sub-vectors, 32x compression).
+    For d_out=896 (current default): returns 224 (4d sub-vectors, ~18x compression).
+    For d_out=768: returns 192 (4d sub-vectors, ~20x compression).
+    For d_out=512: returns 128 (4d sub-vectors, ~32x compression).
     """
     target = d_out // 4
     for m in range(target, 0, -1):
@@ -142,7 +143,14 @@ class OneEmbeddingCodec:
         return self._proj_cache[d_in]
 
     def _preprocess(self, raw: np.ndarray) -> np.ndarray:
-        """Apply centering (+ optional ABTT) + RP projection (skip RP if d_out >= d_in)."""
+        """Apply centering (+ optional ABTT) + RP projection (skip RP if d_out >= d_in).
+
+        Centering and ABTT both require corpus stats from `fit()`. Binary and
+        int4 quantization can encode without `fit()` (no codebook needed); when
+        called in that path, centering is silently skipped and the user gets
+        uncentered output. Call `fit()` first for the documented "center + RP +
+        binary" pipeline.
+        """
         raw = raw.astype(np.float32)
         if self._corpus_stats is not None:
             raw = center_embeddings(raw, self._corpus_stats["mean_vec"])
@@ -163,8 +171,10 @@ class OneEmbeddingCodec:
             embeddings: Dict of protein_id → (L, D) float32 arrays.
             max_residues: Max residues for PQ fitting.
         """
+        # n_pcs must cover abtt_k so `top_pcs[:self.abtt_k]` doesn't silently truncate.
+        n_pcs = max(5, self.abtt_k)
         self._corpus_stats = compute_corpus_stats(
-            embeddings, n_sample=50_000, n_pcs=5, seed=self.seed
+            embeddings, n_sample=50_000, n_pcs=n_pcs, seed=self.seed
         )
 
         if self.quantization == "pq":
