@@ -51,3 +51,28 @@ What I currently expect the audit to find:
 - [RED] User auto-memory `~/.claude/projects/.../memory/MEMORY.md` (lines 91–96, 113, 175) treats `one_embedding/` as a top-level package. NOT a checked-in file (cannot fix in repo), but worth noting for future sessions.
 
 **Distribution:** 5 GREEN / 3 YELLOW / 2 RED.
+
+### Code correctness (Task C.2, evidence: `docs/_audit/pytest_baseline.txt`, `code_markers.txt`, `codec_review.md`)
+
+- [GREEN] **813/813 tests pass** in 90 s. (Docs claim 798 — outdated, undercount; the *actual* count is higher. Re-state in CLAUDE.md/MEMORY.md as Phase D.1 fix.)
+- [GREEN] **Zero TODO/FIXME/HACK/XXX markers in `src/`.** Only one true `[TODO]` exists outside `src/`: `experiments/50_sequence_to_oe.py:439` ("Downstream evaluation (SS3, disorder, retrieval)") — known follow-up for the active Stage 3 work, not a defect.
+- [GREEN] **Receiver-side decode claim VERIFIED** for binary default: H5 file contains `per_residue_bits` + `means` + `scales`, decoded by ~12 lines of pure `numpy` with `h5py` for I/O. No codebook needed. CLAUDE.md headline claim holds.
+- [GREEN] **Receiver claim also holds** for int4 and lossless/fp16. PQ correctly requires a codebook (matches the CLAUDE.md narrative).
+- [GREEN] `OneEmbeddingCodec` defaults (lines 84–93) match CLAUDE.md prose: `d_out=896`, `quantization='binary'`, `pq_m=None` (auto), `abtt_k=0`, `dct_k=4`, `seed=42`. Constructor docstring (lines 64–82) is correctly aligned with current state.
+- [YELLOW] **Hidden defaults / silent skips in codec_v2.py** — none are bugs, but each could surprise a careful Rost-lab user:
+  - `auto_pq_m` docstring example only shows 768/512 cases (line 50–51), not the new 896 default.
+  - `_preprocess` (line 147) silently SKIPS centering when `is_fitted == False` and quantization is binary/int4 (no codebook needed). User encoding without `fit()` gets uncentered binary — works but inconsistent with class docstring's "default: center + RP + binary".
+  - `compute_corpus_stats(..., n_pcs=5)` is hardcoded (line 167), but `abtt_k` is user-configurable. Setting `abtt_k=10` would silently use only 5 PCs (Python slice `top_pcs[:10]` truncates without warning).
+  - `encode_h5_to_h5` writes file-level metadata (`quantization`, `d_out`) but per-protein groups only get `seq_len` and `d_in` attrs. External users inspecting `f[pid].attrs` would miss key info; only `load_batch` correctly merges them.
+  - `version: 4` is hardcoded; no upgrade path documented for older `.one.h5` files.
+- [YELLOW] **Self-contained binary decoder snippet missing from docs.** While the receiver CAN decode with `numpy + h5py` only, they need to know the bit-unpacking layout (bit 7 → col 0 in column-major within byte). For the talk + paper, ship a 15-line standalone snippet. Fix during D.1.
+- [YELLOW] Two informational `RuntimeWarning`s during pytest (BCa CI degenerate-data warning in `test_benchmark_*` and "catastrophic cancellation" in `test_transposed_transforms` on a deliberately-constant matrix). These are tests verifying degenerate-input handling, not failures. Document in pytest_baseline notes; no fix needed.
+- [GREEN] No RED findings in this section. Code is in good shape.
+
+**Distribution:** 6 GREEN / 3 YELLOW / 0 RED.
+
+### Combined posterior so far (C.1 + C.2)
+
+11 GREEN / 6 YELLOW / 2 RED.
+
+Distribution mostly matches the prior prediction (~70 % green / 20 % yellow / 10 % red). The two REDs are exactly what I anticipated — README drift and `one_embedding/` package-location confusion in MEMORY.md — both Phase D.1 fixes.

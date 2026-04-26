@@ -1,0 +1,82 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: /Users/jcoludar/CascadeProjects/ProteEmbedExplorations
+configfile: pyproject.toml
+plugins: anyio-4.12.1
+collected 813 items
+
+tests/test_abtt_stability.py .........                                   [  1%]
+tests/test_aligner.py ...............                                    [  2%]
+tests/test_ancestral.py ..........                                       [  4%]
+tests/test_benchmark_disorder.py ............                            [  5%]
+tests/test_benchmark_per_residue_runner.py .....                         [  6%]
+tests/test_benchmark_probes.py .....                                     [  6%]
+tests/test_benchmark_protein_level_runner.py .....                       [  7%]
+tests/test_benchmark_rules.py ..............                             [  9%]
+tests/test_benchmark_statistics.py .........................             [ 12%]
+tests/test_classifier.py ........                                        [ 13%]
+tests/test_cli.py ......                                                 [ 14%]
+tests/test_codec.py ...........                                          [ 15%]
+tests/test_codec_unified.py ........................................     [ 20%]
+tests/test_conservation.py ...........                                   [ 21%]
+tests/test_core_codec.py .............................                   [ 25%]
+tests/test_embedding_phylo.py .......................................... [ 30%]
+.............................                                            [ 33%]
+tests/test_enriched_transforms.py .............................          [ 37%]
+tests/test_extract.py .....                                              [ 38%]
+tests/test_extreme_compression.py ..........................             [ 41%]
+tests/test_hrr.py .........................                              [ 44%]
+tests/test_integration.py ...                                            [ 44%]
+tests/test_integration_pipeline.py ...                                   [ 45%]
+tests/test_io_one_h5.py .........................................        [ 50%]
+tests/test_mutation_scanner.py ...........                               [ 51%]
+tests/test_oemb_io.py ....................................               [ 55%]
+tests/test_one_embedding.py ...................................          [ 60%]
+tests/test_path_transforms.py .................................          [ 64%]
+tests/test_per_residue_probes.py ...............                         [ 66%]
+tests/test_preprocessing.py ................................             [ 70%]
+tests/test_quantization.py .......................................       [ 74%]
+tests/test_retrieval_euclidean.py ..........                             [ 76%]
+tests/test_seq2oe_model.py ...............                               [ 77%]
+tests/test_structural_similarity.py ..............                       [ 79%]
+tests/test_tensor_decomposition.py ................                      [ 81%]
+tests/test_tool_align.py ........                                        [ 82%]
+tests/test_tool_classify.py ......                                       [ 83%]
+tests/test_tool_conserve.py .......                                      [ 84%]
+tests/test_tool_disorder.py .........                                    [ 85%]
+tests/test_tool_mutate.py .......                                        [ 86%]
+tests/test_tool_search.py ........                                       [ 87%]
+tests/test_tool_ss3.py .........                                         [ 88%]
+tests/test_tools.py .......                                              [ 89%]
+tests/test_tools_dimension.py .....................                      [ 91%]
+tests/test_top_level_api.py ........                                     [ 92%]
+tests/test_topological.py ..................                             [ 94%]
+tests/test_transposed_transforms.py ..........................           [ 98%]
+tests/test_universal_transforms.py ...............                       [100%]
+
+=============================== warnings summary ===============================
+tests/test_benchmark_protein_level_runner.py::TestRetrievalBenchmark::test_returns_cosine_and_euclidean
+tests/test_benchmark_protein_level_runner.py::TestRetrievalBenchmark::test_well_separated_clusters_high_ret1
+tests/test_benchmark_statistics.py::TestPairedBootstrapRetention::test_perfect_retention
+tests/test_benchmark_statistics.py::TestAveragedMultiSeed::test_averaged_reports_per_seed_values
+  /Users/jcoludar/CascadeProjects/ProteEmbedExplorations/.venv/lib/python3.12/site-packages/scipy/stats/_resampling.py:155: RuntimeWarning: invalid value encountered in scalar divide
+    a_hat = 1/6 * sum(nums) / sum(dens)**(3/2)
+
+tests/test_benchmark_protein_level_runner.py::TestRetrievalBenchmark::test_returns_cosine_and_euclidean
+tests/test_benchmark_protein_level_runner.py::TestRetrievalBenchmark::test_well_separated_clusters_high_ret1
+tests/test_benchmark_statistics.py::TestPairedBootstrapRetention::test_perfect_retention
+tests/test_benchmark_statistics.py::TestAveragedMultiSeed::test_averaged_reports_per_seed_values
+  /Users/jcoludar/CascadeProjects/ProteEmbedExplorations/.venv/lib/python3.12/site-packages/scipy/_lib/_util.py:365: DegenerateDataWarning: The BCa confidence interval cannot be calculated. This problem is known to occur when the distribution is degenerate or the statistic is np.min.
+    return fun(*args, **kwargs)
+
+tests/test_transposed_transforms.py::TestChannelStatistics::test_constant_matrix_zero_std
+  /Users/jcoludar/CascadeProjects/ProteEmbedExplorations/src/one_embedding/transposed_transforms.py:118: RuntimeWarning: Precision loss occurred in moment calculation due to catastrophic cancellation. This occurs when the data are nearly identical. Results may be unreliable.
+    parts.append(scipy_skew(X, axis=0))
+
+tests/test_transposed_transforms.py::TestChannelStatistics::test_constant_matrix_zero_std
+  /Users/jcoludar/CascadeProjects/ProteEmbedExplorations/src/one_embedding/transposed_transforms.py:120: RuntimeWarning: Precision loss occurred in moment calculation due to catastrophic cancellation. This occurs when the data are nearly identical. Results may be unreliable.
+    parts.append(scipy_kurtosis(X, axis=0))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 813 passed, 10 warnings in 89.98s (0:01:29) ==================
+Exit code: 0
