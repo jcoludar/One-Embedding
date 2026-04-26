@@ -162,3 +162,63 @@ Phase B prior-stubs land in order; Phase A baseline commit is just behind those.
 | GREEN | 4 | Code imports correct, gitignore comprehensive, recent commits clean, tracked binaries small |
 | YELLOW | 3 | CLAUDE.md 768d/896d table coexistence, tests-count drift, phylo file recovered |
 | RED | 2 | README.md describes old PQ/768d/ABTT default (multiple sections); MEMORY.md treats `one_embedding/` as top-level (not a repo file) |
+
+## Task C.5 — Phylo file decision (2026-04-26)
+
+**Context:** Task A.1 committed the present state of `data/benchmarks/embedding_phylo_results.json`,
+which had been overwritten by an earlier in-flight rerun:
+```
+- n_taxa:       156 → 24
+- mcmc_time_s:  89.81 → 7.88
+(other fields identical: n_dims=512, mode=per_protein, n_generations=20000,
+ n_runs=1, n_chains=2, asdsf=0.0, converged=true)
+```
+
+**Provenance investigation:**
+- Producing script: `experiments/35_embedding_phylogenetics.py:2086, 2387`
+  — writes to a single fixed path `data/benchmarks/embedding_phylo_results.json`
+  on every invocation, regardless of `--dataset` argument. Each run overwrites
+  the previous content.
+- The script supports `--dataset {conotoxin, APAM, APH, …}` via argparse, but
+  the output filename is NOT parameterized by `--dataset`. So whichever dataset
+  was run last "wins."
+- Per-dataset detailed outputs (consensus trees, NJ trees, diagnostics) DO use
+  parameterized filenames in `results/embed_phylo/{ds}_*.nwk` — 31 datasets,
+  179 .nwk files present and intact.
+
+**What this file is:**
+- A sanity-check timestamp from the last-run dataset, not a citable headline.
+- Both 156-taxa and 24-taxa versions used identical sanity-test config
+  (20K generations × 1 run × 2 chains; ASDSF=0.0 indicates trivial convergence
+  consistent with insufficient sampling). Neither matches the rigorous full
+  config (200K generations × 4 chains × 2 runs documented as the production
+  protocol in the script's argparse defaults at lines 2053–2057).
+
+**What this file is NOT:**
+- The source of any cited number in CLAUDE.md or MEMORY.md. The headline phylo
+  claim ("10–11 of 12 families monophyletic with warm-start BM MCMC") comes
+  from analysis of the per-dataset `*_consensus.nwk` files in
+  `results/embed_phylo/`, not from this summary file.
+
+**Decision: option (a) — restore the 156-taxa version.**
+
+Rationale:
+- The 156-taxa run is the more representative artifact (longer convergence
+  time on a real-sized dataset; 24-taxa was the in-flight downsized rerun
+  that kept the same trivial config).
+- Restoring requires no re-execution; we have the prior-version content via
+  `git show 8b1fbf1:data/benchmarks/embedding_phylo_results.json`.
+- The file has zero downstream dependencies — it is a sanity artifact, not
+  consumed by any other script or doc. Confirmed: no other Python file
+  reads `embedding_phylo_results.json`.
+
+**Action taken:** restored the 156-taxa version in this commit.
+
+**Open follow-ups (Phase D / Phase E):**
+- The script should be refactored so `BENCH_PATH` is parameterized by
+  `--dataset` (e.g. `data/benchmarks/embedding_phylo_{ds}_results.json`)
+  to prevent future overwrites.
+- Add a one-line note to `EXPECTED_QA.md` about this file being a sanity
+  artifact, in case a Rost-lab member spots it in the repo and asks
+  "what's the n=24 run?" The number-of-monophyletic-families claim should
+  cite `results/embed_phylo/*_consensus.nwk` analysis, not this file.

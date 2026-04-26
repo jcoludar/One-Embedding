@@ -107,3 +107,35 @@ Distribution mostly matches the prior prediction (~70 % green / 20 % yellow / 10
 - [RED] None.
 
 **Distribution:** 9 GREEN / 1 YELLOW / 0 RED.
+
+### Phylo (Task C.5, evidence: `docs/_audit/hygiene.md` "Task C.5" section)
+
+- [GREEN] **Provenance traced.** `data/benchmarks/embedding_phylo_results.json` is written exclusively by `experiments/35_embedding_phylogenetics.py:2387`. The path is hardcoded at line 2086 — NOT parameterized by `--dataset` — so each invocation overwrites the previous content with whatever dataset was run last. Per-dataset detailed outputs DO use parameterized filenames (`results/embed_phylo/{ds}_*.nwk`, 31 datasets present).
+- [GREEN] **Diff is exactly the documented deltas.** `n_taxa: 156→24` and `mcmc_time_s: 89.81→7.88`; all other fields (n_dims=512, mode=per_protein, n_generations=20000, n_runs=1, n_chains=2, asdsf=0.0, converged=true) are bit-identical between versions.
+- [GREEN] **Zero downstream dependency.** `embedding_phylo_results.json` is not read by any other Python script or doc; it is a sanity artifact only. The cited "10–11 of 12 families monophyletic" claim in CLAUDE.md / MEMORY.md comes from analyzing `results/embed_phylo/*_consensus.nwk`, not from this file.
+- [GREEN] **Decision applied: option (a) — restore 156-taxa version.** Restored via `git show 8b1fbf1:data/benchmarks/embedding_phylo_results.json > data/benchmarks/embedding_phylo_results.json`. Rationale: the 156-taxa run is the more representative artifact (longer convergence time on a real-sized dataset), the 24-taxa was an in-flight downsized rerun, and the file has no downstream consumers so the choice is purely about leaving the most representative sanity number in the repo.
+- [YELLOW] **Both versions used trivial-test config** (20K generations × 1 run × 2 chains; ASDSF=0.0 indicates insufficient sampling rather than true convergence). Neither matches the rigorous full config (200K generations × 4 chains × 2 runs, the script's argparse defaults). For the talk, do not claim this file represents the rigorous run; cite the per-dataset `_consensus.nwk` outputs instead.
+- [YELLOW] **Script bug to fix in Phase D:** parameterize `BENCH_PATH` in `experiments/35_embedding_phylogenetics.py:2086` by `--dataset` (e.g. `embedding_phylo_{ds}_results.json`) to prevent future overwrites. Also add a one-line note to `EXPECTED_QA.md` so a Rost-lab member spotting the n=24 run knows it's a sanity artifact.
+- [RED] None — the resolved status is acceptable for talk purposes.
+
+**Distribution:** 4 GREEN / 2 YELLOW / 0 RED.
+
+### Combined Posterior so far (C.1 + C.2 + C.3 + C.4 + C.5)
+
+| Subsection | GREEN | YELLOW | RED |
+|---|---:|---:|---:|
+| Repo hygiene (C.1) | 5 | 3 | 2 |
+| Code correctness (C.2) | 6 | 3 | 0 |
+| Splits (C.3) | 6 | 3 | 0 |
+| Statistics (C.4) | 9 | 1 | 0 |
+| Phylo (C.5) | 4 | 2 | 0 |
+| **Total** | **30** | **12** | **2** |
+
+The cumulative ratio (~68 % green / 27 % yellow / 5 % red) tracks the prior
+prediction (~70/20/10) reasonably well, with REDs concentrated in the doc-drift
+hotspot (README + MEMORY one_embedding/ references — both Phase D.1 fixes).
+
+**No headline claim was invalidated by this audit phase.** The Rost-lab-critical
+elements all hold: 5-PLM splits identical, BCa B=10,000 with paired retention,
+cluster bootstrap for disorder, multi-seed averaging-before-bootstrap, CV-tuned
+probes with `random_state=42`, fair DCT-K=4 baselines on both raw and compressed.
