@@ -355,3 +355,74 @@ The "true root-cause" RED count of **6** is what a lab-talk listener should
 hear: README drift, MEMORY.md `one_embedding/` confusion, marp-cli missing,
 faiss-cpu undeclared, tmtools undeclared, plus the user-auto-memory framing
 issue (which is not in the repo and cannot be fixed there).
+
+## Phase D progress (2026-04-27)
+
+| Triage rows | Status | Action |
+|-------------|--------|--------|
+| 1, 3–6 (README drift) | **deferred to E.3** | full rewrite handled by Phase E.3 (`docs/superpowers/plans/2026-04-26-lab-talk-prep.md` Task E.3) |
+| 2 (MEMORY.md `one_embedding/`) | **n/a** | not a checked-in file; recorded in audit, no repo action |
+| 7 (`marp-cli`) | **DONE** (D.4) | runs via `npx --yes @marp-team/marp-cli@latest` |
+| 8 (`faiss-cpu`) | **DONE** (D.5) | declared in `[project.optional-dependencies].structural` |
+| 9 (`tmtools`) | **DONE** (D.5) | declared in `[project.optional-dependencies].structural` |
+| 10 (Exp 44 legacy tag) | **DONE** (D.1) | CLAUDE.md tagged "legacy 768d codec sweep" |
+| 11 (test count drift) | **DONE** (D.1) | CLAUDE.md updated 798 → 813 |
+| 12 (phylo file 156→24) | **DONE** (C.5) | restored 156-taxa version in audit |
+| 13 (`n_pcs=5` truncation) | **DONE** (D.1) | `n_pcs = max(5, abtt_k)` in `codec_v2.py` |
+| 14 (`_preprocess` silent skip) | **DONE** (D.1) | docstring documents the binary/int4 unfitted-skip behavior |
+| 15 (`.one.h5` version migration) | **deferred** | YELLOW; no upgrade path documented; address post-talk |
+| 16 (decoder snippet) | **deferred to G.1 / E.3** | will live in HANDOFF.md and README |
+| 17 (pytest warnings) | **deferred** | low-value; both warnings test degenerate-input handling |
+| 18 (CB513 random split) | **defer to G.2** | preempt in EXPECTED_QA.md |
+| 19 (split filename rename) | **deferred** | cosmetic; not on talk path |
+| 20 (Exp 50 in-progress) | **defer to G.2 / H.1** | already framed as in-progress; talk slide will say so |
+| 21 (Exp 37 no BCa CIs) | **DONE** (D.1) | CLAUDE.md tagged "pre-rigorous" |
+| 22 (phylo trivial-config) | **defer to G.2** | preempt in EXPECTED_QA.md |
+| 23 (`BENCH_PATH` parameterize) | **deferred** | bigger code change; post-talk |
+| 24 (`d_out=896` interpolated) | **defer to G.2** | preempt in EXPECTED_QA.md |
+| 25 (`dct_k=4` weak evidence) | **defer to G.2** | preempt in EXPECTED_QA.md |
+| 26 (hidden defaults summary) | **DONE** (D.1) | covered by 13–15 fixes |
+| 27 (commit-message hygiene) | **deferred** | notes-only; post-talk MEMORY.md item |
+| 28 ("232 methods" un-enumerated) | **DONE** (D.1) | softened to "200+" in CLAUDE.md |
+| 29 ("6 tasks" loose) | **DONE** (D.1) | reframed as "4 task families × 9 datasets" |
+| 30 ("8 datasets" off by 1) | **DONE** (D.1) | corrected to 9 in CLAUDE.md |
+| 31 ("L=175" reference) | **DONE** (D.1) | CLAUDE.md tagged "ref" + Exp 45 mean note |
+| 32 ("1500 prot/s") | **DONE** (D.1) | caveated as "~1500 on M3 Max — see Exp 47" |
+| 33 (fp16 rounding 2x vs 2.3x) | **deferred** | cosmetic; both correct |
+| 34 (AUC retention 98.6 → 98.5) | **DONE** (D.1) | CLAUDE.md updated to 98.5% |
+| 35 (pre-rigorous numbers) | **defer to E.3 / G.2** | will be marked "pre-rigorous, no BCa CIs" in README |
+| 36 (TM-score 0.5742 omitted) | **DONE** (D.1) | added to Exp 37 legacy block in CLAUDE.md as 57.4% |
+| 37 (FastTree/IQ-TREE phylo trace) | **deferred** | needs research; post-talk |
+| 38 (`ruff` missing) | **DONE** (D.4) | declared + `[tool.ruff]` config |
+| 39 (`mypy` missing) | **DONE** (D.4) | declared + `[tool.mypy]` config |
+| 40 (`pytest-cov` missing) | **DONE** (D.4) | declared |
+| 41 (`pre-commit` missing) | **DONE** (D.4) | `.pre-commit-config.yaml` added |
+| 42 (`jupyter` / `jupytext` missing) | **DONE** (D.4) | both declared |
+| 43 (venv drift, 16 packages) | **DONE** (D.5) | `uv sync --all-extras --all-groups` cleaned drift; verified no imports |
+| 44 (`scipy` direct-import promotion) | **DONE** (D.5) | promoted to `[project].dependencies` |
+| 45 (`click` direct-import promotion) | **DONE** (D.5) | promoted to `[project].dependencies` |
+
+### Phase D resolution summary
+
+- **Resolved**: 22 line items (3 RED + 19 YELLOW). The 3 RED resolutions
+  cover marp-cli, faiss-cpu, tmtools — all the toolchain/dep REDs.
+- **Deferred to E.3 (README rewrite)**: 5 RED line items (rows 1, 3–6) and 1 YELLOW
+  (row 35). All sub-instances of the README drift root cause; E.3 will rewrite.
+- **Deferred to G.2 (EXPECTED_QA / talk preempt)**: 6 YELLOW (rows 18, 20, 22, 24, 25, 35).
+  These are the items the talk should preempt with one sentence each.
+- **Deferred post-talk**: 8 YELLOW (rows 15, 17, 19, 23, 27, 33, 37, plus G-bound items
+  that may not all land in the talk). Repo-hygiene polish; not a credibility risk.
+- **N/A**: 1 RED (row 2 — MEMORY.md, not in repo).
+
+After Phase D, the talk's spine is intact: every codec retention number remains
+bit-perfect against source JSONs, the dev-tooling/dep manifests match
+professional-repo standard, and the 5 README-drift line items are queued for the
+E.3 rewrite (the next phase).
+
+**Verification at end of Phase D:**
+- `uv lock --check` exit 0
+- `uv sync --all-extras --all-groups` clean
+- `uv run pytest tests/` → **813 passed** (no regression from baseline)
+- `uv run deptry .` → "No dependency issues found"
+- `which npx && npx --yes @marp-team/marp-cli@latest --version` → runs
+- `git status --short` → empty
