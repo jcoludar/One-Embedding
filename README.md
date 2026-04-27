@@ -69,23 +69,43 @@ codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.one.h5")
 
 ### Decode (binary default — `numpy + h5py` only, no codebook)
 
+A batch file (`encode_h5_to_h5` output) stores one group per protein with
+`per_residue_bits`, `per_residue_means`, `per_residue_scales`, and a
+`protein_vec` summary. File-level metadata sits in a JSON blob in
+`f.attrs["metadata"]`. The receiver:
+
 ```python
-import h5py, numpy as np
+import json, h5py, numpy as np
 
 with h5py.File("compressed.one.h5", "r") as f:
-    bits   = f["per_residue_bits"][:]         # uint8, packed bits
-    means  = f.attrs["means"][:]              # (D,) centering vec
-    scales = f.attrs["scales"][:]             # (D,) per-dim scale
-    L      = int(f.attrs["seq_len"])
-    D      = int(f.attrs["d_out"])
+    meta   = json.loads(f.attrs["metadata"])  # codec settings (d_out, version, ...)
+    g      = f["P12345"]                        # one protein per group
+    bits   = g["per_residue_bits"][:]           # uint8, shape (L, ceil(D/8))
+    means  = g["per_residue_means"][:]          # (D,)
+    scales = g["per_residue_scales"][:]         # (D,)
+    L      = int(g.attrs["seq_len"])
+    D      = int(meta["d_out"])
 
-# Unpack bits (column-major within byte: bit 7 → col 0)
 unpacked = np.unpackbits(bits, axis=1, bitorder="big")[:, :D]
-signs    = unpacked.astype(np.float32) * 2 - 1            # {0,1} → {-1,+1}
-per_res  = signs * scales + means                          # (L, D) reconstructed
+signs    = unpacked.astype(np.float32) * 2 - 1   # {0,1} → {-1,+1}
+per_res  = signs * scales + means                 # (L, D) reconstructed, float32
 ```
 
-That's the whole receiver path for the default binary mode — no `OneEmbeddingCodec` import, no codebook, just NumPy. (PQ mode requires the codebook; int4 and fp16 follow the same shape with different unpacking.)
+That's the whole receiver path for the default binary mode — no
+`OneEmbeddingCodec` import, no codebook, just NumPy + h5py + json. Single-protein
+files written by `codec.save()` use the same datasets at file-level instead of
+inside a per-protein group; drop the `g = f["P12345"]` line.
+
+PQ mode requires the codebook; int4 and fp16 follow the same shape with
+different unpacking.
+
+### Try it on real data
+
+```bash
+uv run python demo/build.py     # 10 CASP12 proteins → raw / mean_pool / ours
+uv run python demo/show.py      # prints the on-disk sizes of all three forms
+cat demo/README.md              # walks through what's in each form
+```
 
 ### Pipeline
 
@@ -168,9 +188,38 @@ experiments/            47 numbered experiments, each self-contained
 
 tests/                  813 tests (pytest)
 
+demo/                   3-form demo (raw / mean_pool / ours) on 10 CASP12 proteins
+
 docs/
   EXPERIMENTS.md          Full 200+ method enumeration across 47 experiments
 ```
+
+---
+
+## Tools (work in progress)
+
+A small set of utilities ships under `src/one_embedding/tools/` for operating
+directly on compressed embeddings. **They are usable but rough** — most of the
+trained probe weights were fit against earlier 512d / 768d codec configurations
+and have not yet been retrained against the current 896d binary default. Tools
+auto-detect the input dimension and fall back to dimension-agnostic heuristics
+when no matching weights exist; expect the heuristic fallback for the 896d
+default until probes are retrained.
+
+| tool | what it does | status |
+|------|--------------|:------:|
+| `tools/disorder.py` | per-residue disorder prediction (CheZOD-style CNN probe) | trained at 512d / 768d; 896d falls back to norm heuristic |
+| `tools/ss3.py` | 3-state secondary structure (CB513-style probe) | same as above |
+| `tools/classify.py` | protein-level classification (DeepLoc-style) | trained probe at 768d |
+| `tools/search.py` | kNN retrieval over compressed embeddings | dimension-agnostic — works on any `d_out` |
+| `tools/align.py` | pairwise sequence-via-embedding alignment | dimension-agnostic |
+| `tools/conserve.py` | residue-level conservation score | heuristic; no probe yet |
+| `tools/mutate.py` | mutation effect scoring | heuristic; no probe yet |
+
+For task-quality numbers under the current 896d binary default, refer to the
+benchmark JSONs in `data/benchmarks/rigorous_v1/` (Exp 43 / 44 / 46 / 47 — the
+audit-grounded protocol). The tools are convenience wrappers; the rigorous
+numbers come from the experiment scripts.
 
 ---
 
