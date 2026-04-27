@@ -61,6 +61,13 @@ data/proteins/metadata*.csv
 # Large result files (MCMC tree samples — kept locally)
 results/embed_phylo/*_trees_run*.nwk
 
+# Phylo summary JSONs are per-run artifacts (script writes one per --dataset);
+# they are not benchmark sources of truth. The canonical 156-taxa sanity
+# snapshot is preserved as data/benchmarks/embedding_phylo_scope12_canonical.json.
+data/benchmarks/embedding_phylo_results.json
+data/benchmarks/embedding_phylo_*_results.json
+!data/benchmarks/embedding_phylo_scope12_canonical.json
+
 # Environment files
 .env
 .env.local

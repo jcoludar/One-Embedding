@@ -2083,10 +2083,10 @@ if __name__ == "__main__":
     DATA_DIR = PROJ_ROOT / "data"
     RESULTS_DIR = PROJ_ROOT / "results" / "embed_phylo"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    BENCH_PATH = DATA_DIR / "benchmarks" / "embedding_phylo_results.json"
-    BENCH_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     ds = args.dataset
+    BENCH_PATH = DATA_DIR / "benchmarks" / f"embedding_phylo_{ds}_results.json"
+    BENCH_PATH.parent.mkdir(parents=True, exist_ok=True)
     if args.emb_path:
         EMB_PATH = Path(args.emb_path)
     else:

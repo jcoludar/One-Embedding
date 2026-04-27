@@ -212,7 +212,7 @@ VQ/RVQ confirmed genuinely poor (not bug-caused): VQ K=16384 gets 79% SS3 ret, 5
 - `src/evaluation/` — Retrieval (cosine+euclidean), per-residue probes (SS3/SS8/disorder/TM/SignalP), biological annotations (GO/EC/Pfam/taxonomy), hierarchy, statistical tests, FAISS search index
 - `src/utils/` — Device management (MPS/CPU), H5 I/O
 - `experiments/` — 47 experiment scripts (01–47) + figure generators. Exp 43 = rigorous benchmark, Exp 44 = unified codec sweep, Exp 45 = disorder forensics, Exp 46 = multi-PLM pipeline (5 PLMs), Exp 47 = codec config sweep
-- `tests/` — 798 tests across multiple modules
+- `tests/` — 813 tests across multiple modules
 - `.one.h5 format` — H5-based single/batch protein embedding files (protein_vec + per_residue). Legacy `.oemb` also supported.
 
 ## Hardware
