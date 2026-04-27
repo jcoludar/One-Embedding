@@ -1,12 +1,13 @@
 [project]
 name = "proteembedexplorations"
 version = "0.1.0"
-description = "Sequence-only learned compression of PLM per-residue embeddings (1024d to 256d) with >98% downstream task retention"
+description = "Universal codec for PLM per-residue embeddings (~37x compression at 95–100% retention, 5 PLMs)"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "biopython>=1.86",
+    "click>=8.0",
     "fair-esm>=2.0.0",
     "h5py>=3.16.0",
     "matplotlib>=3.10.0",
@@ -14,6 +15,7 @@ dependencies = [
     "optuna>=4.0.0",
     "pandas>=2.0.0",
     "scikit-learn>=1.4.0",
+    "scipy>=1.13",
     "sentencepiece>=0.2.0",
     "torch>=2.0.0",
     "tqdm>=4.66.0",
@@ -25,6 +27,7 @@ dependencies = [
 [project.optional-dependencies]
 biocentral = ["biocentral-api"]
 extreme = ["pot>=0.9.0", "ripser>=0.6.0", "persim>=0.3.0"]
+structural = ["faiss-cpu>=1.8.0", "tmtools>=0.0.3"]
 
 [tool.uv]
 # Allow importing src as a package
@@ -33,4 +36,39 @@ package = false
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
+    "pytest-cov>=5.0",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pre-commit>=3.7",
+    "jupyter>=1.0",
+    "jupytext>=1.16",
+    "deptry>=0.16",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Lenient default — basic checks only. Goal is the tool runs and reports;
+# strict enforcement is post-talk.
+select = ["E", "F", "W", "I"]   # pycodestyle errors/warnings, pyflakes, isort
+ignore = ["E501"]                # line length handled by formatter, not linter
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true
+# Lenient — types are aspirational, not enforced
+strict = false
+
+[tool.deptry]
+# Local sub-packages inside experiments/43_rigorous_benchmark/ that
+# scripts import via sys.path manipulation. Not real third-party deps.
+known_first_party = ["src", "one_embedding", "config", "runners", "metrics", "rules", "probes", "datasets", "pipelines"]
+
+[tool.deptry.per_rule_ignores]
+# sentencepiece is loaded transitively by transformers tokenizers (T5 family);
+# explicit declaration is intentional to pin the version. pot is declared in
+# the [extreme] optional group and gated by import-try blocks at use sites.
+DEP002 = ["sentencepiece", "pot"]
