@@ -1,444 +1,242 @@
-# One Embedding: Universal Compression for PLM Protein Embeddings
+# OneEmbedding — universal codec for PLM per-residue embeddings
 
-A universal codec that compresses any protein language model's per-residue output into a compact, fixed-schema representation -- the **One Embedding**. Default: center + RP 896d + binary → **~17 KB/protein** (~37x compression) with **95–100% retention** across 6 tasks on 5 PLMs (Exp 46/47, BCa CIs). No codebook needed for default binary mode. Configurable from lossless (1024d fp16, 2x) to max quality (PQ M=224, 18x). Works with any PLM (ProtT5, ESM2, ESM-C, ProstT5, ANKH). Receiver needs `h5py` and `numpy` only.
+A single Python class that compresses any of five major protein language model (PLM) outputs by **~37× at 95–100 % task retention** across 4 task families and 9 datasets, with rigorous BCa confidence intervals throughout. Default mode (binary) needs **no codebook** — the receiver decodes with `numpy + h5py` in ~12 lines.
 
-## TL;DR
+| | |
+|---|---|
+| **Compression** | ~37× (binary, default) — also int4 (9×), PQ M=224 (18×), fp16 (2.3×), lossless (2×) |
+| **Retention** | 95–100 % across SS3, SS8, retrieval, disorder on 5 PLMs |
+| **Storage** | ~17 KB / protein at L=156 mean (binary 896d) |
+| **Receiver deps** | `numpy + h5py` only for binary / int4 / fp16; PQ requires codebook |
+| **PLMs validated** | ProtT5-XL, ProstT5, ESM-C 600M, ANKH-large, ESM2-650M |
+| **Tests** | 813 passing |
+| **License** | MIT |
 
-Protein language models produce large variable-length per-residue embedding matrices `(L, D)`. The unified codec compresses each using: mean-centering → random projection to 896d → binary quantization (1-bit sign) → store in `.one.h5` format. A protein-level vector `(D*dct_k,)` is computed via DCT K=4 for retrieval/clustering. Four knobs: `d_out` (896), `quantization` ('binary'), `pq_m` (auto), `abtt_k` (0).
+> **Talk-prep notes:** `docs/STATE_OF_THE_PROJECT.md` is the audit-grounded source of truth. `docs/AUDIT_FINDINGS.md` lists every cited number's traceability status. `docs/HANDOFF.md` is the 15-minute end-to-end run-through.
 
-- **Retrieval/clustering**: `protein_vec` → (3584,) vector. Cosine similarity. Lossless across all configs.
-- **Per-residue (SS3, disorder)**: `per_residue` → (L, 896) decoded embeddings.
+---
 
-232 compression methods benchmarked across 44 experiments to arrive at this design.
+## Headline numbers
 
-## Quick Start
+### Single-PLM sweep (Exp 47, ProtT5-XL, BCa CIs in source JSONs)
 
-### Python API
+| Config | Compression | SS3 ret | SS8 ret | Ret@1 ret | Disorder ret |
+|--------|:-----------:|:-------:|:-------:|:---------:|:------------:|
+| lossless 1024d | 2× | 100.2 % | 100.0 % | 100.4 % | 100.0 % |
+| fp16 896d | 2.3× | 100.0 % | 99.2 % | 100.6 % | 98.6 % |
+| int4 896d | 9× | 99.8 % | 98.8 % | 100.4 % | 98.2 % |
+| **PQ M=224 896d** *(max quality)* | **18×** | **99.0 %** | **98.5 %** | **100.6 %** | **95.4 %** |
+| PQ M=128 896d | 32× | 97.5 % | 96.1 % | 100.1 % | 91.4 % |
+| **binary 896d** *(default)* | **37×** | **97.6 %** | **95.0 %** | **100.4 %** | **94.9 %** |
+
+### Multi-PLM validation (Exp 46, PQ M=224 896d, ~18×)
+
+| PLM | dim | SS3 ret | SS8 ret | Ret@1 ret | Disorder ret |
+|-----|:---:|:-------:|:-------:|:---------:|:------------:|
+| ProstT5 | 1024 | 99.2 ± 0.3 % | 98.6 ± 0.5 % | 100.0 ± 0.5 % | 98.3 ± 1.1 % |
+| ProtT5-XL | 1024 | 99.0 ± 0.5 % | 98.5 ± 0.6 % | 100.6 ± 0.6 % | 95.4 ± 1.9 % |
+| ESM-C 600M | 1152 | 98.3 ± 0.5 % | 97.6 ± 0.7 % | 102.6 ± 2.9 % | 98.1 ± 1.0 % |
+| ANKH-large | 1536 | 97.9 ± 0.5 % | 96.3 ± 0.8 % | 99.9 ± 0.6 % | 94.8 ± 2.3 % |
+| ESM2-650M | 1280 | 97.6 ± 0.7 % | 96.5 ± 0.7 % | 97.8 ± 1.6 % | 98.8 ± 0.9 % |
+
+Same train/test partition is applied per PLM (single split file, embeddings re-extracted per model). All cells bit-perfect against `data/benchmarks/rigorous_v1/exp46_multi_plm_results.json`.
+
+---
+
+## Quick start
+
+### Install
+
+```bash
+git clone <repo-url> ProteEmbedExplorations
+cd ProteEmbedExplorations
+uv sync --all-extras --all-groups   # installs deps + dev tooling
+uv run pytest tests/                  # 813 tests should pass
+```
+
+### Encode
 
 ```python
 from src.one_embedding.codec_v2 import OneEmbeddingCodec
 
-# Unified codec: ~20x compression (default PQ M=192 on 768d)
-codec = OneEmbeddingCodec()
-codec.fit(training_embeddings)  # dict of {pid: (L, D) arrays}
-codec.save_codebook("codebook.h5")
+codec = OneEmbeddingCodec()        # default: 896d binary, ~37× compression, no codebook
+codec.fit(training_embeddings)     # dict of {pid: (L, D) np.ndarray} — for centering stats only
+
+encoded = codec.encode(raw_embedding)             # raw shape (L, D) → compressed dict
+codec.save(encoded, "protein.one.h5")             # ~17 KB at L=156
+
+# Or batch via H5:
 codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.one.h5")
-
-# Decode batch (receiver side -- h5py + numpy + codebook)
-proteins = OneEmbeddingCodec.load_batch("compressed.one.h5", codebook_path="codebook.h5")
-proteins['P12345']['per_residue']   # (L, 768) for per-residue tasks
-proteins['P12345']['protein_vec']   # (3072,) for retrieval / clustering / UMAP
-
-# Lossless mode -- no RP, no quantization
-codec = OneEmbeddingCodec(d_out=1024, quantization=None)
 ```
 
-### CLI
-
-```bash
-# Extract PLM embeddings from FASTA
-one-embedding extract sequences.fasta embeddings.h5 --model prot_t5
-
-# Compress to .one.h5 format (768d default)
-one-embedding encode embeddings.h5 compressed.one.h5
-one-embedding encode embeddings.h5 compressed.one.h5 --d-out 512  # or 512d
-
-# Inspect contents
-one-embedding inspect compressed.one.h5
-
-# Built-in tools
-one-embedding disorder compressed.one.h5
-one-embedding search query.one.h5 database/ --top-k 10
-one-embedding align protein_a.one.h5 protein_b.one.h5
-```
-
-### Running Experiments
-
-```bash
-# Setup (requires Python 3.12, uv package manager)
-uv sync
-
-# Extract embeddings (prerequisite for all experiments)
-uv run python experiments/01_extract_residue_embeddings.py
-
-# Unified codec benchmarks
-uv run python experiments/44_unified_codec_benchmark.py     # 768d quantization sweep (Exp 44)
-
-# Retention benchmarks
-uv run python experiments/36_toolkit_benchmark.py          # Disorder + SS3 retention
-uv run python experiments/37_structural_retention.py       # lDDT + contact precision
-
-# Generate figures
-uv run python experiments/make_benchmark_barplots.py       # Per-benchmark + V2 + Pareto
-uv run python experiments/make_publication_figures.py       # Publication figures
-```
-
-## Compression Configurations (Experiment 44)
-
-![V2 Pareto](docs/figures/pub_v2_pareto.png)
-
-The unified codec has three knobs: `d_out` (768), `quantization` ('pq'), `pq_m` (auto=192). Default: **ABTT3 + RP 768d + PQ M=192 → ~20x compression, ~34 KB/protein.**
-
-| Config | Quantization | Size (L=175) | Compression | SS3 Ret | SS8 Ret | Dis Ret | Ret Ret |
-|--------|-------------|:----------:|:-----------:|:-------:|:-------:|:-------:|:-------:|
-| lossless (1024d fp16) | None | 366 KB | 2x | 100.0 ± 0.2% | 100.0 ± 0.3% | 99.9 ± 0.1% | 100.4 ± 0.5% |
-| fp16 (768d) | None | 275 KB | 2.7x | 99.1 ± 0.5% | 98.7 ± 0.6% | 95.0 ± 2.1% | 100.2 ± 0.6% |
-| int4 (768d) | int4 | 67 KB | 10x | 99.2 ± 0.6% | 98.6 ± 0.6% | 94.8 ± 2.2% | 100.2 ± 0.6% |
-| **PQ M=192 (default)** | **PQ** | **34 KB** | **20x** | **98.8 ± 0.5%** | **97.6 ± 0.8%** | **92.8 ± 2.7%** | **100.2 ± 0.6%** |
-| PQ M=128 | PQ | 23 KB | 30x | 97.1 ± 0.6% | 95.3 ± 0.8% | 90.6 ± 2.9% | 100.2 ± 0.6% |
-| binary | 1-bit sign | 17 KB | 41x | 95.9 ± 0.7% | 93.6 ± 1.0% | 92.5 ± 2.7% | 100.2 ± 0.6% |
-
-All Exp 44, rigorous (BCa CIs, CV-tuned probes, paired bootstrap retention, pooled disorder ρ). Retrieval **lossless across all configs** (100.2 ± 0.6%). int4 is indistinguishable from fp16 at 10x. Binary beats PQ M=128 on disorder — RaBitQ effect.
-
-### When to Use What
-
-| Use Case | Config | Why |
-|----------|--------|-----|
-| **General purpose** | default (PQ M=192) | 20x compression, 92.8% disorder, 98.8% SS3 |
-| **Disorder-sensitive** | `d_out=1024, quantization=None` | 2x compression, ~100% on everything |
-| **Large databases** | `pq_m=128` | 30x compression, 97.1% SS3, 90.6% disorder |
-| **Retrieval-only** | `quantization='binary'` | 41x compression, lossless retrieval |
-| **Max quality + compression** | `quantization='int4'` | 10x compression, ~99% on everything |
-
-## Detailed Retention Benchmarks
-
-How much task performance does the codec preserve compared to raw ProtT5-XL 1024d embeddings?
-
-### 768d fp16 Retention (Experiment 43 — rigorous, BCa CIs)
-
-All numbers include 95% BCa bootstrap CIs. Probes CV-tuned. Predictions averaged across 3 seeds. Disorder uses pooled residue-level Spearman rho (SETH/CAID standard).
-
-| Task | Dataset (n) | Raw ProtT5 1024d | Compressed 768d | Retention |
-|------|-------------|:----------------:|:---------------:|:---------:|
-| SS3 Q3 | CB513 (103) | 0.840 [0.823, 0.852] | 0.833 [0.818, 0.845] | **99.1 ± 0.6%** |
-| SS3 Q3 | TS115 (115) | 0.841 [0.829, 0.853] | 0.828 [0.816, 0.839] | **98.4 ± 0.5%** |
-| SS8 Q8 | CB513 (103) | 0.716 [0.697, 0.734] | 0.707 [0.689, 0.725] | **98.8 ± 0.6%** |
-| Disorder (pooled rho) | CheZOD117 (117) | 0.663 [0.636, 0.688] | 0.629 [0.601, 0.656] | **94.9 ± 2.0%** |
-| Family Ret@1 | SCOPe 5K (2493) | 0.799 [0.783, 0.815] | 0.798 [0.782, 0.814] | **99.8 ± 0.4%** |
-| Superfamily Ret@1 | CATH20 (9518) | 0.841 [0.834, 0.849] | 0.841 [0.834, 0.849] | **100.0 ± 0.2%** |
-| Localization Q10 | DeepLoc (2768) | 0.810 [0.795, 0.824] | 0.806 [0.791, 0.820] | **99.5 ± 0.9%** |
-
-### Structural Retention (Experiment 37, 512d)
-
-| Metric | Retention | Dataset |
-|--------|:---------:|---------|
-| Local distance difference (lDDT) | **100.7%** | 50 SCOPe domains |
-| Contact precision | **106.5%** | 50 SCOPe domains |
-
-CIs on raw and compressed **overlap** for all tasks — no statistically significant difference detected. Cross-dataset consistency verified on 3 independent SS3/SS8 test sets (max 1.2pp divergence). ESM2 multi-PLM validation: 95.8 ± 1.0% SS3, 100.0 ± 0.5% retrieval. All retention ± from paired bootstrap CIs (10K resamples).
-
-## Embedding Phylogenetics (Experiment 35)
-
-![Phylo Monophyly](docs/figures/pub_phylo_monophyly.png)
-
-PLM embeddings encode enough evolutionary signal to reconstruct phylogenetic trees -- without sequence alignment. We implemented a full Bayesian MCMC framework with Brownian motion likelihood for 512-dimensional continuous character data (a capability no existing phylogenetic software supports).
-
-| Tree Method | Data | Monophyletic Families |
-|-------------|------|:---------------------:|
-| FastTree (ML) | AA sequence | 4 / 12 |
-| IQ-TREE WAG+I+G4 (ML) | AA sequence | 5 / 12 |
-| Embedding NJ | per-protein 512d | 9 / 12 |
-| Embedding BM MCMC (200K gen) | per-protein 512d | 10 / 12 |
-| **BM MCMC warm-start from NJ** | **per-residue 320Kd** | **11 / 12** |
-| BM MCMC (50K gen) | per-residue 320Kd | 10 / 12 |
-
-ToxFam v2 benchmark: 84 proteins sampled from 12 diverse venom protein families (Snaclec, CRISP, Disintegrin, Actinoporin, Insulin, etc. — 7 proteins per family). Embedding trees recover 2x more monophyletic families than sequence-based maximum likelihood methods. The best result (11/12) comes from a per-residue BM MCMC warm-started from a neighbor-joining tree. The Brownian motion model treats each of the 512 compressed dimensions as an independent continuous trait evolving along the tree -- justified by the decorrelation from ABTT3 + random projection preprocessing.
-
-**Implementation:** ExaBayes-style MCMC with vectorized Felsenstein pruning O(N*D), partial likelihood caching, extended SPR proposals, MC3 heated chains, and convergence diagnostics (ASDSF, ESS, PSRF). Cross-validated against RevBayes (sigma-squared CIs overlap). 71 tests.
-
-## The Pipeline
-
-```
-Raw PLM output (L, 1024)            -- any PLM, any protein
-  -> All-but-the-Top k=3            -- remove 3 corpus PCs (isotropy transform)
-  -> Random project to 768d         -- fixed seed=42, norm-preserving (JL lemma)
-  -> Store (L, 768) float16         -- per-residue: 1536 bytes/residue
-  + DCT K=4 on projected embeddings -- protein vector: (3072,) fp16
-  = .one.h5 file                    -- self-contained, h5py + numpy to decode
-```
-
-**Why each step matters:**
-
-- **ABTT k=3**: Removes the dominant protein-identity PCs that dominate cosine similarity. Exposes discriminative family-level directions. +0.006 Ret@1 for free. From Mu & Viswanath (2018), validated for PLM protein embeddings.
-- **RP 768d**: Johnson-Lindenstrauss dimensionality reduction. Preserves pairwise distances with high probability. Deterministic (fixed seed). ProtT5 has intrinsic dimensionality ~374, so 768d captures ~95% of variance with 97-100% task retention (Exp 43, BCa CIs). Configurable: use 512d for more compression.
-- **DCT K=4**: Discrete Cosine Transform on the sequence dimension, keeping the first 4 coefficients per channel. Creates a fixed-size protein-level vector from variable-length per-residue embeddings. DCT K=1 === mean pooling (mathematically).
-
-For extreme compression, PQ quantization can be applied on top of 768d projections (see Compression Tiers above). Use `quantization='pq'` (default) for ~20x or `quantization='binary'` for ~41x.
-
-## Storage Comparison
-
-![Storage Comparison](docs/figures/pub_storage_comparison.png)
-
-| Representation | Size/protein | Compression | Ret@1 | Per-Residue |
-|----------------|:------------:|:-----------:|:-----:|:-----------:|
-| Raw ProtT5 (L, 1024) fp32 | 700 KB | 1x | Baseline | Baseline |
-| Lossless (1024d fp16) | 366 KB | 2x | 0.797 | (L, 1024) |
-| fp16 (768d) | 275 KB | 2.7x | 0.795 | (L, 768) |
-| int4 (768d) | 67 KB | 10x | 0.795 | (L, 768) |
-| **PQ M=192 (default)** | **34 KB** | **20x** | **0.795** | **(L, 768)** |
-| PQ M=128 | 23 KB | 30x | 0.795 | (L, 768) |
-| binary (768d) | 17 KB | 41x | 0.795 | (L, 768) |
-| protein_vec only (3072,) fp16 | 6 KB | 117x | 0.795 | No |
-| mean pool only (1024,) fp32 | 4 KB | 175x | 0.734 | No |
-
-Mean L=175 residues. All 768d configs from Exp 44. Retrieval lossless across all quantizations.
-
-## Built-in Tools
-
-The package includes 7 tools that work directly on compressed `.one.h5` embeddings:
-
-| Tool | Description | Method |
-|------|-------------|--------|
-| **disorder** | Intrinsic disorder prediction | Trained CNN probe (SETH-style), rho=0.707 |
-| **ss3** | Secondary structure (3-class: H/E/C) | Trained CNN probe, Q3=0.855 |
-| **search** | Similarity search / k-NN retrieval | Cosine similarity on protein_vec |
-| **classify** | Family classification | k-NN against reference database |
-| **align** | Pairwise residue alignment | Per-residue embedding alignment |
-| **conserve** | Conservation scoring | Embedding norm heuristic |
-| **mutate** | Mutation sensitivity scanning | Local context sensitivity |
-
-CNN probes (disorder, ss3) are trained on compressed embeddings and ship as pre-trained weights (~460 KB each) supporting both 512d and 768d inputs. Conservation and mutation tools use untrained heuristics.
-
-## Key Results: Training-Free Codec
-
-![Codec Retrieval Benchmark](docs/figures/pub_codec_retrieval.png)
-
-| Codec | Ret@1 | SS3 Q3 | Size | Per-Residue? |
-|-------|:-----:|:------:|:----:|:------------:|
-| **1.0 (RP768 fp16)** | **0.798** | **0.833** | **275 KB** | **Yes (L, 768)** |
-| V2 full (int4) | 0.795 | 0.812 | 48 KB | Yes (L, 512) |
-| V2 balanced (PQ M=128) | 0.795 | 0.804 | 26 KB | Yes (L, 512) |
-| V2 binary (1-bit) | 0.795 | 0.771 | 15 KB | Yes (L, 512) |
-| mean pool (ground zero) | 0.734 | 0.840 | 4 KB | No |
-| *Trained CC d256* | *0.795* | *0.834* | *— (requires training)* | *Yes (256d)* |
-
-ProtT5-XL on SCOPe 5K (n=2493). All numbers from Exp 43 (BCa CIs, CV-tuned probes).
-
-## The Fundamental Trade-off
-
-![Tradeoff Scatter](docs/figures/pub_tradeoff_scatter.png)
-
-There is a fundamental tension between retrieval and per-residue quality:
-
-- **L-compression** (collapsing the sequence dimension via pooling) boosts retrieval but destroys per-residue information
-- **D-compression** (reducing embedding dimension via projection) preserves per-residue structure but barely helps retrieval
-
-**Chained codecs solve this**: D-compress first (RP to 512d for per-residue), then smart-pool (DCT K=4 for retrieval). Both tasks are served from a single stored representation.
-
-## Per-Residue Task Retention
-
-![Per-Residue Retention](docs/figures/pub_per_residue_retention.png)
-
-D-compression codecs (rp512, fh512) retain 93-97% of raw per-residue task performance across secondary structure, disorder, and membrane topology prediction. V2 `balanced` (red) shows the effect of PQ quantization on top: SS3 and SS8 remain close to the RP baseline, while disorder and TM see modest drops. The `full` (int4) tier matches the RP baseline almost exactly.
-
-## Cross-PLM Results
-
-![Cross-PLM](docs/figures/pub_cross_plm.png)
-
-The choice of PLM matters far more than the choice of codec. ProtT5-XL outperforms ESM2-650M by ~0.12 Ret@1 across all codecs, and ESM2-650M outperforms ESM-C 300M by another ~0.23. The relative ranking of codecs is consistent across PLMs.
-
-ABTT k=3 on ESM2 gives a massive +0.072 Ret@1 improvement (0.684 -> 0.755), because ESM2 has very concentrated PCs (intrinsic dimensionality = 41 vs ProtT5 = 374).
-
-## Biology and Hierarchy Validation
-
-![Biology & Hierarchy](docs/figures/pub_biology_hierarchy.png)
-
-Codec performance validated on enzyme classification (EC numbers), Pfam domain retrieval, Gene Ontology semantic similarity, and SCOPe hierarchy separation.
-
-## Evaluation Suite
-
-Every codec is benchmarked against a comprehensive suite spanning retrieval, structure, biology, and per-residue probes. All evaluations use the same SCOPe 5K dataset (family-stratified train/test split, n=850 test queries) unless noted.
-
-### Per-Protein Retrieval
-
-| Metric | What it measures | Dataset |
-|--------|-----------------|---------|
-| Family Ret@1 | Nearest-neighbor same-family match (cosine) | SCOPe 5K |
-| SF Ret@1 | Superfamily-level retrieval | SCOPe 5K |
-| Fold Ret@1 | Fold-level retrieval | SCOPe 5K |
-| MRR | Mean reciprocal rank | SCOPe 5K |
-
-### Biological Annotation Correlation
-
-| Metric | What it measures | Source |
-|--------|-----------------|--------|
-| GO Spearman rho | Embedding similarity vs Gene Ontology Jaccard | UniProt GO terms |
-| EC Ret@1 (4 levels) | Enzyme classification retrieval | UniProt EC numbers |
-| Pfam Ret@1 | Protein domain family retrieval | UniProt Pfam |
-
-### Per-Residue Probes
-
-| Task | Metric | Dataset |
-|------|--------|---------|
-| Secondary structure (3/8-class) | Q3 / Q8 accuracy | CB513 |
-| Intrinsic disorder | Spearman rho | CheZOD |
-| Transmembrane topology | Macro F1 | TMbed |
-
-### Structural Validation
-
-| Metric | What it measures | Source |
-|--------|-----------------|--------|
-| TM-score Spearman rho | Embedding similarity vs structural alignment | PDB via tmtools |
-| lDDT | Local distance difference test | PDB structures |
-| Contact precision | Top-L/5 contact prediction | PDB structures |
-
-## Statistical Methodology
-
-**Bootstrap CIs**: BCa (bias-corrected and accelerated, DiCiccio & Efron 1996), B=10,000, percentile fallback for n<25. Per-protein resampling (cluster bootstrap) for per-residue metrics.
-
-**Multi-seed**: Predictions averaged across 3 seeds before bootstrapping (Bouthillier et al. 2021). Probes CV-tuned via GridSearchCV on training set.
-
-**Disorder evaluation**: Pooled residue-level Spearman rho with cluster bootstrap CIs, matching SETH/ODiNPred/ADOPT/UdonPred/CAID standard. AUC-ROC on binary Z<8 threshold as secondary metric.
-
-**Retrieval**: 3 fair baselines (raw+mean, raw+DCT K=4, raw+ABTT3+DCT K=4). Retention = compressed / baseline C.
-
-**ABTT fitting**: Cross-corpus stability verified — PCs differ across 4 corpora (subspace similarity 0.18-0.71) but Ret@1 varies by only 0.20pp. Fitting corpus choice is irrelevant for downstream performance.
-
-**Training-free codecs are deterministic** -- no training randomness. RP/FH use fixed seed=42.
-
-## Base Codec (fp16, No Codebook Required)
-
-The fp16 mode requires no codebook for decoding -- fully deterministic with zero dependencies beyond the RP seed:
+### Decode (binary default — `numpy + h5py` only, no codebook)
 
 ```python
-from src.one_embedding.codec_v2 import OneEmbeddingCodec
+import h5py, numpy as np
 
-codec = OneEmbeddingCodec(d_out=768, quantization=None)  # fp16 mode
-codec.fit(training_embeddings)  # fit ABTT corpus stats
-codec.encode_h5_to_h5("raw_embeddings.h5", "compressed.one.h5")
+with h5py.File("compressed.one.h5", "r") as f:
+    bits   = f["per_residue_bits"][:]         # uint8, packed bits
+    means  = f.attrs["means"][:]              # (D,) centering vec
+    scales = f.attrs["scales"][:]             # (D,) per-dim scale
+    L      = int(f.attrs["seq_len"])
+    D      = int(f.attrs["d_out"])
 
-# Decode -- no PQ codebook needed for fp16
-data = OneEmbeddingCodec.load("compressed.one.h5")
-data['per_residue']   # (L, 768) float32 (decoded from fp16)
-data['protein_vec']   # (3072,) float16
+# Unpack bits (column-major within byte: bit 7 → col 0)
+unpacked = np.unpackbits(bits, axis=1, bitorder="big")[:, :D]
+signs    = unpacked.astype(np.float32) * 2 - 1            # {0,1} → {-1,+1}
+per_res  = signs * scales + means                          # (L, D) reconstructed
 ```
 
-The unified codec stores PQ-compressed per-residue embeddings + `(3072,)` protein vector. Default: ~34 KB/protein (20x compression) with PQ M=192 on 768d. Slide `quantization=None` for fp16 (~275 KB, 2.7x) or `quantization='binary'` for 1-bit (~17 KB, 41x). Set `d_out=1024` for lossless mode (~366 KB, 2x, ~100% retention on everything).
+That's the whole receiver path for the default binary mode — no `OneEmbeddingCodec` import, no codebook, just NumPy. (PQ mode requires the codebook; int4 and fp16 follow the same shape with different unpacking.)
 
-## The Journey: 232 Methods in 44 Experiments
-
-### Phase 1-4: Trained Compression (Experiments 1-10)
-
-Explored attention pooling, MLP autoencoders, ChannelCompressor. Attention pool failed at scale (lost to PCA-128 on larger data). ChannelCompressor with contrastive fine-tuning achieved Ret@1=0.795 (d256, 3-seed mean). Requires labels and training -- not universal.
-
-### Phase 5: Universal Codec Quest (Experiments 18-24)
-
-Pivoted to training-free codecs. Tested DCT, Haar wavelets, spectral fingerprints, path signatures, curvature, gyration tensors, Fisher vectors, kernel mean embeddings. Key negative: path geometry adds noise, not signal. Key positive: DCT K=1 === mean pool; [mean|max] concat is a free +4pp retrieval boost.
-
-### Phase 6: The Chained Codec Breakthrough (Experiments 25-26)
-
-Discovered that chaining D-compression (RP512) + L-compression (DCT K=4) solves the fundamental tension. 14 codecs x 3 PLMs benchmarked. Best: rp512+dct_K4 -> Ret@1=0.780, SS3=0.815.
-
-### Phase 7: Preprocessing + Quantization (Experiment 29)
-
-ABTT3 (remove top-3 PCs) discovered as a free retrieval boost (+0.006 Ret@1). int4 quantization verified near-lossless for retrieval. 30+ techniques swept across 9 categories. The V1 One Embedding: ABTT3+RP512+int4+DCT K4 -> Ret@1=0.784, SS3=0.809, ~48 KB.
-
-### Phase 8: Extreme Compression (Experiment 28)
-
-45 methods on raw 1024d: wavelets, CUR, channel pruning, PQ, RVQ, tensor train, NMF, SimHash. All on raw space. Best: PQ M=64 at 0.701. Key insight missed: should have tested on preprocessed space.
-
-### Phase 9: V2 -- The Preprocessed Space Changes Everything (Experiments 31-34)
-
-Re-tested all compression on ABTT3+RP512 (decorrelated, isotropic). Results dramatically better:
-
-- **Binary (1-bit) beats int4 for retrieval** (0.787 vs 0.784) -- RaBitQ effect
-- **PQ M=128 matches V1 quality at ~50% less storage** (23 vs 48 KB)
-- **Pure VQ fails in 512d** -- even K=16384 caps at 0.621 Ret@1
-- **RVQ fails in 512d** -- residual norms barely decrease between levels
-- **OPQ doesn't help** -- RP already decorrelates
-
-### Phase 10: Retention Validation (Experiments 36-37)
-
-Comprehensive toolkit and structural retention benchmarks on V2 balanced. SS3 retention 96.7% (LogReg) / 100.3% (CNN), family Ret@1 99.7%, structural lDDT 100.7%, contact precision 106.5%. Disorder retention 90.9% with Ridge, 99.0% with CNN probes.
-
-### Phase 11: Embedding Phylogenetics (Experiment 35)
-
-Applied PLM embeddings to phylogenetic tree inference via Brownian Motion MCMC. Embedding trees achieve 10-11/12 monophyletic families vs 4-5/12 for sequence-based ML/Bayesian methods. Cross-validated against RevBayes.
-
-## What Works, What Doesn't
-
-### Works
-
-- ABTT preprocessing (removes dominant protein-identity PCs)
-- Random projection (JL-based dimensionality reduction, norm-preserving)
-- Product Quantization on the preprocessed space (sub-vector codebooks)
-- DCT K=4 for protein-level vectors (spectral pooling)
-- Binary quantization for retrieval-only use cases
-- CNN probes on compressed embeddings (SETH-style architecture)
-
-### Doesn't Work
-
-- Path geometry features (signatures, curvature, gyration) -- add noise
-- Fisher vectors, Gram features -- poor for family retrieval
-- Delta/DPCM encoding -- residues are i.i.d., deltas have MORE variance
-- Whole-vector VQ in 512d -- codebook can't cover the space
-- RVQ in 512d -- residuals don't decrease meaningfully
-- OPQ/learned rotation after RP -- RP already decorrelates
-- Two-head joint training -- hurts retrieval vs sequential approach
-- Entropy coding on PQ codes -- 7.81/8.00 bits entropy, already near-optimal
-
-## Addendum: Trained ChannelCompressor
-
-![Trained Addendum](docs/figures/pub_trained_addendum.png)
-
-A pointwise MLP (1024 -> 512 -> 256) trained with unsupervised reconstruction then contrastive InfoNCE fine-tuning achieves Ret@1=0.795 +/- 0.012 (3-seed mean). Architecture: input (1024) -> LayerNorm -> Linear(512) -> GELU -> Residual -> Linear(256). Residual connections are critical (-0.169 without). Cross-dataset transfer validated on TS115, CheZOD, TMbed, ToxFam (F1=0.956, beats raw 1024d).
-
-## Project Structure
+### Pipeline
 
 ```
-src/
-  one_embedding/           Research library
-    core/                  Package codec (pre-fitted ABTT weights)
-    codec_v2.py            Unified OneEmbeddingCodec (fp16/int4/PQ/binary, configurable)
-    preprocessing.py       ABTT, PCA rotation
-    quantization.py        int2/int4/int8/binary/PQ/RVQ
-    transforms.py          DCT, Haar, spectral
-    universal_transforms.py Random/feature-hashed projection
-    extract/               ESM2 + ProtT5 embedding extraction
-    tools/                 7 built-in tools (disorder, ss3, search, ...)
-    io.py                  .one.h5 / .oemb file format (H5-based, single + batch)
-    cli.py                 Click CLI: extract, encode, inspect, disorder, search, align
-    __init__.py            Top-level API: encode(), decode(), embed()
-
-  compressors/             ChannelCompressor (trained), AttentionPool, MLP-AE
-  extraction/              ESM2 + ProtT5 + ESM-C embedding extraction
-  training/                Unified trainer with reconstruction + contrastive losses
-  evaluation/              Retrieval, per-residue probes (SS3/disorder/TM),
-                           biological annotations (GO/EC/Pfam), FAISS search index
-
-experiments/
-  01-04                    Setup, baselines, strategy comparison
-  archive/05-10            Scale-up, collapse diagnosis, Track A/B (archived)
-  11-17                    ChannelCompressor training + validation
-  18-23                    Universal codec candidates + path geometry
-  25-26                    Universal codec benchmark + chained codecs
-  28-29                    Extreme compression + exhaustive sweep
-  31-34                    V2 codec: bitwidth, PQ, VQ, progressive tiers (512d)
-  35                       Embedding phylogenetics (MCMC + MrBayes)
-  36-37                    Toolkit + structural retention benchmarks
-  43                       Rigorous benchmark framework (BCa CIs, CV-tuned, paired retention)
-  44                       Unified codec 768d sweep (6 configs, Exp 44)
-  make_benchmark_barplots.py    Per-benchmark + V2 figures
-  make_publication_figures.py   Publication figures
-
-data/
-  proteins/                FASTA files + metadata
-  residue_embeddings/      H5 per-residue embeddings
-  codebooks/               Pre-fitted PQ codebooks (per mode)
-  benchmarks/              JSON result files from all experiments
-  checkpoints/             Trained model weights
+raw PLM (L, D)
+    │
+    ├── center  (subtract corpus mean)              ← from fit()
+    │
+    ├── ABTT    (remove top-k PCs)                  ← off by default (see Exp 45)
+    │
+    ├── RP       (random projection to d_out=896)   ← skipped if d_out ≥ D
+    │
+    ├── quantize (binary | int4 | PQ | fp16)
+    │
+    └── DCT K=4 (auxiliary protein vector for retrieval)
 ```
 
-## Requirements
+### Configuration knobs
 
-- Python 3.12, [uv](https://docs.astral.sh/uv/) package manager
-- PyTorch >= 2.0 with MPS (Apple Silicon) or CUDA
-- ~10 GB disk for embeddings and checkpoints
+| Knob | Default | Range | Notes |
+|------|---------|-------|-------|
+| `d_out` | 896 | 256–4096 | RP target dimension. Set to PLM `D` to skip RP entirely. |
+| `quantization` | `'binary'` | `None`/`'int4'`/`'pq'`/`'binary'` | Per-residue storage. `None` = fp16. |
+| `pq_m` | `auto` | divisor of `d_out` | PQ subquantizers; auto = largest factor ≤ `d_out//4`. |
+| `abtt_k` | 0 | 0–`d_out` | Top-PC removal. Off by default — Exp 45 showed PC1 destroys disorder signal. |
+
+---
+
+## What's not (yet) solved
+
+These open problems are explicit and surface in the talk:
+
+1. **Disorder retention plateaus at ~95 %** — the geometric Exp 45 finding (PC1 ↔ disorder direction) explains why ABTT-style preprocessing doesn't help and why uniform quantization can't fully recover. **Exp 51 (PolarQuant)** is the designed fix: magnitude-augmented binary, expected +2–3 pp at 36×, no codebook.
+2. **Sequence → binary OE prediction is capacity-bound at ~69 %** bit accuracy (Exp 50 Stages 1–3 all converge there). **Stage 4 (transformer)** is the architecture lever; designed but not yet executed.
+3. **No co-distilled VESM baseline yet** — VESM (Bromberg lab, 2026) is the strongest plausible competitor; weights are public.
+4. **VEP / ProteinGym evaluation missing** — the classical PLM-quality benchmark; earmarked.
+
+See `docs/STATE_OF_THE_PROJECT.md` § "Open problems" and § "Next directions" for the full roadmap.
+
+---
+
+## Methodology (Rost-lab convention)
+
+Every cited number ships its 95 % BCa CI in source JSONs under `data/benchmarks/rigorous_v1/`.
+
+- **Bootstrap.** BCa (DiCiccio & Efron 1996), B=10,000, percentile fallback for n<25, jackknife acceleration for cluster bootstrap.
+- **Disorder.** Pooled residue-level Spearman ρ (SETH/CAID convention), cluster bootstrap (resample proteins, recompute pooled ρ) per Davison & Hinkley 1997.
+- **Retention.** Paired bootstrap — same protein-id resample drives raw and compressed in every iteration.
+- **Probes.** CV-tuned (`GridSearchCV` on C/alpha grids, 3-fold), `random_state=42`.
+- **Multi-seed.** Predictions averaged across seeds {42, 123, 456} *before* bootstrapping (Bouthillier et al. 2021).
+- **Baselines.** Retrieval uses identical DCT K=4 pooling on raw and compressed.
+- **Splits.** All cluster-controlled at the dataset level (see `docs/_audit/splits.md`); runtime asserted via `rules.check_no_leakage`.
+
+The full audit (Phase C of `docs/superpowers/plans/2026-04-26-lab-talk-prep.md`) verified these protocols for every result table — see `docs/AUDIT_FINDINGS.md` (49 G / 34 Y / 9 R; **no headline number invalidated**).
+
+---
+
+## Repo layout
+
+```
+src/one_embedding/      Codec + research library
+  codec_v2.py           OneEmbeddingCodec (the shipping class)
+  quantization.py       binary / int4 / PQ implementations + decoders
+  preprocessing.py      centering, ABTT, RP
+  transforms.py         DCT, Haar, spectral
+  io.py                 .one.h5 / .oemb format read/write
+  cli.py                CLI (Click-based)
+  ...
+
+src/evaluation/         Benchmarks (retrieval, probes, structural)
+src/extraction/         PLM embedding extraction (HuggingFace wrappers)
+src/training/           Trainers (ChannelCompressor, MLP-AE, contrastive)
+src/utils/              Device management (MPS / CPU / CUDA), H5 I/O
+
+experiments/            47 numbered experiments, each self-contained
+  43_rigorous_benchmark/  The Nature-level methodology (BCa, paired, CV-tuned)
+  44_unified_codec_benchmark.py
+  45_disorder_forensics.ipynb  ABTT-PC1 ↔ disorder geometry
+  46_multi_plm_benchmark.py    5-PLM validation
+  47_codec_sweep.py            Single-PLM sweep across configs
+  50_sequence_to_oe.py         Sequence → binary OE prediction (in-progress)
+
+tests/                  813 tests (pytest)
+
+docs/
+  STATE_OF_THE_PROJECT.md   Audit-grounded write-up (source of truth)
+  MANUSCRIPT_SKELETON.md    Paper outline (target: Bioinformatics)
+  HANDOFF.md                15-minute onboarding for a new collaborator
+  EXPECTED_QA.md            Anticipated probes for the lab seminar
+  CALIBRATION.md            Prior-vs-posterior summary across all docs
+  AUDIT_FINDINGS.md         Phase-C audit roll-up (49 G / 34 Y / 9 R)
+  EXPERIMENTS.md            Full 200+ method enumeration across 47 experiments
+  _audit/                   Raw audit evidence (hygiene, splits, stats, claims)
+  _priors/                  Pre-audit predictions (calibration trail)
+  superpowers/              Specs and plans
+```
+
+---
+
+## Reproducibility
 
 ```bash
-uv sync  # Installs all dependencies from pyproject.toml
+uv sync --all-extras --all-groups   # installs torch, transformers, faiss-cpu, tmtools, marp, ruff, etc.
+uv run pytest tests/                # 813 / 813 should pass on M3 Max
+uv run deptry .                     # "No dependency issues found"
 ```
 
-## License
+To regenerate the headline single-PLM table:
 
-MIT. See [LICENSE](LICENSE).
+```bash
+# Pre-extracted ProtT5 embeddings live in data/residue_embeddings/ (see Exp 01 to regenerate)
+uv run python experiments/47_codec_sweep.py --plm prot_t5_full
+```
+
+The 5-PLM validation requires extracting all 5 PLMs first (~1–2 days on M3 Max for the full datasets); see `experiments/01_extract_residue_embeddings.py`.
+
+### Hardware notes
+
+- Validated on MacBook Pro M3 Max (96 GB), MPS backend.
+- CUDA path tested in fixtures, not benchmarked at scale.
+- All tensors `float32` (MPS does not support `float64`); `torch.linalg.svdvals` requires CPU on MPS.
+
+---
+
+## Citation
+
+Manuscript in preparation. Until then:
+
+```bibtex
+@misc{oneembedding2026,
+  title  = {OneEmbedding: a universal codec for protein-language-model embeddings},
+  author = {<TBD>},
+  year   = {2026},
+  url    = {https://github.com/<TBD>/ProteEmbedExplorations}
+}
+```
+
+---
+
+## Acknowledgements
+
+This codec stands on top of:
+- **ProtT5 / ProstT5** (Heinzinger, Elnaggar et al., Rost lab)
+- **ESM2 / ESM-C** (Lin, Hayes et al., Meta FAIR)
+- **ANKH** (Elnaggar et al.)
+- **NetSurfP-2.0** (Klausen et al.) for SS3/SS8 datasets
+- **SETH / CheZOD / TriZOD** (Dass, Haak et al.) for disorder
+- **CATH / SCOPe / DeepLoc** for retrieval and localisation
+- The **Rost lab** for the rigorous-benchmarking conventions adopted throughout
+- **Bromberg lab's RNS / VESM work** (companion direction; integration earmarked)
+
+License: MIT (see `LICENSE`).
