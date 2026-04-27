@@ -76,3 +76,17 @@ data/benchmarks/embedding_phylo_*_results.json
 .python-version
 .worktrees/
 tools/reference/
+
+# Internal sprint / lab-notebook docs — kept locally, not in the public repo.
+# (The history before this commit still references them; a fresh clone at HEAD
+# will not have them in the tree.)
+docs/AUDIT_FINDINGS.md
+docs/CALIBRATION.md
+docs/EXPECTED_QA.md
+docs/HANDOFF.md
+docs/MANUSCRIPT_SKELETON.md
+docs/STATE_OF_THE_PROJECT.md
+docs/_audit/
+docs/_priors/
+docs/superpowers/
+slides/lab-talk/

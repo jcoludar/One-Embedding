@@ -12,8 +12,6 @@ A single Python class that compresses any of five major protein language model (
 | **Tests** | 813 passing |
 | **License** | MIT |
 
-> **Talk-prep notes:** `docs/STATE_OF_THE_PROJECT.md` is the audit-grounded source of truth. `docs/AUDIT_FINDINGS.md` lists every cited number's traceability status. `docs/HANDOFF.md` is the 15-minute end-to-end run-through.
-
 ---
 
 ## Headline numbers
@@ -125,8 +123,6 @@ These open problems are explicit and surface in the talk:
 3. **No co-distilled VESM baseline yet** — VESM (Bromberg lab, 2026) is the strongest plausible competitor; weights are public.
 4. **VEP / ProteinGym evaluation missing** — the classical PLM-quality benchmark; earmarked.
 
-See `docs/STATE_OF_THE_PROJECT.md` § "Open problems" and § "Next directions" for the full roadmap.
-
 ---
 
 ## Methodology (Rost-lab convention)
@@ -139,9 +135,9 @@ Every cited number ships its 95 % BCa CI in source JSONs under `data/benchmarks/
 - **Probes.** CV-tuned (`GridSearchCV` on C/alpha grids, 3-fold), `random_state=42`.
 - **Multi-seed.** Predictions averaged across seeds {42, 123, 456} *before* bootstrapping (Bouthillier et al. 2021).
 - **Baselines.** Retrieval uses identical DCT K=4 pooling on raw and compressed.
-- **Splits.** All cluster-controlled at the dataset level (see `docs/_audit/splits.md`); runtime asserted via `rules.check_no_leakage`.
+- **Splits.** All cluster-controlled at the dataset level; runtime asserted via `rules.check_no_leakage`.
 
-The full audit (Phase C of `docs/superpowers/plans/2026-04-26-lab-talk-prep.md`) verified these protocols for every result table — see `docs/AUDIT_FINDINGS.md` (49 G / 34 Y / 9 R; **no headline number invalidated**).
+Every cell in the result tables is bit-perfect against its source JSON in `data/benchmarks/rigorous_v1/`.
 
 ---
 
@@ -173,16 +169,7 @@ experiments/            47 numbered experiments, each self-contained
 tests/                  813 tests (pytest)
 
 docs/
-  STATE_OF_THE_PROJECT.md   Audit-grounded write-up (source of truth)
-  MANUSCRIPT_SKELETON.md    Paper outline (target: Bioinformatics)
-  HANDOFF.md                15-minute onboarding for a new collaborator
-  EXPECTED_QA.md            Anticipated probes for the lab seminar
-  CALIBRATION.md            Prior-vs-posterior summary across all docs
-  AUDIT_FINDINGS.md         Phase-C audit roll-up (49 G / 34 Y / 9 R)
-  EXPERIMENTS.md            Full 200+ method enumeration across 47 experiments
-  _audit/                   Raw audit evidence (hygiene, splits, stats, claims)
-  _priors/                  Pre-audit predictions (calibration trail)
-  superpowers/              Specs and plans
+  EXPERIMENTS.md          Full 200+ method enumeration across 47 experiments
 ```
 
 ---
