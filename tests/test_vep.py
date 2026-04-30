@@ -293,3 +293,59 @@ def test_build_variant_features_negative_pos():
     mut = np.zeros((5, 4), dtype=np.float32)
     with pytest.raises(IndexError):
         build_variant_features(wt_emb=wt, mut_emb=mut, mut_pos=-1)
+
+
+# ---------------------------------------------------------------------------
+# Task 5: fit_evaluate_ridge_probe
+# ---------------------------------------------------------------------------
+
+from src.one_embedding.vep import fit_evaluate_ridge_probe, ProbeResult
+
+
+def test_fit_evaluate_ridge_probe_runs():
+    """Smoke test: probe trains, returns the right shape, ρ in [-1, 1]."""
+    rng = np.random.default_rng(123)
+    n_variants, feat_dim = 100, 32
+    X = rng.standard_normal((n_variants, feat_dim)).astype(np.float32)
+    # Synthetic linear signal so ρ should be > 0
+    true_w = rng.standard_normal(feat_dim).astype(np.float32)
+    y = X @ true_w + 0.1 * rng.standard_normal(n_variants).astype(np.float32)
+
+    result = fit_evaluate_ridge_probe(X, y, n_folds=5, seeds=[42, 123, 456])
+    assert isinstance(result, ProbeResult)
+    assert -1.0 <= result.spearman_rho <= 1.0
+    assert result.predictions.shape == y.shape
+    assert result.spearman_rho > 0.5, f"ρ={result.spearman_rho} on linear-signal toy"
+
+
+def test_fit_evaluate_ridge_probe_deterministic():
+    rng = np.random.default_rng(7)
+    X = rng.standard_normal((80, 16)).astype(np.float32)
+    y = rng.standard_normal(80).astype(np.float32)
+    a = fit_evaluate_ridge_probe(X, y, n_folds=5, seeds=[42])
+    b = fit_evaluate_ridge_probe(X, y, n_folds=5, seeds=[42])
+    np.testing.assert_allclose(a.predictions, b.predictions)
+    assert a.spearman_rho == pytest.approx(b.spearman_rho)
+
+
+def test_fit_evaluate_ridge_probe_handles_constant_y():
+    """If y is constant, Spearman ρ is undefined (nan); should not crash."""
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((50, 8)).astype(np.float32)
+    y = np.ones(50, dtype=np.float32)
+    result = fit_evaluate_ridge_probe(X, y, n_folds=5, seeds=[42])
+    # ρ may be nan when y is constant; the call must not crash and must
+    # return a ProbeResult with the right shapes.
+    assert result.predictions.shape == y.shape
+    assert result.n_variants == 50
+
+
+def test_fit_evaluate_ridge_probe_seeds_change_predictions():
+    """Different seeds should produce different OOF predictions."""
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((60, 8)).astype(np.float32)
+    y = rng.standard_normal(60).astype(np.float32)
+    a = fit_evaluate_ridge_probe(X, y, n_folds=5, seeds=[42])
+    b = fit_evaluate_ridge_probe(X, y, n_folds=5, seeds=[999])
+    # Some predictions should differ (different KFold splits)
+    assert not np.allclose(a.predictions, b.predictions)

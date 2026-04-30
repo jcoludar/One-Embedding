@@ -264,3 +264,83 @@ def build_variant_features(
         mut_emb.mean(axis=0),
     ]
     return np.concatenate(parts).astype(np.float32)
+
+
+# ---------------------------------------------------------------------------
+# Task 5: Ridge probe with 5-fold CV and multi-seed averaging
+# ---------------------------------------------------------------------------
+
+ALPHA_GRID = [0.01, 0.1, 1.0, 10.0, 100.0]
+
+
+@dataclass(frozen=True)
+class ProbeResult:
+    spearman_rho: float
+    predictions: np.ndarray  # (n_variants,) — averaged over seeds, OOF
+    n_variants: int
+
+
+def fit_evaluate_ridge_probe(
+    X: np.ndarray,
+    y: np.ndarray,
+    n_folds: int = 5,
+    seeds: list[int] | None = None,
+    alpha_grid: list[float] | None = None,
+    inner_cv: int = 3,
+) -> ProbeResult:
+    """5-fold CV Ridge probe with inner GridSearchCV on alpha; multi-seed averaging.
+
+    Per outer fold: pick best alpha by inner CV on train, predict on test.
+    Predictions aggregated OOF across all folds. Repeated for each seed
+    (seed controls outer-fold split + inner-CV split). Final OOF predictions
+    are the mean across seeds. Reports Spearman ρ on the averaged predictions.
+
+    Args:
+        X: (n_variants, feat_dim) feature matrix.
+        y: (n_variants,) target values.
+        n_folds: number of outer CV folds (default 5).
+        seeds: list of integer seeds for KFold shuffles; averaged over seeds.
+            Defaults to [42, 123, 456].
+        alpha_grid: list of Ridge alpha values to sweep in inner CV.
+            Defaults to ALPHA_GRID.
+        inner_cv: number of inner CV folds for alpha selection (default 3).
+
+    Returns:
+        ProbeResult with Spearman ρ, averaged OOF predictions, and n_variants.
+    """
+    from sklearn.linear_model import Ridge
+    from sklearn.model_selection import GridSearchCV, KFold
+    from scipy.stats import spearmanr
+
+    if seeds is None:
+        seeds = [42, 123, 456]
+    if alpha_grid is None:
+        alpha_grid = ALPHA_GRID
+
+    y = np.asarray(y, dtype=np.float64)
+    X = np.asarray(X, dtype=np.float64)
+    n = len(y)
+
+    seed_preds: list[np.ndarray] = []
+    for seed in seeds:
+        oof = np.zeros(n, dtype=np.float64)
+        kf = KFold(n_splits=n_folds, shuffle=True, random_state=seed)
+        for tr, te in kf.split(X):
+            inner = GridSearchCV(
+                estimator=Ridge(),
+                param_grid={"alpha": alpha_grid},
+                cv=inner_cv,
+                scoring="r2",
+                n_jobs=1,
+            )
+            inner.fit(X[tr], y[tr])
+            oof[te] = inner.best_estimator_.predict(X[te])
+        seed_preds.append(oof)
+
+    avg_preds = np.mean(seed_preds, axis=0).astype(np.float32)
+    rho_val, _ = spearmanr(y, avg_preds)
+    return ProbeResult(
+        spearman_rho=float(rho_val),
+        predictions=avg_preds,
+        n_variants=n,
+    )
