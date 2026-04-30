@@ -231,3 +231,36 @@ def load_clinvar_split(csv_path: str, pid: str) -> list[ClinVarVariant]:
             label=int(row["DMS_bin_score"]),
         ))
     return out
+
+
+# ---------------------------------------------------------------------------
+# Task 4: variant feature builder
+# ---------------------------------------------------------------------------
+
+def build_variant_features(
+    wt_emb: np.ndarray,
+    mut_emb: np.ndarray,
+    mut_pos: int,
+) -> np.ndarray:
+    """Build the 4*D feature vector for one variant.
+
+    Args:
+        wt_emb: (L, D) per-residue WT embedding.
+        mut_emb: (L, D) per-residue mutant embedding (same L, same D).
+        mut_pos: 0-indexed mutation position.
+
+    Returns:
+        (4*D,) feature: [wt_emb[mut_pos], mut_emb[mut_pos], mean(wt_emb),
+        mean(mut_emb)].
+    """
+    if wt_emb.shape != mut_emb.shape:
+        raise ValueError(f"shape mismatch: {wt_emb.shape} vs {mut_emb.shape}")
+    if mut_pos < 0 or mut_pos >= wt_emb.shape[0]:
+        raise IndexError(f"mut_pos {mut_pos} out of range for L={wt_emb.shape[0]}")
+    parts = [
+        wt_emb[mut_pos],
+        mut_emb[mut_pos],
+        wt_emb.mean(axis=0),
+        mut_emb.mean(axis=0),
+    ]
+    return np.concatenate(parts).astype(np.float32)

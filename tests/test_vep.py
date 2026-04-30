@@ -239,3 +239,57 @@ def test_parse_mutant_rejects_negative_position():
     # Negative pos comes from input like "M-1A" — int("-1") parses fine
     with pytest.raises(ValueError, match="position must be >= 1"):
         _parse_mutant("M-1A")
+
+
+# ---------------------------------------------------------------------------
+# Task 4: build_variant_features
+# ---------------------------------------------------------------------------
+
+from src.one_embedding.vep import build_variant_features
+
+
+def test_build_variant_features_shape():
+    L, D = 50, 64
+    rng = np.random.default_rng(0)
+    wt = rng.standard_normal((L, D)).astype(np.float32)
+    mut = rng.standard_normal((L, D)).astype(np.float32)
+    feat = build_variant_features(wt_emb=wt, mut_emb=mut, mut_pos=10)
+    assert feat.shape == (4 * D,), f"got {feat.shape}"
+
+
+def test_build_variant_features_components():
+    L, D = 5, 4
+    wt = np.zeros((L, D), dtype=np.float32)
+    mut = np.zeros((L, D), dtype=np.float32)
+    wt[2] = np.array([1, 2, 3, 4], dtype=np.float32)
+    mut[2] = np.array([5, 6, 7, 8], dtype=np.float32)
+    wt[4] = np.array([1, 1, 1, 1], dtype=np.float32)  # affects mean(WT)
+    feat = build_variant_features(wt_emb=wt, mut_emb=mut, mut_pos=2)
+    np.testing.assert_array_equal(feat[:4], [1, 2, 3, 4])           # WT[mut_pos]
+    np.testing.assert_array_equal(feat[4:8], [5, 6, 7, 8])           # mut[mut_pos]
+    expected_mean_wt = wt.mean(axis=0)
+    np.testing.assert_allclose(feat[8:12], expected_mean_wt, rtol=1e-6)
+    expected_mean_mut = mut.mean(axis=0)
+    np.testing.assert_allclose(feat[12:16], expected_mean_mut, rtol=1e-6)
+
+
+def test_build_variant_features_pos_out_of_range():
+    L, D = 10, 4
+    wt = np.zeros((L, D), dtype=np.float32)
+    mut = np.zeros((L, D), dtype=np.float32)
+    with pytest.raises(IndexError):
+        build_variant_features(wt_emb=wt, mut_emb=mut, mut_pos=L)
+
+
+def test_build_variant_features_shape_mismatch():
+    wt = np.zeros((5, 4), dtype=np.float32)
+    mut = np.zeros((5, 8), dtype=np.float32)  # different D
+    with pytest.raises(ValueError, match="shape mismatch"):
+        build_variant_features(wt_emb=wt, mut_emb=mut, mut_pos=0)
+
+
+def test_build_variant_features_negative_pos():
+    wt = np.zeros((5, 4), dtype=np.float32)
+    mut = np.zeros((5, 4), dtype=np.float32)
+    with pytest.raises(IndexError):
+        build_variant_features(wt_emb=wt, mut_emb=mut, mut_pos=-1)
