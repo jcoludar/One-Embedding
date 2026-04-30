@@ -179,10 +179,12 @@ class TestNewickIO:
 
     def test_real_iqtree(self):
         """Parse a real IQ-TREE treefile with 40 leaves."""
-        treefile = Path(
-            "/Users/jcoludar/CascadeProjects/SpeciesEmbedding/results/"
-            "iqtree_conotoxin.treefile"
-        )
+        import os
+        species_root = Path(os.environ.get(
+            "SPECIES_EMB_ROOT",
+            str(Path(__file__).resolve().parents[1].parent / "SpeciesEmbedding"),
+        )).expanduser()
+        treefile = species_root / "results" / "iqtree_conotoxin.treefile"
         if not treefile.exists():
             pytest.skip("IQ-TREE treefile not found")
 

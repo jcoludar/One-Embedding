@@ -359,15 +359,28 @@ def fetch_pdb_organisms(
 
 
 def load_ncbi_taxonomy(
-    lineage_path: str = "/Users/jcoludar/CascadeProjects/SpeciesEmbedding/TaxPointCare/poincare-embeddings/data/rankedlineage.dmp",
+    lineage_path: str | None = None,
 ) -> dict[int, list[str]]:
     """Load NCBI ranked lineage file.
 
     Format: tax_id | tax_name | species | genus | family | order | class | phylum | kingdom | superkingdom |
 
     Returns: {taxid: [superkingdom, kingdom, phylum, class, order, family, genus, species]}
+
+    Args:
+        lineage_path: Path to ``rankedlineage.dmp``. If None, falls back to
+            the ``NCBI_LINEAGE_PATH`` env var, then to
+            ``../SpeciesEmbedding/TaxPointCare/poincare-embeddings/data/rankedlineage.dmp``
+            relative to the project root.
     """
-    lineage_file = Path(lineage_path)
+    import os
+    if lineage_path is None:
+        lineage_path = os.environ.get(
+            "NCBI_LINEAGE_PATH",
+            str(Path(__file__).resolve().parents[2].parent
+                / "SpeciesEmbedding/TaxPointCare/poincare-embeddings/data/rankedlineage.dmp"),
+        )
+    lineage_file = Path(lineage_path).expanduser()
     if not lineage_file.exists():
         print(f"  WARNING: NCBI lineage file not found at {lineage_path}")
         return {}

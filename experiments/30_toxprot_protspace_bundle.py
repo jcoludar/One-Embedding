@@ -18,7 +18,8 @@ import numpy as np
 import pandas as pd
 import h5py
 
-SPECIES_EMB_ROOT = Path("/Users/jcoludar/CascadeProjects/SpeciesEmbedding")
+import os
+SPECIES_EMB_ROOT = Path(os.environ.get("SPECIES_EMB_ROOT", "../SpeciesEmbedding")).expanduser()
 sys.path.insert(0, str(SPECIES_EMB_ROOT / "tools"))
 from pipelines.protspace_pipeline import build_bundle, save_embeddings_h5
 

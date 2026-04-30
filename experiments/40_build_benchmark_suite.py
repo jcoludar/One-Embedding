@@ -37,7 +37,8 @@ from src.utils.h5_store import load_residue_embeddings
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 SUITE = DATA / "benchmark_suite"
-SPECIES = Path("/Users/jcoludar/CascadeProjects/SpeciesEmbedding")
+import os
+SPECIES = Path(os.environ.get("SPECIES_EMB_ROOT", str(ROOT.parent / "SpeciesEmbedding"))).expanduser()
 RESULTS_PATH = DATA / "benchmarks" / "benchmark_suite_assembly.json"
 
 EXISTING_EMBEDDINGS = DATA / "residue_embeddings"

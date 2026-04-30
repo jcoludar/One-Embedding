@@ -23,7 +23,8 @@ import torch
 # Project imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-TOXFAM_ROOT = Path("/Users/jcoludar/CascadeProjects/students/ToxFam")
+import os
+TOXFAM_ROOT = Path(os.environ.get("TOXFAM_ROOT", "../students/ToxFam")).expanduser()
 TOXFAM_CSV = TOXFAM_ROOT / "data" / "processed" / "training_data.csv"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = PROJECT_ROOT / "data" / "external_validation" / "toxfam"

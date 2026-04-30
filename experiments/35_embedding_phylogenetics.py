@@ -2077,7 +2077,9 @@ if __name__ == "__main__":
     import h5py
 
     PROJ_ROOT = Path(__file__).resolve().parent.parent
-    SPECIES_ROOT = Path("/Users/jcoludar/CascadeProjects/SpeciesEmbedding")
+    SPECIES_ROOT = Path(
+        os.environ.get("SPECIES_EMB_ROOT", str(PROJ_ROOT.parent / "SpeciesEmbedding"))
+    ).expanduser()
     sys.path.insert(0, str(PROJ_ROOT))
 
     DATA_DIR = PROJ_ROOT / "data"

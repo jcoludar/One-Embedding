@@ -409,7 +409,7 @@ git clone https://github.com/bodenlab/GRASP.git  # Classical ML ASR with POGs
 ## Repos to Clone (All)
 
 ```bash
-cd /Users/jcoludar/CascadeProjects/SpeciesEmbedding/tools
+cd "${SPECIES_EMB_ROOT:-../SpeciesEmbedding}/tools"
 
 # Aligner
 git clone https://github.com/mgtools/PEbA.git

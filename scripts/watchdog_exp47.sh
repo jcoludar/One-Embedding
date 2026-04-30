@@ -44,7 +44,7 @@ while true; do
     fi
 
     # Check disk space
-    DISK_FREE=$(df -g /Users/jcoludar | tail -1 | awk '{print $4}')
+    DISK_FREE=$(df -g "$HOME" | tail -1 | awk '{print $4}')
     if [ "$DISK_FREE" -lt 10 ]; then
         echo "$(date): CRITICAL — Only ${DISK_FREE}GB free disk space!"
     fi
