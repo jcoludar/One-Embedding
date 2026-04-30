@@ -49,7 +49,6 @@ def select_diversity_subset(
     coverage broad before picking duplicates.
     """
     df = reference_df.copy()
-    df = df[~df["DMS_id"].str.startswith("Z")]  # drop reserved Z* rows in tests
 
     def bucket(row):
         if row["seq_len"] < 150:
@@ -95,3 +94,48 @@ def select_diversity_subset(
                 fitness_type=row["fitness_type"],
             ))
     return picked
+
+
+def prepare_reference_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Rename real ProteinGym DMS_substitutions.csv columns to canonical names.
+
+    Maps:
+        taxon                  -> family
+        coarse_selection_type  -> fitness_type
+
+    Pass-through if the canonical names are already present (so synthetic
+    test data with ``family`` / ``fitness_type`` columns still works without
+    going through this helper).
+
+    Raises ValueError if neither the canonical nor the source column is
+    present, listing what was missing.
+    """
+    out = df.copy()
+
+    if "family" not in out.columns:
+        if "taxon" not in out.columns:
+            raise ValueError(
+                "reference df must have either 'family' or 'taxon' column"
+            )
+        out["family"] = out["taxon"]
+
+    if "fitness_type" not in out.columns:
+        if "coarse_selection_type" not in out.columns:
+            raise ValueError(
+                "reference df must have either 'fitness_type' or "
+                "'coarse_selection_type' column"
+            )
+        out["fitness_type"] = out["coarse_selection_type"]
+
+    if "seq_len" not in out.columns:
+        if "target_seq" in out.columns:
+            out["seq_len"] = out["target_seq"].str.len()
+        else:
+            raise ValueError(
+                "reference df must have either 'seq_len' or 'target_seq'"
+            )
+
+    if "DMS_id" not in out.columns:
+        raise ValueError("reference df must have 'DMS_id' column")
+
+    return out

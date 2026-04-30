@@ -11,7 +11,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.one_embedding.vep import select_diversity_subset, AssayInfo
+from src.one_embedding.vep import select_diversity_subset, AssayInfo, prepare_reference_df
 
 
 def _toy_reference_df() -> pd.DataFrame:
@@ -37,9 +37,6 @@ def _toy_reference_df() -> pd.DataFrame:
         ("C2_phos", 600, "Phosphatase", "binding"),
         ("C3_tf", 700, "TranscriptionFactor", "stability"),
         ("C4_struct", 450, "Structural", "growth"),
-        # extras (should not be picked)
-        ("Z1", 100, "Kinase", "growth"),
-        ("Z2", 200, "Kinase", "growth"),
     ]
     return pd.DataFrame(
         rows,
@@ -84,3 +81,66 @@ def test_select_diversity_subset_deterministic():
     a = select_diversity_subset(df, n=15, seed=42)
     b = select_diversity_subset(df, n=15, seed=42)
     assert [x.dms_id for x in a] == [x.dms_id for x in b]
+
+
+# ---------------------------------------------------------------------------
+# prepare_reference_df tests
+# ---------------------------------------------------------------------------
+
+def test_prepare_reference_df_real_schema():
+    """Maps the real ProteinGym column names to the canonical ones."""
+    df = pd.DataFrame({
+        "DMS_id": ["X1", "X2"],
+        "taxon": ["Human", "Virus"],
+        "coarse_selection_type": ["Activity", "Stability"],
+        "seq_len": [100, 200],
+    })
+    out = prepare_reference_df(df)
+    assert list(out["family"]) == ["Human", "Virus"]
+    assert list(out["fitness_type"]) == ["Activity", "Stability"]
+    assert list(out["seq_len"]) == [100, 200]
+
+
+def test_prepare_reference_df_canonical_passthrough():
+    """If canonical names are already present, leave them unchanged."""
+    df = pd.DataFrame({
+        "DMS_id": ["X1"],
+        "family": ["Kinase"],
+        "fitness_type": ["growth"],
+        "seq_len": [100],
+    })
+    out = prepare_reference_df(df)
+    assert list(out["family"]) == ["Kinase"]
+    assert list(out["fitness_type"]) == ["growth"]
+
+
+def test_prepare_reference_df_seq_len_from_target_seq():
+    df = pd.DataFrame({
+        "DMS_id": ["X1"],
+        "taxon": ["Human"],
+        "coarse_selection_type": ["Activity"],
+        "target_seq": ["MAKVLR"],
+    })
+    out = prepare_reference_df(df)
+    assert int(out["seq_len"].iloc[0]) == 6
+
+
+def test_prepare_reference_df_missing_columns_raises():
+    df = pd.DataFrame({"DMS_id": ["X1"], "seq_len": [100]})  # no family or taxon
+    with pytest.raises(ValueError, match="family.*taxon"):
+        prepare_reference_df(df)
+
+
+def test_select_diversity_subset_on_real_proteingym_csv():
+    """End-to-end smoke: real CSV -> prepare -> select. Catches column-mapping bugs."""
+    real_csv = ROOT / "data" / "proteingym" / "DMS_substitutions.csv"
+    if not real_csv.exists():
+        pytest.skip("real ProteinGym reference CSV not downloaded")
+    df = pd.read_csv(real_csv)
+    prepared = prepare_reference_df(df)
+    chosen = select_diversity_subset(prepared, n=15, seed=42)
+    assert len(chosen) == 15
+    families = {a.family for a in chosen}
+    assert len(families) >= 2  # real data has 4 taxa, expect at least 2 to appear
+    fitness = {a.fitness_type for a in chosen}
+    assert len(fitness) >= 2  # real data has 5 selection types
