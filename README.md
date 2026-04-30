@@ -162,6 +162,7 @@ These open problems are explicit and surface in the talk:
 2. **Sequence → binary OE prediction is capacity-bound at ~69 %** bit accuracy (Exp 50 Stages 1–3 all converge there). **Stage 4 (transformer)** is the architecture lever; designed but not yet executed.
 3. **No co-distilled VESM baseline yet** — VESM (Bromberg lab, 2026) is the strongest plausible competitor; weights are public.
 4. **VEP / ProteinGym evaluation missing** — the classical PLM-quality benchmark; earmarked.
+5. **PQ as a "learned filter" — open follow-up.** Exp 48c found that PQ M=64 *exceeds* raw ProtT5 at DCT-K=4 RNS (Δ = −0.028 vs raw, sig.) — the PQ codebook fit on real residues snaps junkyard residues onto real-protein-like centroids, re-introducing a corpus-direction bias post-centering. Worth investigating whether the same mechanism could be turned on disorder, where uniform quantization plateaus at ~95 % retention. Connects naturally to (1).
 
 ---
 

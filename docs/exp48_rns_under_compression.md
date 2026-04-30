@@ -14,6 +14,8 @@ which reflects a metric mismatch, not embedding degradation.
   → `data/benchmarks/rigorous_v1/exp48_rns_compression.json`
 - `experiments/48b_rns_ablation.py` — pipeline-stage ablation
   → `data/benchmarks/rigorous_v1/exp48b_rns_ablation.json`
+- `experiments/48c_rns_knob_sweep.py` — codec-knob sweep (12 configs)
+  → `data/benchmarks/rigorous_v1/exp48c_knob_sweep.json`
 - `experiments/48a_extract_junkyard.py` — junkyard ProtT5 extraction (~9 min, 2.6 GB)
 - `src/one_embedding/rns.py` — `compute_rns(...)` with `exclude_shuffles_of_query=True` for the same-source filter
 
@@ -126,6 +128,77 @@ Cross-checks support that:
   tasks live on is preserved.
 - Mean-pooling the decoded OE bytes recovers raw-equivalent RNS.
 
+## Knob sweep (Exp 48c)
+
+The Exp 48b ablation walked the *default* (binary 896d) pipeline. Exp 48c
+sweeps across codec configurations to ask whether the +0.14 DCT-K=4 hit is
+intrinsic to the codec, or specific to particular knob settings.
+
+| Config | mean | DCT-K=4 | Δ DCT4 vs raw |
+|---|:---:|:---:|:---:|
+| raw baseline                | 0.127 | 0.370 | — |
+| lossless 1024d (fp16, no RP) | 0.127 | 0.444 | +0.074 * |
+| fp16 896d                   | 0.129 | 0.445 | +0.075 * |
+| int4 896d                   | 0.129 | 0.447 | +0.077 * |
+| **PQ M=64 896d**            | 0.127 | **0.342** | **−0.028** * |
+| PQ M=128 896d               | 0.124 | 0.391 | +0.021 * |
+| PQ M=224 896d               | 0.126 | 0.429 | +0.060 * |
+| binary 896d (default)       | 0.130 | 0.510 | +0.140 * |
+| binary 1024d (no RP)        | 0.129 | 0.447 | +0.077 * |
+| binary 512d                 | 0.127 | 0.493 | +0.123 * |
+| binary 768d                 | 0.133 | 0.505 | +0.135 * |
+| **binary 896d, ABTT-3**     | 0.130 | **0.616** | **+0.246** * |
+
+`*` = 95 % paired CI excludes zero.
+
+### Sweep findings
+
+1. **At mean pool every codec is RNS-neutral.** All paired Δs ≤ 0.007 in
+   absolute value. No knob — quantization scheme, d_out, ABTT, PQ M —
+   meaningfully shifts mean-pool RNS. The Exp 48 / 48b headline that the
+   per-residue substrate is RNS-equivalent to raw is robust across the
+   whole knob space.
+2. **PQ wins at DCT-K=4. Binary loses. ABTT is catastrophic.**
+   - **PQ M=64 is *better* than raw** at DCT-K=4 (Δ = −0.028, CI excludes zero).
+     The PQ codebook is fit on real residues, so when junkyard residues are
+     quantized through it they get snapped onto "real-protein-like"
+     centroids. The structured noise re-introduces a corpus-direction bias
+     that helps the kNN search distinguish real from shuffled. **PQ is a
+     learned filter that filters toward the training distribution; binary
+     is unstructured noise.**
+   - PQ degrades smoothly as M grows (M=64 < M=128 < M=224 < binary).
+   - Binary at d_out = 1024 (no RP) sits at +0.077, same as int4 and fp16.
+     The "binary tax" only kicks in once RP is also applied — RP and
+     binarization stack multiplicatively at DCT-K=4 but neither alone is
+     bad. (At mean pool, both are still ≈ 0.)
+   - **ABTT-3 doubles the binary cost** to +0.246. Removing the top
+     principal components removes the very direction that carries
+     real-protein-vs-junk discriminability. Same root cause as the
+     disorder collapse documented in Exp 45.
+3. **The +0.074 "centering toll" at DCT-K=4 is universal across non-PQ
+   quantizations** — present in fully lossless 1024d (no RP, no binary,
+   only centering + fp16). Confirms Exp 48b's mechanism: centering moves
+   the DC bin near zero, kNN reweights toward k=1..3, and those bins
+   don't separate real from junk well. PQ is the only configuration
+   that gets *under* this floor, because the codebook restores
+   corpus-direction bias post-centering.
+
+### Practical implications
+
+- **Default codec (binary 896d) is fine for the tasks we benchmark**
+  (Ret@1, SS3/SS8, disorder). Those don't depend on real-vs-junkyard
+  separability.
+- **For RNS-aware downstream usage at DCT-K=4, switch to PQ M=64.**
+  It's the best DCT-K=4 RNS in the sweep, *better* than raw — at the
+  cost of needing the codebook on the receiver side (~1 MB extra per
+  PLM × config). PQ M=64 also gives ~32× compression.
+- **Keep `abtt_k=0` as the universal default.** RNS at DCT-K=4 doubles
+  with ABTT-3 on. Combined with the disorder evidence (Exp 45), there
+  is no remaining metric where ABTT is the right call.
+- **For binary-specific users who care about RNS:** `d_out=1024`
+  (skip RP) recovers most of the binary cost (+0.077 vs +0.140 at the
+  default 896d). The trade-off is ~14 % more bits per residue.
+
 ## Recipe — RNS-aware downstream usage
 
 The codec ships two pools off the same bytes:
@@ -179,4 +252,7 @@ uv run python experiments/48_rns_compression.py
 
 # 3. Pipeline ablation (~50 s)
 uv run python experiments/48b_rns_ablation.py
+
+# 4. Codec-knob sweep (~10 min — 3 PQ fits dominate)
+uv run python experiments/48c_rns_knob_sweep.py
 ```
