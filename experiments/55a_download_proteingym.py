@@ -41,12 +41,14 @@ def _download(url: str, dest: Path) -> None:
 
 
 def _unzip(zip_path: Path, target_dir: Path) -> None:
-    if target_dir.exists() and any(target_dir.iterdir()):
+    sentinel = target_dir / ".complete"
+    if sentinel.exists():
         print(f"  already unzipped: {target_dir.name}")
         return
     target_dir.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(zip_path) as zf:
         zf.extractall(target_dir)
+    sentinel.touch()
     print(f"  unzipped {zip_path.name} -> {target_dir.name}")
 
 

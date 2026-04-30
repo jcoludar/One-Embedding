@@ -62,6 +62,7 @@ data/proteins/metadata*.csv
 data/proteingym/DMS_*/
 data/proteingym/clinical_*/
 data/proteingym/*.zip
+data/proteingym/*.h5
 
 # Large result files (MCMC tree samples — kept locally)
 results/embed_phylo/*_trees_run*.nwk
