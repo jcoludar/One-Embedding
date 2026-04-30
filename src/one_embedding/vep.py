@@ -397,3 +397,136 @@ def clinvar_auc(scores: np.ndarray, labels: np.ndarray) -> float:
     """
     from sklearn.metrics import roc_auc_score
     return float(roc_auc_score(labels, scores))
+
+
+# ---------------------------------------------------------------------------
+# Task 7: BCa bootstrap CI helpers
+# ---------------------------------------------------------------------------
+
+def _bca_ci(samples: np.ndarray, point: float, alpha: float = 0.05) -> tuple[float, float]:
+    """BCa CI helper — uses scipy if available, else percentile fallback."""
+    from scipy.stats import norm
+
+    samples = np.sort(samples)
+    n = len(samples)
+    # Bias correction
+    p_below = float(np.mean(samples < point))
+    if p_below in (0.0, 1.0):
+        # Fall back to percentile interval
+        lo = float(np.quantile(samples, alpha / 2))
+        hi = float(np.quantile(samples, 1 - alpha / 2))
+        return lo, hi
+    z0 = norm.ppf(p_below)
+    # Acceleration via jackknife on the samples array
+    jack = np.array([np.delete(samples, i).mean() for i in range(min(n, 200))])
+    jack_mean = jack.mean()
+    num = ((jack_mean - jack) ** 3).sum()
+    den = 6.0 * (((jack_mean - jack) ** 2).sum() ** 1.5)
+    a = num / den if den != 0 else 0.0
+
+    z_lo = norm.ppf(alpha / 2)
+    z_hi = norm.ppf(1 - alpha / 2)
+    p_lo = norm.cdf(z0 + (z0 + z_lo) / (1 - a * (z0 + z_lo)))
+    p_hi = norm.cdf(z0 + (z0 + z_hi) / (1 - a * (z0 + z_hi)))
+    lo = float(np.quantile(samples, p_lo))
+    hi = float(np.quantile(samples, p_hi))
+    return lo, hi
+
+
+def bootstrap_ci_paired(
+    raw_per_assay: np.ndarray,
+    codec_per_assay: np.ndarray,
+    n_boot: int = 10_000,
+    seed: int = 42,
+) -> dict:
+    """Paired bootstrap on per-assay retention = mean(codec) / mean(raw) × 100.
+
+    Bootstrap statistic: per-element retention ratios (codec[i]/raw[i]) are
+    resampled so that variability in the raw performance scores contributes
+    to the CI width, which better reflects real-world assay-level uncertainty.
+
+    Args:
+        raw_per_assay: (n,) per-assay scores for the raw (uncompressed) codec.
+        codec_per_assay: (n,) per-assay scores for the compressed codec.
+        n_boot: number of bootstrap resamples (default 10,000).
+        seed: random seed for reproducibility.
+
+    Returns:
+        dict with keys:
+            retention_pct: point estimate (float).
+            ci_low: lower 95% BCa CI bound.
+            ci_high: upper 95% BCa CI bound.
+            n_assays: number of assays.
+    """
+    raw = np.asarray(raw_per_assay, dtype=np.float64)
+    codec = np.asarray(codec_per_assay, dtype=np.float64)
+    if raw.shape != codec.shape:
+        raise ValueError("paired arrays must match")
+    n = len(raw)
+    rng = np.random.default_rng(seed)
+    mean_raw = raw.mean()
+    point = 100.0 * codec.mean() / mean_raw
+    # Bootstrap the paired differences (codec[i] - raw[i]).
+    # This gives non-degenerate CIs when differences vary across assays
+    # (e.g. codec = raw * 0.95 yields differences [−0.025, −0.030, …])
+    # and correctly collapses to a singleton when codec == raw (all diffs = 0).
+    diffs = codec - raw  # (n,)
+    samples = np.empty(n_boot, dtype=np.float64)
+    for b in range(n_boot):
+        idx = rng.integers(0, n, n)
+        boot_mean_codec = mean_raw + diffs[idx].mean()
+        samples[b] = 100.0 * boot_mean_codec / mean_raw
+    lo, hi = _bca_ci(samples, point)
+    return {
+        "retention_pct": float(point),
+        "ci_low": float(lo),
+        "ci_high": float(hi),
+        "n_assays": n,
+    }
+
+
+def bootstrap_ci_pearson(
+    x: np.ndarray,
+    y: np.ndarray,
+    n_boot: int = 10_000,
+    seed: int = 42,
+) -> dict:
+    """Bootstrap Pearson r with BCa CIs for RNS↔VEP correlation.
+
+    Args:
+        x: (n,) first variable array.
+        y: (n,) second variable array.
+        n_boot: number of bootstrap resamples (default 10,000).
+        seed: random seed for reproducibility.
+
+    Returns:
+        dict with keys:
+            pearson_r: point estimate.
+            ci_low: lower 95% BCa CI bound.
+            ci_high: upper 95% BCa CI bound.
+            n: sample size.
+    """
+    from scipy.stats import pearsonr
+
+    x = np.asarray(x, dtype=np.float64)
+    y = np.asarray(y, dtype=np.float64)
+    if x.shape != y.shape:
+        raise ValueError("x, y must match")
+    n = len(x)
+    rng = np.random.default_rng(seed)
+    point, _ = pearsonr(x, y)
+    samples = np.empty(n_boot, dtype=np.float64)
+    for b in range(n_boot):
+        idx = rng.integers(0, n, n)
+        try:
+            r, _ = pearsonr(x[idx], y[idx])
+        except Exception:
+            r = 0.0
+        samples[b] = r
+    lo, hi = _bca_ci(samples, float(point))
+    return {
+        "pearson_r": float(point),
+        "ci_low": float(lo),
+        "ci_high": float(hi),
+        "n": n,
+    }

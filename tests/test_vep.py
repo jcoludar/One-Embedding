@@ -408,3 +408,59 @@ def test_score_clinvar_zeroshot_pos_out_of_range():
     mut = np.zeros((L, D), dtype=np.float32)
     with pytest.raises(IndexError):
         score_clinvar_zeroshot(wt_emb=wt, mut_emb=mut, mut_pos=L)
+
+
+# ---------------------------------------------------------------------------
+# Task 7: BCa bootstrap CI helpers
+# ---------------------------------------------------------------------------
+
+from src.one_embedding.vep import bootstrap_ci_paired, bootstrap_ci_pearson
+
+
+def test_bootstrap_ci_paired_basic():
+    raw = np.array([0.50, 0.60, 0.70, 0.55, 0.65])
+    codec = raw * 0.95  # uniform 95% retention
+    result = bootstrap_ci_paired(raw, codec, n_boot=2000, seed=42)
+    assert "retention_pct" in result
+    assert "ci_low" in result
+    assert "ci_high" in result
+    assert result["retention_pct"] == pytest.approx(95.0, abs=0.5)
+    assert result["ci_low"] < result["retention_pct"] < result["ci_high"]
+
+
+def test_bootstrap_ci_pearson_basic():
+    rng = np.random.default_rng(0)
+    n = 30
+    x = rng.standard_normal(n)
+    y = x + 0.1 * rng.standard_normal(n)  # strong positive correlation
+    result = bootstrap_ci_pearson(x, y, n_boot=2000, seed=42)
+    assert "pearson_r" in result
+    assert "ci_low" in result
+    assert "ci_high" in result
+    assert result["pearson_r"] > 0.9
+    assert result["ci_low"] < result["pearson_r"] < result["ci_high"]
+
+
+def test_bootstrap_ci_paired_shape_mismatch():
+    raw = np.array([0.5, 0.6, 0.7])
+    codec = np.array([0.5, 0.6])  # length mismatch
+    with pytest.raises(ValueError, match="paired arrays must match"):
+        bootstrap_ci_paired(raw, codec, n_boot=100, seed=42)
+
+
+def test_bootstrap_ci_pearson_shape_mismatch():
+    x = np.array([1, 2, 3])
+    y = np.array([1, 2])
+    with pytest.raises(ValueError, match="must match"):
+        bootstrap_ci_pearson(x, y, n_boot=100, seed=42)
+
+
+def test_bootstrap_ci_paired_perfect_retention():
+    """codec == raw exactly -> retention=100%, tight CI."""
+    raw = np.array([0.5, 0.6, 0.7, 0.55, 0.65])
+    codec = raw.copy()
+    result = bootstrap_ci_paired(raw, codec, n_boot=1000, seed=42)
+    assert result["retention_pct"] == pytest.approx(100.0)
+    # CI should be a tight singleton at 100% (BCa fall-through to percentile)
+    assert result["ci_low"] == pytest.approx(100.0, abs=1e-6)
+    assert result["ci_high"] == pytest.approx(100.0, abs=1e-6)
