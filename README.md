@@ -153,22 +153,6 @@ These open problems are explicit and surface in the talk:
 
 ---
 
-## Methodology (Rost-lab convention)
-
-Every cited number ships its 95 % BCa CI in source JSONs under `data/benchmarks/rigorous_v1/`.
-
-- **Bootstrap.** BCa (DiCiccio & Efron 1996), B=10,000, percentile fallback for n<25, jackknife acceleration for cluster bootstrap.
-- **Disorder.** Pooled residue-level Spearman ρ (SETH/CAID convention), cluster bootstrap (resample proteins, recompute pooled ρ) per Davison & Hinkley 1997.
-- **Retention.** Paired bootstrap — same protein-id resample drives raw and compressed in every iteration.
-- **Probes.** CV-tuned (`GridSearchCV` on C/alpha grids, 3-fold), `random_state=42`.
-- **Multi-seed.** Predictions averaged across seeds {42, 123, 456} *before* bootstrapping (Bouthillier et al. 2021).
-- **Baselines.** Retrieval uses identical DCT K=4 pooling on raw and compressed.
-- **Splits.** All cluster-controlled at the dataset level; runtime asserted via `rules.check_no_leakage`.
-
-Every cell in the result tables is bit-perfect against its source JSON in `data/benchmarks/rigorous_v1/`.
-
----
-
 ## Repo layout
 
 ```
@@ -224,6 +208,7 @@ default until probes are retrained.
 | `tools/align.py` | pairwise sequence-via-embedding alignment | dimension-agnostic |
 | `tools/conserve.py` | residue-level conservation score | heuristic; no probe yet |
 | `tools/mutate.py` | mutation effect scoring | heuristic; no probe yet |
+| tree construction (Exp 35) | Bayesian phylogeny from embedding distances (Brownian-motion MCMC, warm-started from per-protein consensus) | **exploratory, experiment-only** — runs as `experiments/35_embedding_phylogenetics.py`, not yet packaged as a `tools/` entry; tested on a 12-family benchmark, no claims of replacing established sequence-tree methods |
 
 For task-quality numbers under the current 896d binary default, refer to the
 benchmark JSONs in `data/benchmarks/rigorous_v1/` (Exp 43 / 44 / 46 / 47 — the
