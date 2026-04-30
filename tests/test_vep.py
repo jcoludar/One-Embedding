@@ -349,3 +349,62 @@ def test_fit_evaluate_ridge_probe_seeds_change_predictions():
     b = fit_evaluate_ridge_probe(X, y, n_folds=5, seeds=[999])
     # Some predictions should differ (different KFold splits)
     assert not np.allclose(a.predictions, b.predictions)
+
+
+# ---------------------------------------------------------------------------
+# Task 6: ClinVar zero-shot scorer
+# ---------------------------------------------------------------------------
+
+from src.one_embedding.vep import score_clinvar_zeroshot, clinvar_auc
+
+
+def test_score_clinvar_zeroshot_identical_embeddings():
+    """If WT == mut at the position, score is 0."""
+    L, D = 10, 8
+    wt = np.ones((L, D), dtype=np.float32)
+    mut = wt.copy()
+    s = score_clinvar_zeroshot(wt_emb=wt, mut_emb=mut, mut_pos=3)
+    assert s == pytest.approx(0.0, abs=1e-6)
+
+
+def test_score_clinvar_zeroshot_orthogonal():
+    """Orthogonal -> cosine=0 -> score=1."""
+    L, D = 5, 4
+    wt = np.zeros((L, D), dtype=np.float32)
+    mut = np.zeros((L, D), dtype=np.float32)
+    wt[2] = np.array([1, 0, 0, 0], dtype=np.float32)
+    mut[2] = np.array([0, 1, 0, 0], dtype=np.float32)
+    s = score_clinvar_zeroshot(wt_emb=wt, mut_emb=mut, mut_pos=2)
+    assert s == pytest.approx(1.0)
+
+
+def test_clinvar_auc_perfect():
+    scores = np.array([0.1, 0.2, 0.8, 0.9])
+    labels = np.array([0, 0, 1, 1])
+    auc = clinvar_auc(scores, labels)
+    assert auc == pytest.approx(1.0)
+
+
+def test_clinvar_auc_random():
+    rng = np.random.default_rng(42)
+    scores = rng.random(1000)
+    labels = rng.integers(0, 2, 1000)
+    auc = clinvar_auc(scores, labels)
+    assert 0.4 < auc < 0.6
+
+
+def test_score_clinvar_zeroshot_zero_norm():
+    """Zero embedding -> score=1 (undefined cosine, worst case)."""
+    L, D = 5, 4
+    wt = np.zeros((L, D), dtype=np.float32)
+    mut = np.zeros((L, D), dtype=np.float32)
+    s = score_clinvar_zeroshot(wt_emb=wt, mut_emb=mut, mut_pos=2)
+    assert s == 1.0
+
+
+def test_score_clinvar_zeroshot_pos_out_of_range():
+    L, D = 5, 4
+    wt = np.zeros((L, D), dtype=np.float32)
+    mut = np.zeros((L, D), dtype=np.float32)
+    with pytest.raises(IndexError):
+        score_clinvar_zeroshot(wt_emb=wt, mut_emb=mut, mut_pos=L)

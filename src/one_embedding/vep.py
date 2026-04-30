@@ -344,3 +344,56 @@ def fit_evaluate_ridge_probe(
         predictions=avg_preds,
         n_variants=n,
     )
+
+
+# ---------------------------------------------------------------------------
+# Task 6: ClinVar zero-shot scorer
+# ---------------------------------------------------------------------------
+
+def score_clinvar_zeroshot(
+    wt_emb: np.ndarray,
+    mut_emb: np.ndarray,
+    mut_pos: int,
+) -> float:
+    """Cosine-distance score at the mutation site. Returns 1 - cos(WT[p], mut[p]).
+
+    A score of 0 means identical embeddings (no predicted effect).
+    A score of 1 means orthogonal embeddings (maximum predicted effect).
+    When either embedding vector has zero norm (undefined cosine), returns 1.0
+    as the conservative worst-case estimate.
+
+    Args:
+        wt_emb: (L, D) per-residue wild-type embedding.
+        mut_emb: (L, D) per-residue mutant embedding.
+        mut_pos: 0-indexed mutation position.
+
+    Returns:
+        Float in [0, 2] (typically [0, 1] for non-antiparallel vectors).
+
+    Raises:
+        IndexError: if mut_pos is out of bounds.
+    """
+    if mut_pos < 0 or mut_pos >= wt_emb.shape[0]:
+        raise IndexError(f"mut_pos {mut_pos} out of range for L={wt_emb.shape[0]}")
+    a = wt_emb[mut_pos]
+    b = mut_emb[mut_pos]
+    na = float(np.linalg.norm(a))
+    nb = float(np.linalg.norm(b))
+    if na == 0 or nb == 0:
+        return 1.0  # undefined cosine — worst case
+    cos = float(np.dot(a, b) / (na * nb))
+    return 1.0 - cos
+
+
+def clinvar_auc(scores: np.ndarray, labels: np.ndarray) -> float:
+    """ROC AUC for ClinVar binary labels (1 = pathogenic).
+
+    Args:
+        scores: (n,) float array of pathogenicity scores (higher = more pathogenic).
+        labels: (n,) int array with 1 = pathogenic, 0 = benign.
+
+    Returns:
+        ROC AUC as a float in [0, 1].
+    """
+    from sklearn.metrics import roc_auc_score
+    return float(roc_auc_score(labels, scores))
