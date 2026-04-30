@@ -439,24 +439,22 @@ def bootstrap_ci_paired(
     n_boot: int = 10_000,
     seed: int = 42,
 ) -> dict:
-    """Paired bootstrap on per-assay retention = mean(codec) / mean(raw) × 100.
+    """Paired bootstrap CI on retention = mean(codec) / mean(raw) × 100.
 
-    Bootstrap statistic: per-element retention ratios (codec[i]/raw[i]) are
-    resampled so that variability in the raw performance scores contributes
-    to the CI width, which better reflects real-world assay-level uncertainty.
+    Uses paired resampling (same indices for both arrays each bootstrap
+    iteration) and the ratio-of-means statistic. Matches the protocol used
+    in Exp 43/44/47 (see experiments/43_rigorous_benchmark/metrics/
+    statistics.py::paired_bootstrap_retention).
 
     Args:
-        raw_per_assay: (n,) per-assay scores for the raw (uncompressed) codec.
-        codec_per_assay: (n,) per-assay scores for the compressed codec.
+        raw_per_assay: (n,) per-assay scores under the raw (uncompressed)
+            condition. n_assays should be >= 5 for a meaningful CI.
+        codec_per_assay: (n,) per-assay scores under the compressed condition.
         n_boot: number of bootstrap resamples (default 10,000).
-        seed: random seed for reproducibility.
+        seed: random seed.
 
     Returns:
-        dict with keys:
-            retention_pct: point estimate (float).
-            ci_low: lower 95% BCa CI bound.
-            ci_high: upper 95% BCa CI bound.
-            n_assays: number of assays.
+        dict with keys retention_pct, ci_low, ci_high, n_assays.
     """
     raw = np.asarray(raw_per_assay, dtype=np.float64)
     codec = np.asarray(codec_per_assay, dtype=np.float64)
@@ -464,18 +462,23 @@ def bootstrap_ci_paired(
         raise ValueError("paired arrays must match")
     n = len(raw)
     rng = np.random.default_rng(seed)
-    mean_raw = raw.mean()
-    point = 100.0 * codec.mean() / mean_raw
-    # Bootstrap the paired differences (codec[i] - raw[i]).
-    # This gives non-degenerate CIs when differences vary across assays
-    # (e.g. codec = raw * 0.95 yields differences [−0.025, −0.030, …])
-    # and correctly collapses to a singleton when codec == raw (all diffs = 0).
-    diffs = codec - raw  # (n,)
+    if raw.mean() == 0:
+        # Degenerate: raw is all zeros. Return a "no signal" result.
+        return {
+            "retention_pct": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_assays": n,
+        }
+    point = 100.0 * codec.mean() / raw.mean()
     samples = np.empty(n_boot, dtype=np.float64)
     for b in range(n_boot):
         idx = rng.integers(0, n, n)
-        boot_mean_codec = mean_raw + diffs[idx].mean()
-        samples[b] = 100.0 * boot_mean_codec / mean_raw
+        rm = raw[idx].mean()
+        if rm == 0:
+            samples[b] = 0.0
+        else:
+            samples[b] = 100.0 * codec[idx].mean() / rm
     lo, hi = _bca_ci(samples, point)
     return {
         "retention_pct": float(point),

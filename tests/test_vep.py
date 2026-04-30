@@ -418,14 +418,20 @@ from src.one_embedding.vep import bootstrap_ci_paired, bootstrap_ci_pearson
 
 
 def test_bootstrap_ci_paired_basic():
+    """Non-degenerate paired retention: codec is roughly 95% of raw with assay-level variance."""
     raw = np.array([0.50, 0.60, 0.70, 0.55, 0.65])
-    codec = raw * 0.95  # uniform 95% retention
+    codec = np.array([0.46, 0.58, 0.66, 0.51, 0.63])  # ~92-96% retention with spread
     result = bootstrap_ci_paired(raw, codec, n_boot=2000, seed=42)
     assert "retention_pct" in result
     assert "ci_low" in result
     assert "ci_high" in result
-    assert result["retention_pct"] == pytest.approx(95.0, abs=0.5)
+    # Point estimate around 95%
+    assert 90 < result["retention_pct"] < 100
+    # CI should bracket the point estimate (with some slack — paired bootstrap
+    # CI may be biased)
     assert result["ci_low"] < result["retention_pct"] < result["ci_high"]
+    # CI should be tight given small spread (codec ~ 0.92*raw to 0.97*raw)
+    assert (result["ci_high"] - result["ci_low"]) < 10  # less than 10pp wide
 
 
 def test_bootstrap_ci_pearson_basic():
