@@ -158,7 +158,7 @@ Full notes in [`docs/related-work.md`](docs/related-work.md).
 
 These open problems are explicit and surface in the talk:
 
-1. **Disorder retention plateaus at ~95 %** — the geometric Exp 45 finding (PC1 ↔ disorder direction) explains why ABTT-style preprocessing doesn't help and why uniform quantization can't fully recover. **Exp 51 (PolarQuant)** is the designed fix: magnitude-augmented binary, expected +2–3 pp at 36×, no codebook.
+1. **Disorder retention plateaus at ~95 %** — the geometric Exp 45 finding (PC1 ↔ disorder direction) explains why ABTT-style preprocessing doesn't help and why uniform quantization can't fully recover. **Exp 51 (PolarQuant) tested and rejected:** adding a per-residue magnitude scalar on top of binary does not move disorder retention (94.4 ± 1.9 % vs 94.9 ± 1.8 %, CIs overlap). The gap is from sign-quantization noise on *direction*, not magnitude loss — three extra bits per dim (int4) recover most of it. There is no "polar shortcut" at 1 bit per dim. See `docs/exp51_polarquant.md`. Multi-teacher distillation is the remaining angle worth trying.
 2. **Sequence → binary OE prediction is capacity-bound at ~69 %** bit accuracy (Exp 50 Stages 1–3 all converge there). **Stage 4 (transformer)** is the architecture lever; designed but not yet executed.
 3. **No co-distilled VESM baseline yet** — VESM (Bromberg lab, 2026) is the strongest plausible competitor; weights are public.
 4. **VEP / ProteinGym evaluation missing** — the classical PLM-quality benchmark; earmarked.

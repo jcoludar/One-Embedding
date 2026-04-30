@@ -78,6 +78,9 @@ class CodecConfig:
             return f"{raw / self.pq_m:.0f}x"
         elif self.quantization == "binary":
             return f"{raw / (self.d_out // 8):.0f}x"
+        elif self.quantization == "binary_magnitude":
+            # bits + 2 bytes/residue magnitude (per-residue payload only)
+            return f"{raw / (self.d_out // 8 + 2):.0f}x"
         elif self.quantization == "vq":
             # VQ: 2 bytes per residue (codebook index)
             return f"{raw / 2:.0f}x"
@@ -222,6 +225,7 @@ class FittedCodec:
         from src.one_embedding.quantization import (
             quantize_int4, dequantize_int4,
             quantize_binary, dequantize_binary,
+            quantize_binary_magnitude, dequantize_binary_magnitude,
             pq_encode, pq_decode,
             rvq_encode, rvq_decode,
         )
@@ -234,6 +238,9 @@ class FittedCodec:
             return {pid: dequantize_int4(quantize_int4(e)) for pid, e in proc.items()}
         elif q == "binary":
             return {pid: dequantize_binary(quantize_binary(e)) for pid, e in proc.items()}
+        elif q == "binary_magnitude":
+            return {pid: dequantize_binary_magnitude(quantize_binary_magnitude(e))
+                    for pid, e in proc.items()}
         elif q == "pq":
             return {pid: pq_decode(pq_encode(e, self.pq_model), self.pq_model)
                     for pid, e in proc.items()}

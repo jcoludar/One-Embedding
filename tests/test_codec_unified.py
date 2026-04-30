@@ -152,8 +152,45 @@ class TestEncodeDecode:
         decoded = codec.decode_per_residue(encoded)
         assert decoded.shape == (30, 768)
 
+    def test_binary_magnitude_roundtrip(self, raw_1024, small_corpus):
+        codec = OneEmbeddingCodec(d_out=768, quantization='binary_magnitude')
+        codec.fit(small_corpus)
+        encoded = codec.encode(raw_1024)
+        # Stored as bits + per-residue magnitudes (no per-channel means/scales)
+        assert encoded["per_residue_bits"].shape == (30, 768 // 8)
+        assert encoded["per_residue_bits"].dtype == np.uint8
+        assert encoded["per_residue_magnitudes"].shape == (30,)
+        assert encoded["per_residue_magnitudes"].dtype == np.float16
+        decoded = codec.decode_per_residue(encoded)
+        assert decoded.shape == (30, 768)
+        # Reconstruction preserves direction (high cosine with the projected vector)
+        projected = codec._preprocess(raw_1024)
+        cos = np.mean([
+            np.dot(projected[i], decoded[i])
+            / (np.linalg.norm(projected[i]) * np.linalg.norm(decoded[i]) + 1e-10)
+            for i in range(30)
+        ])
+        # 1-bit-per-dim direction vs full-precision direction → ~0.8 cosine on Gaussian-ish RP outputs
+        assert cos > 0.7
+
+    def test_binary_magnitude_recovers_per_residue_norms(self, raw_1024, small_corpus):
+        """Hybrid PolarQuant: ‖decoded_l‖₂ should match the recorded magnitude
+        per residue (within fp16 rounding), not just rank-correlate."""
+        codec = OneEmbeddingCodec(d_out=768, quantization='binary_magnitude')
+        codec.fit(small_corpus)
+        encoded = codec.encode(raw_1024)
+        decoded = codec.decode_per_residue(encoded)
+        projected = codec._preprocess(raw_1024)
+
+        proj_norms = np.linalg.norm(projected, axis=1)
+        dec_norms = np.linalg.norm(decoded, axis=1)
+
+        # Absolute-norm match: rescaling targets the original ‖projected_l‖
+        # (stored in fp16). Tolerance accounts for fp16 quantization.
+        np.testing.assert_allclose(dec_norms, proj_norms, rtol=5e-3)
+
     def test_protein_vec_always_fp16(self, raw_1024, small_corpus):
-        for q in [None, 'int4', 'pq', 'binary']:
+        for q in [None, 'int4', 'pq', 'binary', 'binary_magnitude']:
             codec = OneEmbeddingCodec(d_out=768, quantization=q)
             codec.fit(small_corpus)
             encoded = codec.encode(raw_1024)
@@ -250,6 +287,23 @@ class TestSaveLoad:
         loaded = OneEmbeddingCodec.load(str(h5_path), codebook_path=str(cb_path))
         assert loaded["per_residue"].shape == (30, 768)
         assert loaded["metadata"]["quantization"] == "binary"
+
+    def test_binary_magnitude_h5_roundtrip(self, raw_1024, small_corpus, tmp_path):
+        codec = OneEmbeddingCodec(d_out=768, quantization='binary_magnitude')
+        codec.fit(small_corpus)
+        cb_path = tmp_path / "codebook.h5"
+        codec.save_codebook(str(cb_path))
+
+        encoded = codec.encode(raw_1024)
+        h5_path = tmp_path / "protein.h5"
+        codec.save(encoded, str(h5_path))
+
+        loaded = OneEmbeddingCodec.load(str(h5_path), codebook_path=str(cb_path))
+        assert loaded["per_residue"].shape == (30, 768)
+        assert loaded["metadata"]["quantization"] == "binary_magnitude"
+        # Round-trip equality: in-memory decode == H5 decode (no extra precision loss)
+        in_mem = codec.decode_per_residue(encoded)
+        np.testing.assert_allclose(loaded["per_residue"], in_mem, atol=1e-5)
 
     def test_codebook_stores_quantization_params(self, small_corpus, tmp_path):
         codec = OneEmbeddingCodec(d_out=896, quantization='pq', pq_m=224)

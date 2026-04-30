@@ -346,6 +346,77 @@ def dequantize_binary(compressed: dict) -> np.ndarray:
     return (signs * scales[np.newaxis, :] + means[np.newaxis, :]).astype(np.float32)
 
 
+# ─── Binary + per-residue magnitude (PolarQuant variant, Exp 51) ──────────────
+
+def quantize_binary_magnitude(matrix: np.ndarray) -> dict:
+    """Strict superset of binary: signs + per-channel scales/means + per-residue magnitude.
+
+    Hybrid PolarQuant — extends the binary codec with one fp16 per-residue
+    magnitude, stored alongside the existing per-channel scales and means.
+    The decoder uses the binary path's full reconstruction (sign × scale +
+    mean) for direction, then rescales each residue to match the recorded
+    target magnitude. By construction the information content is a strict
+    superset of pure binary; any deviation in retention vs binary tests
+    whether the per-residue magnitude scalar actually carries useful signal.
+
+    Storage per protein: ``ceil(D/8) * L`` bits + 2D fp32 (means/scales)
+    + 2L bytes (fp16 magnitudes). For L=156, D=896 the magnitude overhead
+    is ~1.3 % vs binary's footprint.
+
+    Args:
+        matrix: (L, D) float32 per-residue embeddings.
+
+    Returns:
+        dict with:
+            bits: (L, ceil(D/8)) uint8 packed sign bits
+            means: (D,) float32 per-channel means
+            scales: (D,) float32 per-channel mean abs deviations
+            magnitudes: (L,) float16 per-residue L2 norms (target reconstruction)
+            original_shape: tuple (L, D)
+            dtype: "binary_magnitude"
+    """
+    base = quantize_binary(matrix)  # bits, means, scales
+    base["magnitudes"] = np.linalg.norm(np.asarray(matrix, dtype=np.float32),
+                                        axis=1).astype(np.float16)
+    base["dtype"] = "binary_magnitude"
+    return base
+
+
+def dequantize_binary_magnitude(compressed: dict) -> np.ndarray:
+    """Reconstruct float32 embeddings from binary+magnitude dict.
+
+    Two-stage decode:
+      1. Run the binary path's reconstruction: ``y_base = signs * scales + means``.
+         This gives the direction the codec already encoded.
+      2. Rescale per residue so ‖ŷ_l‖₂ matches the recorded ``magnitudes[l]``.
+
+    The rescaling is a per-residue multiplicative factor; for a linear probe
+    it gets absorbed into weights for classification (scale-invariant under
+    softmax) but materially changes regression predictions where target
+    magnitude correlates with the per-residue label (e.g. CheZOD disorder).
+
+    Args:
+        compressed: dict returned by quantize_binary_magnitude.
+
+    Returns:
+        (L, D) float32 reconstructed embeddings.
+    """
+    # Reuse the binary decoder for the direction
+    base = dequantize_binary({
+        "bits": compressed["bits"],
+        "means": compressed["means"],
+        "scales": compressed["scales"],
+        "original_shape": compressed["original_shape"],
+        "dtype": "binary",
+    })  # (L, D)
+
+    target_mag = compressed["magnitudes"].astype(np.float32)  # (L,)
+    base_mag = np.linalg.norm(base, axis=1)  # (L,)
+    # Avoid div-by-zero on degenerate residues
+    factor = target_mag / np.clip(base_mag, 1e-8, None)
+    return (base * factor[:, np.newaxis]).astype(np.float32)
+
+
 # ---------------------------------------------------------------------------
 # Product Quantization (PQ)
 # ---------------------------------------------------------------------------

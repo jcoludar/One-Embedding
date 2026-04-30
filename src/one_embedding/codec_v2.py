@@ -39,6 +39,7 @@ from src.one_embedding.transforms import dct_summary
 from src.one_embedding.quantization import (
     quantize_int4, dequantize_int4,
     quantize_binary, dequantize_binary,
+    quantize_binary_magnitude, dequantize_binary_magnitude,
     pq_fit, pq_encode, pq_decode,
 )
 
@@ -58,7 +59,7 @@ def auto_pq_m(d_out: int) -> int:
     return 1
 
 
-_VALID_QUANTIZATIONS = {None, "int4", "pq", "binary"}
+_VALID_QUANTIZATIONS = {None, "int4", "pq", "binary", "binary_magnitude"}
 
 
 class OneEmbeddingCodec:
@@ -291,6 +292,12 @@ class OneEmbeddingCodec:
             result["per_residue_bits"] = compressed["bits"]
             result["per_residue_means"] = compressed["means"]
             result["per_residue_scales"] = compressed["scales"]
+        elif self.quantization == "binary_magnitude":
+            compressed = quantize_binary_magnitude(projected)
+            result["per_residue_bits"] = compressed["bits"]
+            result["per_residue_means"] = compressed["means"]
+            result["per_residue_scales"] = compressed["scales"]
+            result["per_residue_magnitudes"] = compressed["magnitudes"]
         elif self.quantization == "pq":
             codes = pq_encode(projected, self._pq_model)
             result["pq_codes"] = codes  # (L, M) uint8
@@ -322,6 +329,16 @@ class OneEmbeddingCodec:
                 "dtype": "binary",
             }
             return dequantize_binary(compressed)
+        elif quantization == "binary_magnitude":
+            compressed = {
+                "bits": encoded["per_residue_bits"],
+                "means": encoded["per_residue_means"],
+                "scales": encoded["per_residue_scales"],
+                "magnitudes": encoded["per_residue_magnitudes"],
+                "original_shape": (L, d_out),
+                "dtype": "binary_magnitude",
+            }
+            return dequantize_binary_magnitude(compressed)
         elif quantization == "pq":
             return pq_decode(encoded["pq_codes"], self._pq_model)
         raise ValueError(f"Unknown quantization: {quantization}")
@@ -351,6 +368,16 @@ class OneEmbeddingCodec:
                                  data=encoded["per_residue_means"])
             group.create_dataset("per_residue_scales",
                                  data=encoded["per_residue_scales"])
+        elif quantization == "binary_magnitude":
+            group.create_dataset("per_residue_bits",
+                                 data=encoded["per_residue_bits"],
+                                 compression="gzip", compression_opts=4)
+            group.create_dataset("per_residue_means",
+                                 data=encoded["per_residue_means"])
+            group.create_dataset("per_residue_scales",
+                                 data=encoded["per_residue_scales"])
+            group.create_dataset("per_residue_magnitudes",
+                                 data=encoded["per_residue_magnitudes"])
         elif quantization == "pq":
             group.create_dataset("pq_codes", data=encoded["pq_codes"],
                                  compression="gzip", compression_opts=4)
@@ -395,6 +422,16 @@ class OneEmbeddingCodec:
                 "dtype": "binary",
             }
             return dequantize_binary(compressed)
+        elif quantization == "binary_magnitude":
+            compressed = {
+                "bits": group["per_residue_bits"][:],
+                "means": group["per_residue_means"][:],
+                "scales": group["per_residue_scales"][:],
+                "magnitudes": group["per_residue_magnitudes"][:],
+                "original_shape": (L, d_out),
+                "dtype": "binary_magnitude",
+            }
+            return dequantize_binary_magnitude(compressed)
         elif quantization == "pq":
             codes = group["pq_codes"][:]
             if codebook_path is None:
