@@ -712,3 +712,56 @@ def evaluate_assay_across_codecs(
         ])
         out[spec.name] = fit_evaluate_ridge_probe(X, y, seeds=seeds)
     return out
+
+
+# ---------------------------------------------------------------------------
+# Task 10: RNS ride-along helper
+# ---------------------------------------------------------------------------
+
+def compute_rns_for_assays(
+    wt_embs: dict[str, np.ndarray],
+    wt_sequences: dict[str, str],
+    n_shuffles: int = 5,
+    k: int = 100,
+    seed: int = 42,
+) -> dict[str, float]:
+    """Compute per-protein RNS for the WT proteins of each assay.
+
+    Protein vector = mean(per_residue_emb) — Exp 48's RNS-friendly pooling.
+    Junkyard = per-residue-shuffled copies of each WT embedding (same per-residue
+    distribution but no order). The shuffle operates on the embedding row order
+    directly, then mean-pools.
+
+    Args:
+        wt_embs: {assay_id: (L, D) per-residue embedding}.
+        wt_sequences: {assay_id: WT sequence string}. Currently used only for
+            naming/auditing; the RNS computation uses the embeddings directly
+            (mean-pooled). Provided for future extensions that may need the
+            sequence (e.g. composition-controlled shuffles).
+        n_shuffles: Number of shuffled copies per WT.
+        k: Number of nearest neighbors for RNS.
+        seed: RNG seed.
+
+    Returns:
+        {assay_id: rns_score} in [0, 1].
+    """
+    if not wt_embs:
+        return {}
+
+    from src.one_embedding.rns import compute_rns
+
+    real_vecs = {pid: emb.mean(axis=0).astype(np.float32)
+                 for pid, emb in wt_embs.items()}
+    rng = np.random.default_rng(seed)
+    junkyard: dict[str, np.ndarray] = {}
+    for pid, emb in wt_embs.items():
+        for s in range(n_shuffles):
+            order = rng.permutation(emb.shape[0])
+            junkyard[f"{pid}_shuf{s}"] = emb[order].mean(axis=0).astype(np.float32)
+    return compute_rns(
+        query_vectors=real_vecs,
+        real_vectors=real_vecs,
+        junkyard_vectors=junkyard,
+        k=k,
+        exclude_shuffles_of_query=True,
+    )

@@ -23,6 +23,7 @@ dependencies = [
     "PyWavelets>=1.6.0",
     "zstandard>=0.23.0",
     "protobuf>=7.34.1",
+    "faiss-cpu>=1.13.2",
 ]
 
 [project.optional-dependencies]

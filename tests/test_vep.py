@@ -598,3 +598,48 @@ def test_evaluate_assay_across_codecs_lossless_dim():
         wt_emb=wt, variants=variants, codecs=codecs, fit_corpus=fit_corpus, seeds=[42],
     )
     assert "lossless" in results
+
+
+# ---------------------------------------------------------------------------
+# Task 10: RNS ride-along helper
+# ---------------------------------------------------------------------------
+
+from src.one_embedding.vep import compute_rns_for_assays
+
+
+def test_compute_rns_for_assays_smoke():
+    rng = np.random.default_rng(0)
+    L, D = 50, 64
+    # 5 real WT proteins
+    wt_embs = {f"prot{i}": rng.standard_normal((L, D)).astype(np.float32)
+               for i in range(5)}
+    wt_seqs = {f"prot{i}": "ACDEFGHIKLM" * 5 for i in range(5)}  # length 55, fine
+    rns = compute_rns_for_assays(
+        wt_embs=wt_embs,
+        wt_sequences=wt_seqs,
+        n_shuffles=3,
+        k=10,
+        seed=42,
+    )
+    assert set(rns.keys()) == set(wt_embs.keys())
+    for v in rns.values():
+        assert 0.0 <= v <= 1.0
+
+
+def test_compute_rns_for_assays_empty():
+    rns = compute_rns_for_assays(wt_embs={}, wt_sequences={}, n_shuffles=3, k=10, seed=42)
+    assert rns == {}
+
+
+def test_compute_rns_for_assays_shape_independence():
+    """RNS should run cleanly on assays with different sequence lengths."""
+    rng = np.random.default_rng(0)
+    D = 64
+    wt_embs = {
+        "short": rng.standard_normal((30, D)).astype(np.float32),
+        "long": rng.standard_normal((200, D)).astype(np.float32),
+    }
+    wt_seqs = {"short": "A" * 30, "long": "A" * 200}
+    rns = compute_rns_for_assays(wt_embs=wt_embs, wt_sequences=wt_seqs,
+                                  n_shuffles=3, k=5, seed=42)
+    assert set(rns.keys()) == {"short", "long"}
