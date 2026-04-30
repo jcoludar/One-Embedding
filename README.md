@@ -142,6 +142,18 @@ Compression ratios in this table are vs raw fp32 at the asymptote (long ProtT5 p
 
 ---
 
+## Related work
+
+OneEmbedding is a **storage / transport** codec. Methods at adjacent layers:
+
+- **[TEA](https://www.biorxiv.org/content/10.1101/2025.11.27.690975v2)** (Pantolini et al., bioRxiv 2025) — 20-letter alphabet from contrastive ESM2 head, plugs into vanilla MMseqs2 for sequence-style remote-homology search. Solves the "MMseqs2 on embeddings" question; OneEmbedding does not compete, the two layer cleanly.
+- **[Foldseek / 3Di](https://www.nature.com/articles/s41587-023-01773-0)** (van Kempen et al., 2024) — structural-alphabet baseline; complementary to OneEmbedding (requires structures).
+- **[RNS](https://www.nature.com/articles/s41592-026-02651-5)** (Prabakaran & Bromberg, Nat Methods 2026) — per-protein embedding-quality metric; we use it under compression in Exp 48.
+
+Full notes in [`docs/related-work.md`](docs/related-work.md).
+
+---
+
 ## What's not (yet) solved
 
 These open problems are explicit and surface in the talk:
