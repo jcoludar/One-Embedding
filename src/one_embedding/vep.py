@@ -583,3 +583,132 @@ def bootstrap_ci_pearson(
         "ci_high": float(hi),
         "n": n,
     }
+
+
+# ---------------------------------------------------------------------------
+# Task 9: per-codec evaluation orchestration
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class CodecSpec:
+    """Specification for a OneEmbeddingCodec configuration to evaluate.
+
+    Attributes:
+        name: Human-readable identifier (used as dict key in results).
+        d_out: Dimensions after random projection (1024 = lossless / skip RP).
+        quantization: Quantization mode: None (fp16), 'int4', 'binary', 'pq'.
+        pq_m: PQ sub-quantizers. Only used when quantization='pq'.
+            0 means auto (d_out // 4). Must divide d_out evenly.
+        abtt_k: Number of top PCs to remove. 0 = centering only (default).
+    """
+    name: str
+    d_out: int
+    quantization: str | None
+    pq_m: int = 0
+    abtt_k: int = 0
+
+
+def _apply_codec(
+    spec: CodecSpec,
+    wt_emb: np.ndarray,
+    variant_embs: list[np.ndarray],
+    fit_corpus: dict[str, np.ndarray],
+) -> tuple[np.ndarray, list[np.ndarray]]:
+    """Fit OneEmbeddingCodec on fit_corpus, then encode/decode WT and each variant.
+
+    The codec API (verified against codec_v2.py):
+        codec.fit(embeddings: dict[str, (L, D) np.ndarray])
+        codec.encode(raw: (L, D) np.ndarray) -> dict
+        codec.decode_per_residue(encoded: dict) -> (L, d_out) np.ndarray
+
+    Args:
+        spec: Codec configuration.
+        wt_emb: (L, D) raw WT embedding. Not mutated.
+        variant_embs: list of (L, D) raw variant embeddings. Not mutated.
+        fit_corpus: dict of {pid: (L, D) array} for corpus stats.
+
+    Returns:
+        (wt_decoded, [variant_decoded, ...]) where each array is (L, d_out).
+
+    Raises:
+        ValueError: if fit_corpus is empty.
+    """
+    from src.one_embedding.codec_v2 import OneEmbeddingCodec
+
+    if not fit_corpus:
+        raise ValueError("fit_corpus must not be empty — codec needs centering stats")
+
+    kwargs: dict = {
+        "d_out": spec.d_out,
+        "quantization": spec.quantization,
+        "abtt_k": spec.abtt_k,
+    }
+    if spec.quantization == "pq" and spec.pq_m > 0:
+        kwargs["pq_m"] = spec.pq_m
+
+    codec = OneEmbeddingCodec(**kwargs)
+    codec.fit(fit_corpus)
+
+    def _roundtrip(emb: np.ndarray) -> np.ndarray:
+        encoded = codec.encode(emb)
+        return codec.decode_per_residue(encoded)
+
+    wt_dec = _roundtrip(wt_emb)
+    var_dec = [_roundtrip(v) for v in variant_embs]
+    return wt_dec, var_dec
+
+
+def evaluate_assay_across_codecs(
+    wt_emb: np.ndarray,
+    variants: list[dict],
+    codecs: list[CodecSpec],
+    fit_corpus: dict[str, np.ndarray],
+    seeds: list[int] | None = None,
+) -> dict[str, ProbeResult]:
+    """For each codec, encode/decode embeddings then fit and evaluate a Ridge probe.
+
+    Pipeline per codec:
+        1. Fit codec on fit_corpus (centering + optional PQ codebook).
+        2. Round-trip WT and all variant embeddings through encode/decode_per_residue.
+        3. Build 4*d_out feature vectors via build_variant_features.
+        4. Fit Ridge probe via fit_evaluate_ridge_probe with 5-fold CV.
+
+    Args:
+        wt_emb: (L, D) raw wild-type per-residue embedding. Not mutated.
+        variants: list of dicts with keys:
+            'mut_pos': int — 0-indexed mutation position.
+            'mut_emb': (L, D) np.ndarray — raw mutant per-residue embedding.
+            'score': float — experimental fitness/DMS score.
+        codecs: ordered list of CodecSpec configurations to evaluate.
+            An empty list returns an empty dict without error.
+        fit_corpus: dict of {pid: (L, D) array} for codec.fit() centering stats
+            and (if quantization='pq') PQ codebook fitting.
+        seeds: list of seeds for the Ridge probe's outer KFold shuffle.
+            Defaults to [42, 123, 456].
+
+    Returns:
+        dict mapping CodecSpec.name -> ProbeResult. Keys match the order and
+        names of the input codecs list.
+
+    Raises:
+        ValueError: if fit_corpus is empty and codecs is non-empty.
+    """
+    if seeds is None:
+        seeds = [42, 123, 456]
+
+    if not codecs:
+        return {}
+
+    var_embs = [v["mut_emb"] for v in variants]
+    y = np.array([v["score"] for v in variants], dtype=np.float32)
+    mut_positions = [v["mut_pos"] for v in variants]
+
+    out: dict[str, ProbeResult] = {}
+    for spec in codecs:
+        wt_dec, var_dec = _apply_codec(spec, wt_emb, var_embs, fit_corpus)
+        X = np.stack([
+            build_variant_features(wt_dec, m, p)
+            for m, p in zip(var_dec, mut_positions)
+        ])
+        out[spec.name] = fit_evaluate_ridge_probe(X, y, seeds=seeds)
+    return out

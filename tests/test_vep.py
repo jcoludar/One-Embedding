@@ -518,3 +518,83 @@ def test_bootstrap_ci_paired_perfect_retention():
     # CI should be a tight singleton at 100% (BCa fall-through to percentile)
     assert result["ci_low"] == pytest.approx(100.0, abs=1e-6)
     assert result["ci_high"] == pytest.approx(100.0, abs=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# Task 9: per-codec evaluation orchestration
+# ---------------------------------------------------------------------------
+
+from src.one_embedding.vep import evaluate_assay_across_codecs, CodecSpec
+
+
+def test_evaluate_assay_across_codecs_smoke():
+    """Synthetic WT + variants, 2 codec tiers, verify each returns a ProbeResult."""
+    rng = np.random.default_rng(0)
+    L, D = 80, 1024
+    n_variants = 60
+    wt_emb = rng.standard_normal((L, D)).astype(np.float32)
+    variants = []
+    for i in range(n_variants):
+        mut_emb = wt_emb.copy()
+        mut_pos = rng.integers(0, L)
+        mut_emb[mut_pos] = rng.standard_normal(D)
+        score = float(rng.standard_normal())
+        variants.append({
+            "mut_pos": int(mut_pos),
+            "mut_emb": mut_emb,
+            "score": score,
+        })
+
+    codecs = [
+        CodecSpec(name="lossless", d_out=1024, quantization=None),
+        CodecSpec(name="binary_896", d_out=896, quantization="binary"),
+    ]
+    # Fit corpus stats from WT-only (small corpus is fine for the smoke test).
+    fit_corpus = {"wt": wt_emb}
+    results = evaluate_assay_across_codecs(
+        wt_emb=wt_emb,
+        variants=variants,
+        codecs=codecs,
+        fit_corpus=fit_corpus,
+        seeds=[42],
+    )
+    assert set(results.keys()) == {"lossless", "binary_896"}
+    for name, res in results.items():
+        from src.one_embedding.vep import ProbeResult
+        assert isinstance(res, ProbeResult)
+        assert -1.0 <= res.spearman_rho <= 1.0
+        assert res.n_variants == n_variants
+
+
+def test_evaluate_assay_across_codecs_empty_codecs():
+    """No codecs -> empty result dict."""
+    L, D = 10, 64
+    wt = np.zeros((L, D), dtype=np.float32)
+    variants = [{"mut_pos": 0, "mut_emb": wt.copy(), "score": 1.0}]
+    fit_corpus = {"wt": wt}
+    results = evaluate_assay_across_codecs(
+        wt_emb=wt, variants=variants, codecs=[], fit_corpus=fit_corpus, seeds=[42],
+    )
+    assert results == {}
+
+
+def test_evaluate_assay_across_codecs_lossless_dim():
+    """Lossless codec should preserve d_out=1024."""
+    L, D = 30, 1024
+    rng = np.random.default_rng(0)
+    wt = rng.standard_normal((L, D)).astype(np.float32)
+    variants = [
+        {"mut_pos": 5, "mut_emb": wt + 0.01 * rng.standard_normal(wt.shape), "score": 0.5},
+        {"mut_pos": 10, "mut_emb": wt + 0.01 * rng.standard_normal(wt.shape), "score": -0.5},
+    ]
+    # need enough variants for 5-fold CV; expand to 30
+    for i in range(28):
+        variants.append({"mut_pos": int(rng.integers(0, L)),
+                         "mut_emb": (wt + 0.01 * rng.standard_normal(wt.shape)).astype(np.float32),
+                         "score": float(rng.standard_normal())})
+    fit_corpus = {"wt": wt}
+    codecs = [CodecSpec(name="lossless", d_out=1024, quantization=None)]
+    results = evaluate_assay_across_codecs(
+        wt_emb=wt, variants=variants, codecs=codecs, fit_corpus=fit_corpus, seeds=[42],
+    )
+    assert "lossless" in results
