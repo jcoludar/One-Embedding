@@ -164,6 +164,7 @@ def main() -> None:
             real_vectors=real_vecs,
             junkyard_vectors=junk_vecs,
             k=K_NEIGHBORS,
+            exclude_shuffles_of_query=True,
         )
         rns_per_condition[name] = scores
         agg = aggregate(scores)
@@ -195,6 +196,7 @@ def main() -> None:
             "dct_k": DCT_K,
             "seed": SEED,
             "codec": "OneEmbeddingCodec(d_out=896, quantization='binary', abtt_k=0)",
+            "exclude_shuffles_of_query": True,
         },
         "aggregate": {name: aggregate(scores) for name, scores in rns_per_condition.items()},
         "paired": paired,

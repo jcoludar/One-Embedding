@@ -51,6 +51,8 @@ def compute_rns(
     real_vectors: dict[str, np.ndarray],
     junkyard_vectors: dict[str, np.ndarray],
     k: int = 1000,
+    exclude_shuffles_of_query: bool = False,
+    shuffle_separator: str = "_shuf",
 ) -> dict[str, float]:
     """Compute RNS_k for each query protein.
 
@@ -66,6 +68,16 @@ def compute_rns(
             by ProtT5 or another trusted source, PLUS the training set).
         junkyard_vectors: {pid: (D,) float32} shuffled-sequence embeddings.
         k: Number of nearest neighbors. Paper recommends k > 100.
+        exclude_shuffles_of_query: If True, also exclude any neighbor whose
+            id begins with f"{pid}{shuffle_separator}" (e.g. ``pid_shuf*``).
+            Use this when the junkyard sequences are residue-shuffled copies
+            of the same source proteins — those copies share composition
+            with the query and cluster trivially close, inflating RNS without
+            measuring true real-vs-random separation. Default False
+            preserves the original behaviour.
+        shuffle_separator: Suffix marker used to detect shuffles of the
+            same source protein. Default ``"_shuf"`` matches the naming
+            from :func:`generate_junkyard_sequences`.
 
     Returns:
         {pid: rns_score} for each query. rns in [0, 1].
@@ -97,14 +109,23 @@ def compute_rns(
     query_mat = np.stack([query_vectors[pid].astype(np.float32)
                           for pid in query_ids])
 
-    # k+1 because the query itself may be in the index (self-match)
-    _, indices = index.search(query_mat, k + 1)
+    # Pull more than k so filtering still leaves k valid neighbors. Worst
+    # case under exclude_shuffles_of_query: query itself + all of its own
+    # shuffles can be inside the top neighbors. Cap by index size.
+    pull = min(len(all_ids), k + 32)
+    _, indices = index.search(query_mat, pull)
 
     scores: dict[str, float] = {}
     for i, pid in enumerate(query_ids):
         neighbors = indices[i]
-        # Exclude self-match if present
-        neighbor_mask = np.array([all_ids[j] != pid for j in neighbors])
+        if exclude_shuffles_of_query:
+            shuf_prefix = f"{pid}{shuffle_separator}"
+            neighbor_mask = np.array([
+                all_ids[j] != pid and not all_ids[j].startswith(shuf_prefix)
+                for j in neighbors
+            ])
+        else:
+            neighbor_mask = np.array([all_ids[j] != pid for j in neighbors])
         valid_neighbors = neighbors[neighbor_mask][:k]
         if len(valid_neighbors) == 0:
             scores[pid] = 1.0  # no valid neighbors -> worst case

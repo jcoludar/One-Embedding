@@ -82,3 +82,32 @@ class TestComputeRNS:
         assert set(scores.keys()) == {"r0", "r1", "r2"}
         for v in scores.values():
             assert 0.0 <= v <= 1.0
+
+    def test_exclude_shuffles_of_query_drops_same_source_junk(self):
+        """exclude_shuffles_of_query=True must filter pid_shuf* from the
+        query's neighbors, while keeping shuffles from other sources."""
+        d = 8
+        rng = np.random.RandomState(0)
+        real_vec = rng.randn(d).astype(np.float32)
+        other_vec = rng.randn(d).astype(np.float32) + 10.0
+        real = {"r0": real_vec, "r1": other_vec}
+        junk = {
+            "r0_shuf0": real_vec.copy(),  # same-source — should be filtered
+            "r0_shuf1": real_vec.copy(),
+            "r0_shuf2": real_vec.copy(),
+            "r1_shuf0": other_vec.copy(),  # other-source — kept
+            "r1_shuf1": other_vec.copy(),
+        }
+        query = {"r0": real_vec}
+
+        # Default: same-source shuffles are NOT filtered → r0's top-3 valid
+        # neighbors are all r0_shuf* (junk), so RNS == 1.0
+        scores_default = compute_rns(query, real, junk, k=3)
+        assert scores_default["r0"] == 1.0
+
+        # With the filter: r0_shuf* dropped → top-3 valid are r1 + 2 r1_shuf*
+        # (1 real, 2 junk) → 2/3 junk
+        scores_filtered = compute_rns(
+            query, real, junk, k=3, exclude_shuffles_of_query=True
+        )
+        assert abs(scores_filtered["r0"] - 2.0 / 3.0) < 1e-6
