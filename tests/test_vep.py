@@ -144,3 +144,66 @@ def test_select_diversity_subset_on_real_proteingym_csv():
     assert len(families) >= 2  # real data has 4 taxa, expect at least 2 to appear
     fitness = {a.fitness_type for a in chosen}
     assert len(fitness) >= 2  # real data has 5 selection types
+
+
+# ---------------------------------------------------------------------------
+# Task 3: ProteinGym CSV loaders
+# ---------------------------------------------------------------------------
+
+from src.one_embedding.vep import (
+    DMSAssay, load_dms_assay,
+    load_clinvar_split,
+)
+
+
+def _write_toy_dms(tmp_path):
+    """Toy DMS CSV: WT=MAR..., 4 variants."""
+    csv = tmp_path / "TOY_ASSAY.csv"
+    csv.write_text(
+        "mutant,mutated_sequence,DMS_score\n"
+        "M1A,AAR,0.10\n"  # pos 0: M -> A
+        "M1L,LAR,-0.50\n"  # pos 0: M -> L
+        "A2T,MTR,0.30\n"  # pos 1: A -> T
+        "R3K,MAK,0.05\n"  # pos 2: R -> K
+    )
+    return csv
+
+
+def test_load_dms_assay_basic(tmp_path):
+    csv = _write_toy_dms(tmp_path)
+    assay = load_dms_assay(csv, dms_id="TOY_ASSAY")
+    assert assay.dms_id == "TOY_ASSAY"
+    assert assay.wt_sequence == "MAR"
+    assert len(assay.variants) == 4
+    v0 = assay.variants[0]
+    assert (v0.mut_pos, v0.wt_aa, v0.mut_aa) == (0, "M", "A")
+    assert v0.score == pytest.approx(0.10)
+
+
+def test_load_dms_assay_recovers_wt_from_first_variant(tmp_path):
+    """WT seq is recovered by un-mutating any variant — sanity check."""
+    csv = _write_toy_dms(tmp_path)
+    assay = load_dms_assay(csv, dms_id="TOY_ASSAY")
+    assert assay.wt_sequence[0] == "M"
+    assert assay.wt_sequence[1] == "A"
+    assert assay.wt_sequence[2] == "R"
+
+
+def _write_toy_clinvar(tmp_path):
+    csv = tmp_path / "P12345_clinvar.csv"
+    csv.write_text(
+        "mutant,mutated_sequence,DMS_bin_score\n"
+        "M1A,AAR,1\n"
+        "A2T,MTR,0\n"
+    )
+    return csv
+
+
+def test_load_clinvar_split(tmp_path):
+    csv = _write_toy_clinvar(tmp_path)
+    variants = load_clinvar_split(csv, pid="P12345")
+    assert len(variants) == 2
+    assert variants[0].pid == "P12345"
+    assert variants[0].label == 1
+    assert variants[0].mut_pos == 0
+    assert variants[1].label == 0

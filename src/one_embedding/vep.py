@@ -139,3 +139,87 @@ def prepare_reference_df(df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("reference df must have 'DMS_id' column")
 
     return out
+
+
+# ---------------------------------------------------------------------------
+# ProteinGym CSV loaders (Task 3)
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class DMSVariant:
+    mut_pos: int  # 0-indexed
+    wt_aa: str
+    mut_aa: str
+    score: float
+    mutated_sequence: str
+
+
+@dataclass(frozen=True)
+class DMSAssay:
+    dms_id: str
+    wt_sequence: str
+    variants: list[DMSVariant]
+
+
+def _parse_mutant(mut_str: str) -> tuple[int, str, str]:
+    """'M1A' -> (0, 'M', 'A'). One-indexed position in input -> 0-indexed."""
+    wt_aa = mut_str[0]
+    mut_aa = mut_str[-1]
+    pos_1idx = int(mut_str[1:-1])
+    return pos_1idx - 1, wt_aa, mut_aa
+
+
+def load_dms_assay(csv_path, dms_id: str) -> DMSAssay:
+    """Load one ProteinGym DMS CSV. Recovers WT sequence by inverting any variant."""
+    df = pd.read_csv(csv_path)
+    needed = {"mutant", "mutated_sequence", "DMS_score"}
+    if not needed.issubset(df.columns):
+        raise ValueError(f"{csv_path} missing columns; have {list(df.columns)}")
+
+    # Recover WT by inverting the first variant.
+    first = df.iloc[0]
+    pos_0, wt_aa, _mut_aa = _parse_mutant(first["mutant"])
+    mut_seq = first["mutated_sequence"]
+    wt_sequence = mut_seq[:pos_0] + wt_aa + mut_seq[pos_0 + 1:]
+
+    variants: list[DMSVariant] = []
+    for _, row in df.iterrows():
+        pos, wt, mut = _parse_mutant(row["mutant"])
+        variants.append(DMSVariant(
+            mut_pos=pos,
+            wt_aa=wt,
+            mut_aa=mut,
+            score=float(row["DMS_score"]),
+            mutated_sequence=str(row["mutated_sequence"]),
+        ))
+    return DMSAssay(
+        dms_id=dms_id,
+        wt_sequence=wt_sequence,
+        variants=variants,
+    )
+
+
+def load_clinvar_split(csv_path, pid: str) -> list[ClinVarVariant]:
+    """Load one ProteinGym clinical CSV (per parent protein)."""
+    df = pd.read_csv(csv_path)
+    needed = {"mutant", "mutated_sequence", "DMS_bin_score"}
+    if not needed.issubset(df.columns):
+        raise ValueError(f"{csv_path} missing columns; have {list(df.columns)}")
+
+    first = df.iloc[0]
+    pos_0, wt_aa, _ = _parse_mutant(first["mutant"])
+    mut_seq = first["mutated_sequence"]
+    wt_sequence = mut_seq[:pos_0] + wt_aa + mut_seq[pos_0 + 1:]
+
+    out: list[ClinVarVariant] = []
+    for _, row in df.iterrows():
+        pos, wt, mut = _parse_mutant(row["mutant"])
+        out.append(ClinVarVariant(
+            pid=pid,
+            wt_seq=wt_sequence,
+            mut_pos=pos,
+            wt_aa=wt,
+            mut_aa=mut,
+            label=int(row["DMS_bin_score"]),
+        ))
+    return out
