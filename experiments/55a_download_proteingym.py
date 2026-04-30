@@ -19,11 +19,11 @@ DATA = ROOT / "data" / "proteingym"
 
 DMS_ZIP_URL = (
     "https://marks.hms.harvard.edu/proteingym/"
-    "ProteinGym_substitutions_DMS.zip"
+    "ProteinGym_v1.3/DMS_ProteinGym_substitutions.zip"
 )
 CLINICAL_ZIP_URL = (
     "https://marks.hms.harvard.edu/proteingym/"
-    "ProteinGym_clinical_substitutions.zip"
+    "ProteinGym_v1.3/clinical_ProteinGym_substitutions.zip"
 )
 REFERENCE_URL = (
     "https://raw.githubusercontent.com/OATML-Markslab/ProteinGym/main/"
@@ -59,12 +59,12 @@ def main(skip_dms: bool, skip_clinical: bool) -> int:
     _download(REFERENCE_URL, DATA / "DMS_substitutions.csv")
 
     if not skip_dms:
-        dms_zip = DATA / "ProteinGym_substitutions_DMS.zip"
+        dms_zip = DATA / "DMS_ProteinGym_substitutions.zip"
         _download(DMS_ZIP_URL, dms_zip)
         _unzip(dms_zip, DATA / "DMS_substitutions")
 
     if not skip_clinical:
-        cli_zip = DATA / "ProteinGym_clinical_substitutions.zip"
+        cli_zip = DATA / "clinical_ProteinGym_substitutions.zip"
         _download(CLINICAL_ZIP_URL, cli_zip)
         _unzip(cli_zip, DATA / "clinical_substitutions")
 

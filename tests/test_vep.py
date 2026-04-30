@@ -153,6 +153,7 @@ def test_select_diversity_subset_on_real_proteingym_csv():
 from src.one_embedding.vep import (
     DMSAssay, load_dms_assay,
     load_clinvar_split,
+    load_dms_assay_single_subs,
 )
 
 
@@ -207,6 +208,53 @@ def test_load_clinvar_split(tmp_path):
     assert variants[0].label == 1
     assert variants[0].mut_pos == 0
     assert variants[1].label == 0
+
+
+# ---------------------------------------------------------------------------
+# load_dms_assay_single_subs tests
+# ---------------------------------------------------------------------------
+
+def test_load_dms_assay_single_subs_filters_multimutants(tmp_path):
+    """Rows with ':' in mutant string are dropped; single-subs kept."""
+    csv = tmp_path / "MIXED.csv"
+    csv.write_text(
+        "mutant,mutated_sequence,DMS_score\n"
+        "M1A,AAR,0.10\n"      # single — keep
+        "M1A:R3K,AAK,0.20\n"  # double — drop
+        "A2T,MTR,0.30\n"      # single — keep
+        "M1A:A2T:R3K,ATK,-0.5\n"  # triple — drop
+    )
+    assay = load_dms_assay_single_subs(csv, dms_id="MIXED")
+    assert assay.dms_id == "MIXED"
+    assert len(assay.variants) == 2
+    assert assay.wt_sequence == "MAR"
+    assert {(v.mut_pos, v.mut_aa) for v in assay.variants} == {(0, "A"), (1, "T")}
+
+
+def test_load_dms_assay_single_subs_recovers_wt_from_first_single(tmp_path):
+    """If first row is multi-mutant, WT is still recovered from first SINGLE row."""
+    csv = tmp_path / "MULTIFIRST.csv"
+    csv.write_text(
+        "mutant,mutated_sequence,DMS_score\n"
+        "M1A:R3K,AAK,0.20\n"   # multi — skipped, doesn't define WT
+        "A2T,MTR,0.30\n"       # first single — defines WT as MAR
+        "M1A,AAR,0.10\n"
+    )
+    assay = load_dms_assay_single_subs(csv, dms_id="MULTIFIRST")
+    assert assay.wt_sequence == "MAR"
+    assert len(assay.variants) == 2
+
+
+def test_load_dms_assay_single_subs_all_multi_raises(tmp_path):
+    """All-multi-mutant CSV should raise ValueError."""
+    csv = tmp_path / "ALLMULTI.csv"
+    csv.write_text(
+        "mutant,mutated_sequence,DMS_score\n"
+        "M1A:R3K,AAK,0.20\n"
+        "A2T:R3K,MTK,0.30\n"
+    )
+    with pytest.raises(ValueError, match="no single-substitution"):
+        load_dms_assay_single_subs(csv, dms_id="ALLMULTI")
 
 
 # ---------------------------------------------------------------------------

@@ -233,6 +233,56 @@ def load_clinvar_split(csv_path: str, pid: str) -> list[ClinVarVariant]:
     return out
 
 
+def load_dms_assay_single_subs(csv_path: str, dms_id: str) -> DMSAssay:
+    """Load a ProteinGym DMS CSV, keeping only single-substitution variants.
+
+    Multi-mutant rows (mutant string contains ':') are filtered out.
+    This is the loader to use for VEP probes that operate on single-residue
+    substitutions only — which is most of the project's pipeline.
+
+    Recovers WT sequence from the first valid single-substitution row.
+
+    Args:
+        csv_path: path to a ProteinGym DMS CSV with mutant/mutated_sequence/
+            DMS_score columns.
+        dms_id: identifier for the assay (typically the CSV stem).
+
+    Returns:
+        DMSAssay with only single-substitution variants. Raises ValueError if
+        no single-substitution rows are present after filtering.
+    """
+    df = pd.read_csv(csv_path)
+    needed = {"mutant", "mutated_sequence", "DMS_score"}
+    if not needed.issubset(df.columns):
+        raise ValueError(f"{csv_path} missing columns; have {list(df.columns)}")
+    if df.empty:
+        raise ValueError(f"{csv_path} has no data rows")
+
+    single = df[~df["mutant"].str.contains(":", na=False)].reset_index(drop=True)
+    if single.empty:
+        raise ValueError(f"{csv_path} has no single-substitution rows")
+
+    first = single.iloc[0]
+    pos_0, wt_aa, _ = _parse_mutant(first["mutant"])
+    mut_seq = first["mutated_sequence"]
+    wt_sequence = mut_seq[:pos_0] + wt_aa + mut_seq[pos_0 + 1:]
+
+    variants: list[DMSVariant] = []
+    for _, row in single.iterrows():
+        try:
+            pos, wt, mut = _parse_mutant(row["mutant"])
+        except (ValueError, IndexError):
+            continue  # skip malformed rows
+        variants.append(DMSVariant(
+            mut_pos=pos,
+            wt_aa=wt,
+            mut_aa=mut,
+            score=float(row["DMS_score"]),
+            mutated_sequence=str(row["mutated_sequence"]),
+        ))
+    return DMSAssay(dms_id=dms_id, wt_sequence=wt_sequence, variants=variants)
+
+
 # ---------------------------------------------------------------------------
 # Task 4: variant feature builder
 # ---------------------------------------------------------------------------

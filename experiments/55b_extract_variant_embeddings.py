@@ -37,10 +37,8 @@ import torch
 from tqdm import tqdm
 
 from src.one_embedding.vep import (
-    DMSAssay,
-    DMSVariant,
-    _parse_mutant,
     load_clinvar_split,
+    load_dms_assay_single_subs,
     prepare_reference_df,
     select_diversity_subset,
 )
@@ -106,48 +104,6 @@ def _embed_one(seq: str, tokenizer, model, device: torch.device) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
-# DMS loader (single-substitution only)
-# ---------------------------------------------------------------------------
-
-def _load_dms_single_subs(csv_path: Path, dms_id: str) -> DMSAssay:
-    """Load DMS CSV keeping only single-substitution rows.
-
-    Multi-mutant rows (mutant string contains ':') are silently skipped.
-    Recovers WT sequence from the first valid single-mutant row.
-    """
-    df = pd.read_csv(csv_path)
-    needed = {"mutant", "mutated_sequence", "DMS_score"}
-    if not needed.issubset(df.columns):
-        raise ValueError(f"{csv_path} missing columns; have {list(df.columns)}")
-
-    # Keep single-substitution rows only (no ':' in mutant string)
-    single = df[~df["mutant"].str.contains(":", na=False)].reset_index(drop=True)
-    if single.empty:
-        raise ValueError(f"{csv_path} has no single-substitution rows")
-
-    # Recover WT from first single-sub row
-    first = single.iloc[0]
-    pos_0, wt_aa, _ = _parse_mutant(first["mutant"])
-    mut_seq = first["mutated_sequence"]
-    wt_sequence = mut_seq[:pos_0] + wt_aa + mut_seq[pos_0 + 1:]
-
-    variants: list[DMSVariant] = []
-    for _, row in single.iterrows():
-        try:
-            pos, wt, mut = _parse_mutant(row["mutant"])
-        except (ValueError, IndexError):
-            continue  # skip malformed rows
-        variants.append(DMSVariant(
-            mut_pos=pos,
-            wt_aa=wt,
-            mut_aa=mut,
-            score=float(row["DMS_score"]),
-            mutated_sequence=str(row["mutated_sequence"]),
-        ))
-    return DMSAssay(dms_id=dms_id, wt_sequence=wt_sequence, variants=variants)
-
-
-# ---------------------------------------------------------------------------
 # DMS extraction
 # ---------------------------------------------------------------------------
 
@@ -189,7 +145,7 @@ def extract_diversity(
 
             print(f"\n[{dms_id}]  family={assay_info.family}  type={assay_info.fitness_type}")
             try:
-                assay = _load_dms_single_subs(csv_path, dms_id)
+                assay = load_dms_assay_single_subs(csv_path, dms_id)
             except Exception as exc:
                 print(f"  [SKIP] load failed: {exc}")
                 continue
