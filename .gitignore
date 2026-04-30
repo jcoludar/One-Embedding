@@ -58,6 +58,11 @@ data/proteins/*.fa
 data/proteins/*.fasta
 data/proteins/metadata*.csv
 
+# ProteinGym (downloaded, not redistributed)
+data/proteingym/DMS_*/
+data/proteingym/clinical_*/
+data/proteingym/*.zip
+
 # Large result files (MCMC tree samples — kept locally)
 results/embed_phylo/*_trees_run*.nwk
 
