@@ -166,15 +166,21 @@ def _parse_mutant(mut_str: str) -> tuple[int, str, str]:
     wt_aa = mut_str[0]
     mut_aa = mut_str[-1]
     pos_1idx = int(mut_str[1:-1])
+    if pos_1idx < 1:
+        raise ValueError(
+            f"_parse_mutant: position must be >= 1 (got {pos_1idx!r} from {mut_str!r})"
+        )
     return pos_1idx - 1, wt_aa, mut_aa
 
 
-def load_dms_assay(csv_path, dms_id: str) -> DMSAssay:
+def load_dms_assay(csv_path: str, dms_id: str) -> DMSAssay:
     """Load one ProteinGym DMS CSV. Recovers WT sequence by inverting any variant."""
     df = pd.read_csv(csv_path)
     needed = {"mutant", "mutated_sequence", "DMS_score"}
     if not needed.issubset(df.columns):
         raise ValueError(f"{csv_path} missing columns; have {list(df.columns)}")
+    if df.empty:
+        raise ValueError(f"{csv_path} has no data rows")
 
     # Recover WT by inverting the first variant.
     first = df.iloc[0]
@@ -199,12 +205,14 @@ def load_dms_assay(csv_path, dms_id: str) -> DMSAssay:
     )
 
 
-def load_clinvar_split(csv_path, pid: str) -> list[ClinVarVariant]:
+def load_clinvar_split(csv_path: str, pid: str) -> list[ClinVarVariant]:
     """Load one ProteinGym clinical CSV (per parent protein)."""
     df = pd.read_csv(csv_path)
     needed = {"mutant", "mutated_sequence", "DMS_bin_score"}
     if not needed.issubset(df.columns):
         raise ValueError(f"{csv_path} missing columns; have {list(df.columns)}")
+    if df.empty:
+        raise ValueError(f"{csv_path} has no data rows")
 
     first = df.iloc[0]
     pos_0, wt_aa, _ = _parse_mutant(first["mutant"])

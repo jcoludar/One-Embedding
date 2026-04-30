@@ -207,3 +207,35 @@ def test_load_clinvar_split(tmp_path):
     assert variants[0].label == 1
     assert variants[0].mut_pos == 0
     assert variants[1].label == 0
+
+
+# ---------------------------------------------------------------------------
+# C1 / I1 / I2 defensive guard tests
+# ---------------------------------------------------------------------------
+
+def test_load_dms_assay_empty_csv_raises(tmp_path):
+    """Empty CSV (headers only) raises ValueError with file context."""
+    csv = tmp_path / "EMPTY.csv"
+    csv.write_text("mutant,mutated_sequence,DMS_score\n")  # header only
+    with pytest.raises(ValueError, match="no data rows"):
+        load_dms_assay(csv, dms_id="EMPTY")
+
+
+def test_load_clinvar_split_empty_csv_raises(tmp_path):
+    csv = tmp_path / "EMPTY.csv"
+    csv.write_text("mutant,mutated_sequence,DMS_bin_score\n")
+    with pytest.raises(ValueError, match="no data rows"):
+        load_clinvar_split(csv, pid="X")
+
+
+def test_parse_mutant_rejects_position_zero():
+    from src.one_embedding.vep import _parse_mutant
+    with pytest.raises(ValueError, match="position must be >= 1"):
+        _parse_mutant("M0A")
+
+
+def test_parse_mutant_rejects_negative_position():
+    from src.one_embedding.vep import _parse_mutant
+    # Negative pos comes from input like "M-1A" — int("-1") parses fine
+    with pytest.raises(ValueError, match="position must be >= 1"):
+        _parse_mutant("M-1A")
