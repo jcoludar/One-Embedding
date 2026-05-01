@@ -1,7 +1,7 @@
 # Protein Embedding Codec
 
 ## Project Overview
-Universal codec for PLM per-residue embeddings. **200+ compression methods benchmarked** across 47 experiments, validated on **5 PLMs** (ProtT5, ESM2, ESM-C, ProstT5, ANKH). The unified codec uses center + RP 896d + binary by default, achieving **~17 KB/protein** (~37x compression) with **95–100% retention** across **4 task families** (SS3, SS8, retrieval, disorder) on **9 datasets** and 5 PLMs (Exp 46/47, BCa CIs). Binary skips the PQ codebook fit at encode time (~20× faster than PQ; precise per-PLM timing in Exp 47 logs). Configurable: `d_out` (896), `quantization` ('binary'), `pq_m` (auto), `abtt_k` (0). Use `quantization='pq', pq_m=224` for maximum quality at 18x.
+Universal codec for PLM per-residue embeddings. **200+ compression methods benchmarked** across 48 experiments, validated on **5 PLMs** (ProtT5, ESM2, ESM-C, ProstT5, ANKH). The unified codec uses center + RP 896d + binary by default, achieving **~17 KB/protein** (~37x compression) with **95–100% retention** across **5 task families** (SS3, SS8, retrieval, disorder, VEP) on **10 datasets** and 5 PLMs (Exp 46/47/55, BCa CIs). Binary skips the PQ codebook fit at encode time (~20× faster than PQ; precise per-PLM timing in Exp 47 logs). Configurable: `d_out` (896), `quantization` ('binary'), `pq_m` (auto), `abtt_k` (0). Use `quantization='pq', pq_m=224` for maximum quality at 18x.
 
 ## Quick Start
 
@@ -125,6 +125,15 @@ All numbers include 95% BCa bootstrap CIs (DiCiccio & Efron 1996, second-order a
 | Disorder (pooled ρ) | per-residue | TriZOD348 (348) | 0.506 [0.461, 0.566] | 0.471 [0.426, 0.533] | **93.0 ± 2.6%** |
 | Disorder (AUC-ROC) | per-residue | CheZOD117 (117) | 0.890 [0.836, 0.922] | 0.877 [0.826, 0.909] | **98.5%** |
 
+#### Variant Effect Prediction (Exp 55, supervised Ridge probe + zero-shot ClinVar AUC)
+
+| Task | Level | Dataset (n_assays / n_variants) | Raw ProtT5 1024d | One Embedding 896d (binary, 37×) | Retention |
+|------|-------|-------------|:----------------:|:------------------:|:---------:|
+| DMS Spearman ρ (mean) | per-protein | ProteinGym diversity (15 / 37,919) | 0.645 | 0.640 | **99.2 ± 0.8%** |
+| ClinVar AUC (zero-shot) | per-variant | ProteinGym clinical ≤500 aa (1,016 / 15,252) | 0.602 | **0.605** | **100.5%** |
+
+3-seed averaged Ridge probe (5-fold outer CV, inner 3-fold GridSearch on α). BCa B=10,000 paired ratio-of-means bootstrap. Binary 896d retention is statistically indistinguishable from PQ M=224 (CIs overlap heavily) — binary is the recommended VEP tier. Per-residue mutational sensitivity survives 1-bit-per-dim quantization, in contrast to disorder (94.9% binary retention) which has a real ~5pp gap. See `docs/exp55_vep_retention.md` for the per-assay breakdown and methodological discussion.
+
 Disorder uses **pooled residue-level** Spearman ρ (matching SETH/ODiNPred/ADOPT/UdonPred standard) with cluster bootstrap CIs (resample proteins, recompute pooled statistic — Davison & Hinkley 1997). AUC-ROC computed on binary Z<8 threshold (CAID standard).
 
 CIs on raw and compressed **overlap** for all tasks — no statistically significant difference detected.
@@ -179,7 +188,7 @@ See [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) for the full journey (200+ method
 - Probes: CV-tuned (GridSearchCV on train set, 3-fold, C/alpha grids)
 - ABTT leakage: formally tested — PCs differ across corpora but downstream Ret@1 varies <0.2pp (irrelevant)
 
-824 tests, 4 task families (SS3 / SS8 / retrieval / disorder), 9 datasets (CB513, TS115, CASP12, CheZOD117, TriZOD348, SCOPe 5K, CATH20, DeepLoc test, DeepLoc setHARD), 5 PLMs. BCa CIs on everything.
+874 tests, 5 task families (SS3 / SS8 / retrieval / disorder / VEP), 10 datasets (CB513, TS115, CASP12, CheZOD117, TriZOD348, SCOPe 5K, CATH20, DeepLoc test, DeepLoc setHARD, ProteinGym DMS+ClinVar), 5 PLMs. BCa CIs on everything.
 
 **Multi-PLM validation (Exp 46, center + RP896 + PQ224, ~18x):**
 
@@ -212,7 +221,7 @@ VQ/RVQ confirmed genuinely poor (not bug-caused): VQ K=16384 gets 79% SS3 ret, 5
 - `src/evaluation/` — Retrieval (cosine+euclidean), per-residue probes (SS3/SS8/disorder/TM/SignalP), biological annotations (GO/EC/Pfam/taxonomy), hierarchy, statistical tests, FAISS search index
 - `src/utils/` — Device management (MPS/CPU), H5 I/O
 - `experiments/` — 47 experiment scripts (01–47) + figure generators. Exp 43 = rigorous benchmark, Exp 44 = unified codec sweep, Exp 45 = disorder forensics, Exp 46 = multi-PLM pipeline (5 PLMs), Exp 47 = codec config sweep
-- `tests/` — 824 tests across multiple modules
+- `tests/` — 874 tests across multiple modules (50 in `tests/test_vep.py` for Exp 55)
 - `.one.h5 format` — H5-based single/batch protein embedding files (protein_vec + per_residue). Legacy `.oemb` also supported.
 
 ## Hardware
