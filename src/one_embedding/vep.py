@@ -35,6 +35,7 @@ class ClinVarVariant:
     wt_aa: str
     mut_aa: str
     label: int  # 1 = pathogenic, 0 = benign
+    mutated_sequence: str = ""  # WT with mut_aa substituted at mut_pos; populated by load_clinvar_split
 
 
 def select_diversity_subset(
@@ -263,6 +264,12 @@ def load_clinvar_split(csv_path: str, pid: str) -> list[ClinVarVariant]:
     out: list[ClinVarVariant] = []
     for _, row in df.iterrows():
         pos, wt, mut = _parse_mutant(row["mutant"])
+        # Use the pre-stored mutated_sequence column if available (real ProteinGym
+        # layout has it). Otherwise construct from WT.
+        if "mutated_sequence" in df.columns:
+            mut_seq_full = str(row["mutated_sequence"])
+        else:
+            mut_seq_full = wt_sequence[:pos] + mut + wt_sequence[pos + 1:]
         out.append(ClinVarVariant(
             pid=pid,
             wt_seq=wt_sequence,
@@ -270,6 +277,7 @@ def load_clinvar_split(csv_path: str, pid: str) -> list[ClinVarVariant]:
             wt_aa=wt,
             mut_aa=mut,
             label=_parse_clinvar_label(row["DMS_bin_score"]),
+            mutated_sequence=mut_seq_full,
         ))
     return out
 
