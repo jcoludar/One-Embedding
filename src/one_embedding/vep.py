@@ -219,8 +219,32 @@ def load_dms_assay(csv_path: str, dms_id: str) -> DMSAssay:
     )
 
 
+_CLINVAR_LABEL_MAP = {
+    "pathogenic": 1, "likely_pathogenic": 1, "1": 1, "1.0": 1,
+    "benign": 0, "likely_benign": 0, "0": 0, "0.0": 0,
+}
+
+
+def _parse_clinvar_label(raw) -> int:
+    """Convert ClinVar label to 0/1. Accepts 'Pathogenic'/'Benign' strings or 0/1 ints."""
+    if isinstance(raw, (int, float)) and not isinstance(raw, bool):
+        if raw == 0 or raw == 1:
+            return int(raw)
+        raise ValueError(f"unknown ClinVar numeric label: {raw!r}")
+    key = str(raw).strip().lower().replace(" ", "_")
+    if key not in _CLINVAR_LABEL_MAP:
+        raise ValueError(f"unknown ClinVar label: {raw!r}")
+    return _CLINVAR_LABEL_MAP[key]
+
+
 def load_clinvar_split(csv_path: str, pid: str) -> list[ClinVarVariant]:
-    """Load one ProteinGym clinical CSV (per parent protein)."""
+    """Load one ProteinGym clinical CSV (per parent protein).
+
+    Recovers WT sequence from the ``protein_sequence`` column when present
+    (the canonical ProteinGym clinical layout) and falls back to inverting
+    the first variant's mutation otherwise. Labels in ``DMS_bin_score`` may
+    be either strings ('Pathogenic'/'Benign') or integers (1/0).
+    """
     df = pd.read_csv(csv_path)
     needed = {"mutant", "mutated_sequence", "DMS_bin_score"}
     if not needed.issubset(df.columns):
@@ -229,9 +253,12 @@ def load_clinvar_split(csv_path: str, pid: str) -> list[ClinVarVariant]:
         raise ValueError(f"{csv_path} has no data rows")
 
     first = df.iloc[0]
-    pos_0, wt_aa, _ = _parse_mutant(first["mutant"])
-    mut_seq = first["mutated_sequence"]
-    wt_sequence = mut_seq[:pos_0] + wt_aa + mut_seq[pos_0 + 1:]
+    if "protein_sequence" in df.columns:
+        wt_sequence = str(first["protein_sequence"])
+    else:
+        pos_0, wt_aa, _ = _parse_mutant(first["mutant"])
+        mut_seq = first["mutated_sequence"]
+        wt_sequence = mut_seq[:pos_0] + wt_aa + mut_seq[pos_0 + 1:]
 
     out: list[ClinVarVariant] = []
     for _, row in df.iterrows():
@@ -242,7 +269,7 @@ def load_clinvar_split(csv_path: str, pid: str) -> list[ClinVarVariant]:
             mut_pos=pos,
             wt_aa=wt,
             mut_aa=mut,
-            label=int(row["DMS_bin_score"]),
+            label=_parse_clinvar_label(row["DMS_bin_score"]),
         ))
     return out
 

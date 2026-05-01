@@ -224,6 +224,33 @@ def test_load_clinvar_split(tmp_path):
     assert variants[1].label == 0
 
 
+def test_load_clinvar_split_string_labels(tmp_path):
+    """Real ProteinGym clinical CSVs use 'Pathogenic'/'Benign' strings, not 0/1."""
+    csv = tmp_path / "P_string.csv"
+    csv.write_text(
+        "mutant,mutated_sequence,DMS_bin_score\n"
+        "M1A,AAR,Pathogenic\n"
+        "A2T,MTR,Benign\n"
+        "R3K,MAK,Likely_Pathogenic\n"
+    )
+    variants = load_clinvar_split(csv, pid="P_str")
+    assert [v.label for v in variants] == [1, 0, 1]
+
+
+def test_load_clinvar_split_uses_protein_sequence_column(tmp_path):
+    """When protein_sequence column is present (real ProteinGym layout), use it for WT."""
+    csv = tmp_path / "with_protseq.csv"
+    csv.write_text(
+        "protein,protein_sequence,mutant,mutated_sequence,DMS_bin_score\n"
+        "P1,MARKL,M1A,AARKL,Pathogenic\n"
+        "P1,MARKL,K4Q,MARQL,Benign\n"
+    )
+    variants = load_clinvar_split(csv, pid="P1")
+    assert variants[0].wt_seq == "MARKL"
+    assert variants[0].label == 1
+    assert variants[1].label == 0
+
+
 # ---------------------------------------------------------------------------
 # load_dms_assay_single_subs tests
 # ---------------------------------------------------------------------------

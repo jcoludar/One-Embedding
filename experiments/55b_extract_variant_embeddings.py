@@ -196,9 +196,16 @@ def extract_diversity(
 
 def extract_clinvar(
     max_proteins: Optional[int] = None,
+    max_seq_len: int = 500,
     out_h5: Path = OUT_CLINVAR,
 ) -> None:
-    """Extract WT + variant embeddings for ClinVar proteins."""
+    """Extract WT + variant embeddings for ClinVar proteins.
+
+    Filters out proteins with WT sequence longer than max_seq_len. Default 500
+    matches the typical-VEP-target framing and keeps the ClinVar extraction
+    bounded (the full ProteinGym ClinVar split is 62K variants × mean L=709,
+    which would not fit on most workstations).
+    """
     from src.utils.device import get_device
 
     if not CLINVAR_DIR.exists():
@@ -210,7 +217,7 @@ def extract_clinvar(
     if max_proteins is not None:
         csv_files = csv_files[:max_proteins]
 
-    print(f"\nClinVar: {len(csv_files)} parent protein files")
+    print(f"\nClinVar: {len(csv_files)} parent protein files (max_seq_len={max_seq_len})")
     tokenizer, model = _load_prot_t5(device)
 
     EMB_DIR.mkdir(parents=True, exist_ok=True)
@@ -226,8 +233,7 @@ def extract_clinvar(
                 continue
 
             wt_seq = variants[0].wt_seq
-            if len(wt_seq) > 900:
-                print(f"  [SKIP] {pid}: WT length {len(wt_seq)} > 900")
+            if len(wt_seq) > max_seq_len:
                 continue
 
             grp = hf.require_group(pid)
@@ -285,6 +291,14 @@ def main() -> None:
         metavar="N",
         help="Cap number of ClinVar parent proteins.",
     )
+    parser.add_argument(
+        "--max-clinvar-seq-len",
+        type=int,
+        default=500,
+        metavar="N",
+        help="Skip ClinVar proteins longer than N residues. Default 500 keeps "
+        "extraction bounded (full ClinVar is 62K vars × mean L=709 = 64 GB).",
+    )
     parser.add_argument("--skip-dms", action="store_true", help="Skip DMS extraction.")
     parser.add_argument("--skip-clinvar", action="store_true", help="Skip ClinVar extraction.")
     args = parser.parse_args()
@@ -325,6 +339,7 @@ def main() -> None:
     if not skip_clinvar:
         extract_clinvar(
             max_proteins=max_clinvar,
+            max_seq_len=args.max_clinvar_seq_len,
             out_h5=OUT_CLINVAR,
         )
 
