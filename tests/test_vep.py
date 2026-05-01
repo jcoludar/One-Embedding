@@ -568,6 +568,52 @@ def test_bootstrap_ci_paired_perfect_retention():
 from src.one_embedding.vep import evaluate_assay_across_codecs, CodecSpec
 
 
+def test_evaluate_assay_streaming_matches_in_memory():
+    """Streaming variant must produce identical results to the in-memory variant."""
+    from src.one_embedding.vep import evaluate_assay_streaming
+
+    rng = np.random.default_rng(0)
+    L, D = 60, 1024
+    n_variants = 40
+    wt = rng.standard_normal((L, D)).astype(np.float32)
+    variants = []
+    for _ in range(n_variants):
+        mut = wt.copy()
+        p = int(rng.integers(0, L))
+        mut[p] = rng.standard_normal(D)
+        variants.append({
+            "mut_pos": p,
+            "mut_emb": mut,
+            "score": float(rng.standard_normal()),
+        })
+    codecs = [
+        CodecSpec(name="lossless", d_out=1024, quantization=None),
+        CodecSpec(name="binary_896", d_out=896, quantization="binary"),
+    ]
+    fit_corpus = {"wt": wt}
+
+    in_mem = evaluate_assay_across_codecs(
+        wt_emb=wt, variants=variants, codecs=codecs,
+        fit_corpus=fit_corpus, seeds=[42],
+    )
+    streamed = evaluate_assay_streaming(
+        wt_emb=wt,
+        variant_loader=lambda i: variants[i]["mut_emb"],
+        n_variants=n_variants,
+        mut_positions=[v["mut_pos"] for v in variants],
+        scores=np.array([v["score"] for v in variants], dtype=np.float32),
+        codecs=codecs,
+        fit_corpus=fit_corpus,
+        seeds=[42],
+    )
+    for name in ("lossless", "binary_896"):
+        assert in_mem[name].n_variants == streamed[name].n_variants == n_variants
+        assert in_mem[name].spearman_rho == pytest.approx(streamed[name].spearman_rho, abs=1e-6)
+        np.testing.assert_allclose(
+            in_mem[name].predictions, streamed[name].predictions, atol=1e-5,
+        )
+
+
 def test_evaluate_assay_across_codecs_smoke():
     """Synthetic WT + variants, 2 codec tiers, verify each returns a ProbeResult."""
     rng = np.random.default_rng(0)

@@ -43,6 +43,7 @@ from src.one_embedding.vep import (
     clinvar_auc,
     compute_rns_for_assays,
     evaluate_assay_across_codecs,
+    evaluate_assay_streaming,
     fit_evaluate_ridge_probe,
     score_clinvar_zeroshot,
 )
@@ -184,51 +185,82 @@ def run_dms_retention(
     print(f"  H5: {OUT_DMS_H5}")
     print(f"{'='*70}")
 
-    # Collect all assay data
-    assay_data: dict[str, dict] = {}
+    # First pass: load just WT embeddings (small) to build fit_corpus + RNS-side caches.
+    # Variants are loaded streaming, one assay at a time, to keep peak RAM bounded.
     wt_embs: dict[str, np.ndarray] = {}
     wt_seqs: dict[str, str] = {}
+    assay_variant_counts: dict[str, int] = {}
 
     with h5py.File(OUT_DMS_H5, "r") as hf:
-        assay_ids = list(hf.keys())
+        assay_ids = sorted(hf.keys())
         print(f"\nAssays in H5: {len(assay_ids)}")
         for assay_id in assay_ids:
-            d = _load_assay_from_h5(hf, assay_id)
-            if d is None:
-                print(f"  [SKIP] {assay_id}: could not load", flush=True)
+            grp = hf[assay_id]
+            if "wt" not in grp or "variant_meta" not in grp.attrs:
+                print(f"  [SKIP] {assay_id}: malformed group", flush=True)
                 continue
-            assay_data[assay_id] = d
-            wt_embs[assay_id] = d["wt_emb"]
-            wt_seqs[assay_id] = d["wt_sequence"]
-            print(f"  {assay_id}: L={d['wt_emb'].shape[0]}, n_variants={len(d['variants'])}", flush=True)
+            try:
+                meta_list = json.loads(grp.attrs["variant_meta"])
+            except (json.JSONDecodeError, KeyError):
+                print(f"  [SKIP] {assay_id}: bad variant_meta", flush=True)
+                continue
+            if not meta_list:
+                print(f"  [SKIP] {assay_id}: empty variant_meta", flush=True)
+                continue
+            wt_embs[assay_id] = grp["wt"][:].astype(np.float32)
+            wt_seqs[assay_id] = grp.attrs.get("wt_sequence", "")
+            assay_variant_counts[assay_id] = len(meta_list)
+            print(f"  {assay_id}: L={wt_embs[assay_id].shape[0]}, n_variants={len(meta_list)}", flush=True)
 
-    if not assay_data:
+    if not wt_embs:
         raise RuntimeError("No valid assays loaded from DMS H5.")
 
-    # Build fit_corpus from all WT embeddings (centering stats only)
-    fit_corpus = {aid: d["wt_emb"] for aid, d in assay_data.items()}
+    # fit_corpus = WT embeddings only (small; centering stats and PQ codebook)
+    fit_corpus = wt_embs  # alias — same dict
 
-    # Evaluate all codecs across all assays
-    # per_codec_rho[codec_name][assay_id] = rho
+    # Evaluate all codecs across all assays — streaming variants per assay
     per_codec_rho: dict[str, dict[str, float]] = {n: {} for n in codec_names}
 
-    for assay_id, d in assay_data.items():
-        print(f"\n  [{assay_id}]  n={len(d['variants'])}", flush=True)
+    for assay_id in sorted(wt_embs.keys()):
+        n_var = assay_variant_counts[assay_id]
+        print(f"\n  [{assay_id}]  n={n_var}", flush=True)
         t0 = time.time()
+        # Streaming pattern: keep the H5 open across this assay's codec sweep,
+        # define a closure that lazy-loads one variant at a time.
         try:
-            results = evaluate_assay_across_codecs(
-                wt_emb=d["wt_emb"],
-                variants=d["variants"],
-                codecs=codecs,
-                fit_corpus=fit_corpus,
-                seeds=seeds,
-            )
+            with h5py.File(OUT_DMS_H5, "r") as hf:
+                grp = hf[assay_id]
+                meta_list = json.loads(grp.attrs["variant_meta"])
+                valid = [
+                    m for m in meta_list
+                    if m.get("score") is not None and f"v_{m['idx']}" in grp
+                ]
+                if not valid:
+                    print(f"    [SKIP] no scored variants", flush=True)
+                    continue
+                mut_positions = [int(m["mut_pos"]) for m in valid]
+                scores = np.array([float(m["score"]) for m in valid], dtype=np.float32)
+
+                def _loader(i: int, _grp=grp, _valid=valid) -> np.ndarray:
+                    return _grp[f"v_{_valid[i]['idx']}"][:].astype(np.float32)
+
+                results = evaluate_assay_streaming(
+                    wt_emb=wt_embs[assay_id],
+                    variant_loader=_loader,
+                    n_variants=len(valid),
+                    mut_positions=mut_positions,
+                    scores=scores,
+                    codecs=codecs,
+                    fit_corpus=fit_corpus,
+                    seeds=seeds,
+                )
             for codec_name, probe_result in results.items():
                 per_codec_rho[codec_name][assay_id] = probe_result.spearman_rho
                 print(f"    {codec_name}: ρ={probe_result.spearman_rho:.3f}", flush=True)
         except Exception as exc:
             print(f"    ERROR: {exc}", flush=True)
             import traceback; traceback.print_exc()
+        import gc; gc.collect()
         print(f"    ({time.time()-t0:.1f}s)", flush=True)
 
     # Aggregate: mean ρ per codec + paired retention CIs vs lossless
@@ -302,25 +334,37 @@ def run_clinvar(
     print(f"  Codecs: {codec_names}")
     print(f"{'='*70}")
 
-    # Load all ClinVar proteins
-    clinvar_data: dict[str, dict] = {}
+    # First pass: preload only WT embeddings + per-protein variant metadata.
+    # Variants are streamed from H5 during the codec loop below.
+    cv_wt_embs: dict[str, np.ndarray] = {}
+    cv_meta: dict[str, list[dict]] = {}
     with h5py.File(OUT_CLINVAR_H5, "r") as hf:
-        pids = list(hf.keys())
+        pids = sorted(hf.keys())
         print(f"\n  ClinVar proteins in H5: {len(pids)}")
         for pid in pids:
-            d = _load_clinvar_assay_from_h5(hf, pid)
-            if d is None:
+            grp = hf[pid]
+            if "wt" not in grp or "variant_meta" not in grp.attrs:
                 continue
-            clinvar_data[pid] = d
+            try:
+                meta_list = json.loads(grp.attrs["variant_meta"])
+            except (json.JSONDecodeError, KeyError):
+                continue
+            valid = [
+                m for m in meta_list
+                if m.get("label") is not None and f"v_{m['idx']}" in grp
+            ]
+            if not valid:
+                continue
+            cv_wt_embs[pid] = grp["wt"][:].astype(np.float32)
+            cv_meta[pid] = valid
 
-    if not clinvar_data:
+    if not cv_wt_embs:
         return {"skipped": True, "reason": "no valid ClinVar proteins"}
 
-    n_total = sum(len(d["variants"]) for d in clinvar_data.values())
-    print(f"  Loaded {len(clinvar_data)} proteins, {n_total} variants total")
+    n_total = sum(len(m) for m in cv_meta.values())
+    print(f"  Loaded {len(cv_wt_embs)} WT embeddings, {n_total} labelled variants total")
 
     # Extend fit_corpus with ClinVar WTs for centering
-    cv_wt_embs = {pid: d["wt_emb"] for pid, d in clinvar_data.items()}
     full_corpus = {**fit_corpus, **cv_wt_embs}
 
     codec_auc: dict[str, dict] = {}
@@ -329,26 +373,32 @@ def run_clinvar(
         print(f"\n  [{codec_name}]", flush=True)
         t0 = time.time()
         try:
-            codec = OneEmbeddingCodec(
-                d_out=spec.d_out,
-                quantization=spec.quantization,
-                pq_m=spec.pq_m if spec.pq_m else None,
-                abtt_k=spec.abtt_k,
-            )
+            codec_kwargs = {
+                "d_out": spec.d_out,
+                "quantization": spec.quantization,
+                "abtt_k": spec.abtt_k,
+            }
+            if spec.quantization == "pq":
+                codec_kwargs["pq_m"] = spec.pq_m
+            codec = OneEmbeddingCodec(**codec_kwargs)
             codec.fit(full_corpus)
 
             all_scores: list[float] = []
             all_labels: list[int] = []
 
-            for pid, d in clinvar_data.items():
-                wt_raw = d["wt_emb"]
-                wt_dec = codec.decode_per_residue(codec.encode(wt_raw))
-                for var in d["variants"]:
-                    mut_raw = var["mut_emb"]
-                    mut_dec = codec.decode_per_residue(codec.encode(mut_raw))
-                    score = score_clinvar_zeroshot(wt_dec, mut_dec, var["mut_pos"])
-                    all_scores.append(score)
-                    all_labels.append(var["label"])
+            # Re-open H5 once for streaming variant reads.
+            with h5py.File(OUT_CLINVAR_H5, "r") as hf:
+                for pid, meta in cv_meta.items():
+                    grp = hf[pid]
+                    wt_raw = cv_wt_embs[pid]
+                    wt_dec = codec.decode_per_residue(codec.encode(wt_raw))
+                    for m in meta:
+                        mut_raw = grp[f"v_{m['idx']}"][:].astype(np.float32)
+                        mut_dec = codec.decode_per_residue(codec.encode(mut_raw))
+                        score = score_clinvar_zeroshot(wt_dec, mut_dec, int(m["mut_pos"]))
+                        all_scores.append(score)
+                        all_labels.append(int(m["label"]))
+                        # mut_raw/mut_dec drop on next iter
 
             scores_arr = np.array(all_scores, dtype=np.float32)
             labels_arr = np.array(all_labels, dtype=np.int32)
@@ -356,11 +406,12 @@ def run_clinvar(
             codec_auc[codec_name] = {
                 "auc": float(auc),
                 "n_variants": len(all_scores),
-                "n_proteins": len(clinvar_data),
+                "n_proteins": len(cv_wt_embs),
             }
             print(f"    AUC={auc:.3f}  n={len(all_scores)}  ({time.time()-t0:.1f}s)", flush=True)
         except Exception as exc:
             print(f"    ERROR: {exc}", flush=True)
+            import traceback; traceback.print_exc()
             codec_auc[codec_name] = {"error": str(exc)}
 
     # Summary

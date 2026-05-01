@@ -707,6 +707,90 @@ def _apply_codec(
     return wt_dec, var_dec
 
 
+def evaluate_assay_streaming(
+    wt_emb: np.ndarray,
+    variant_loader,
+    n_variants: int,
+    mut_positions: list[int],
+    scores: np.ndarray,
+    codecs: list[CodecSpec],
+    fit_corpus: dict[str, np.ndarray],
+    seeds: list[int] | None = None,
+) -> dict[str, ProbeResult]:
+    """Memory-bounded variant of evaluate_assay_across_codecs.
+
+    Lazily loads each variant via ``variant_loader(i) -> (L, D) ndarray``. Each
+    variant is encoded, decoded, fed through ``build_variant_features``, and the
+    intermediate (L, D) arrays are released before the next iteration. Peak
+    memory: ~ wt_dec + 1 decoded variant + (n_variants × 4*d_out) feature matrix.
+    For HIV-scale assays (12k variants × 850 residues × 1024 dims) this drops
+    peak from tens of GB to a few hundred MB.
+
+    Args:
+        wt_emb: (L, D) raw WT embedding (kept in memory for the duration).
+        variant_loader: callable(idx: int) -> (L, D) np.ndarray. Called n_variants
+            times per codec (so 5 codecs × n_variants total reads). The loader
+            should keep its underlying file handle live; if backed by h5py, call
+            this function from inside the ``with h5py.File(...) as hf:`` block.
+        n_variants: number of variants to iterate.
+        mut_positions: list of length n_variants with 0-indexed mutation positions.
+        scores: (n_variants,) experimental scores.
+        codecs: ordered list of CodecSpec configs.
+        fit_corpus: dict of {pid: (L, D) array} for codec.fit() centering /
+            codebook fitting.
+        seeds: probe seeds (default [42, 123, 456]).
+
+    Returns:
+        dict mapping CodecSpec.name -> ProbeResult.
+
+    Raises:
+        ValueError: if fit_corpus is empty and codecs is non-empty.
+    """
+    from src.one_embedding.codec_v2 import OneEmbeddingCodec
+
+    if seeds is None:
+        seeds = [42, 123, 456]
+    if not codecs:
+        return {}
+    if not fit_corpus:
+        raise ValueError("fit_corpus must be non-empty when codecs is non-empty")
+
+    scores_arr = np.asarray(scores, dtype=np.float32)
+    if len(scores_arr) != n_variants:
+        raise ValueError(
+            f"scores length {len(scores_arr)} != n_variants {n_variants}"
+        )
+    if len(mut_positions) != n_variants:
+        raise ValueError(
+            f"mut_positions length {len(mut_positions)} != n_variants {n_variants}"
+        )
+
+    out: dict[str, ProbeResult] = {}
+    for spec in codecs:
+        kwargs = {
+            "d_out": spec.d_out,
+            "quantization": spec.quantization,
+            "abtt_k": spec.abtt_k,
+        }
+        if spec.quantization == "pq":
+            kwargs["pq_m"] = spec.pq_m
+        codec = OneEmbeddingCodec(**kwargs)
+        codec.fit(fit_corpus)
+
+        wt_dec = codec.decode_per_residue(codec.encode(wt_emb))
+        n_feat = 4 * spec.d_out
+        X = np.empty((n_variants, n_feat), dtype=np.float32)
+        for i in range(n_variants):
+            mut_emb = variant_loader(i)
+            var_dec = codec.decode_per_residue(codec.encode(mut_emb))
+            X[i] = build_variant_features(wt_dec, var_dec, mut_positions[i])
+            # mut_emb / var_dec drop out of scope on next iter (no further
+            # references in numpy arrays we hold).
+
+        out[spec.name] = fit_evaluate_ridge_probe(X, scores_arr, seeds=seeds)
+    return out
+
+
 def evaluate_assay_across_codecs(
     wt_emb: np.ndarray,
     variants: list[dict],
