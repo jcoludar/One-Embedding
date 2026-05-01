@@ -38,6 +38,7 @@ from src.one_embedding.universal_transforms import random_orthogonal_project
 from src.one_embedding.transforms import dct_summary
 from src.one_embedding.quantization import (
     quantize_int4, dequantize_int4,
+    quantize_int2, dequantize_int2,
     quantize_binary, dequantize_binary,
     quantize_binary_magnitude, dequantize_binary_magnitude,
     pq_fit, pq_encode, pq_decode,
@@ -59,7 +60,7 @@ def auto_pq_m(d_out: int) -> int:
     return 1
 
 
-_VALID_QUANTIZATIONS = {None, "int4", "pq", "binary", "binary_magnitude"}
+_VALID_QUANTIZATIONS = {None, "int4", "int2", "pq", "binary", "binary_magnitude"}
 
 
 class OneEmbeddingCodec:
@@ -75,7 +76,8 @@ class OneEmbeddingCodec:
             Higher = more fidelity, less compression.
             Set to input dim (e.g. 1024) to skip RP entirely.
         quantization: Per-residue storage method (default 'binary').
-            None = fp16, 'int4' (9x), 'pq' (~18x), 'binary' (~37x).
+            None = fp16, 'int4' (9x), 'int2' (18x), 'pq' (~18x), 'binary' (~37x).
+            'binary_magnitude' is the polar-quant variant of binary.
         pq_m: PQ subquantizers (default auto = d_out // 4).
             Only used when quantization='pq'. Must divide d_out evenly.
         abtt_k: Number of top PCs to remove (default 0 = centering only).
@@ -287,6 +289,11 @@ class OneEmbeddingCodec:
             result["per_residue_data"] = compressed["data"]
             result["per_residue_scales"] = compressed["scales"]
             result["per_residue_zp"] = compressed["zero_points"]
+        elif self.quantization == "int2":
+            compressed = quantize_int2(projected)
+            result["per_residue_data"] = compressed["data"]
+            result["per_residue_scales"] = compressed["scales"]
+            result["per_residue_zp"] = compressed["zero_points"]
         elif self.quantization == "binary":
             compressed = quantize_binary(projected)
             result["per_residue_bits"] = compressed["bits"]
@@ -320,6 +327,15 @@ class OneEmbeddingCodec:
                 "dtype": "int4",
             }
             return dequantize_int4(compressed)
+        elif quantization == "int2":
+            compressed = {
+                "data": encoded["per_residue_data"],
+                "scales": encoded["per_residue_scales"],
+                "zero_points": encoded["per_residue_zp"],
+                "original_shape": (L, d_out),
+                "dtype": "int2",
+            }
+            return dequantize_int2(compressed)
         elif quantization == "binary":
             compressed = {
                 "bits": encoded["per_residue_bits"],
@@ -353,6 +369,14 @@ class OneEmbeddingCodec:
                                  data=encoded["per_residue_fp16"],
                                  compression="gzip", compression_opts=4)
         elif quantization == "int4":
+            group.create_dataset("per_residue_data",
+                                 data=encoded["per_residue_data"],
+                                 compression="gzip", compression_opts=4)
+            group.create_dataset("per_residue_scales",
+                                 data=encoded["per_residue_scales"])
+            group.create_dataset("per_residue_zp",
+                                 data=encoded["per_residue_zp"])
+        elif quantization == "int2":
             group.create_dataset("per_residue_data",
                                  data=encoded["per_residue_data"],
                                  compression="gzip", compression_opts=4)
@@ -413,6 +437,15 @@ class OneEmbeddingCodec:
                 "dtype": "int4",
             }
             return dequantize_int4(compressed)
+        elif quantization == "int2":
+            compressed = {
+                "data": group["per_residue_data"][:],
+                "scales": group["per_residue_scales"][:],
+                "zero_points": group["per_residue_zp"][:],
+                "original_shape": (L, d_out),
+                "dtype": "int2",
+            }
+            return dequantize_int2(compressed)
         elif quantization == "binary":
             compressed = {
                 "bits": group["per_residue_bits"][:],

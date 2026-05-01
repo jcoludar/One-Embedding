@@ -49,6 +49,11 @@ class TestConstructor:
         assert codec.quantization == 'int4'
         assert codec.pq_m is None
 
+    def test_quantization_int2(self):
+        codec = OneEmbeddingCodec(quantization='int2')
+        assert codec.quantization == 'int2'
+        assert codec.pq_m is None
+
     def test_quantization_binary(self):
         codec = OneEmbeddingCodec(quantization='binary')
         assert codec.quantization == 'binary'
@@ -136,6 +141,21 @@ class TestEncodeDecode:
         ])
         assert cos_sim > 0.95
 
+    def test_int2_roundtrip(self, raw_1024, small_corpus):
+        codec = OneEmbeddingCodec(d_out=768, quantization='int2')
+        codec.fit(small_corpus)
+        encoded = codec.encode(raw_1024)
+        decoded = codec.decode_per_residue(encoded)
+        assert decoded.shape == (30, 768)
+        projected = codec._preprocess(raw_1024)
+        cos_sim = np.mean([
+            np.dot(projected[i], decoded[i]) / (np.linalg.norm(projected[i]) * np.linalg.norm(decoded[i]) + 1e-10)
+            for i in range(30)
+        ])
+        # 2-bit quant has 4 levels per channel — direction degrades vs int4 but
+        # remains well-aligned (per-channel scale + zp absorbs most range).
+        assert cos_sim > 0.85
+
     def test_pq_roundtrip(self, raw_1024, small_corpus):
         codec = OneEmbeddingCodec(d_out=768, quantization='pq', pq_m=128)
         codec.fit(small_corpus)
@@ -190,7 +210,7 @@ class TestEncodeDecode:
         np.testing.assert_allclose(dec_norms, proj_norms, rtol=5e-3)
 
     def test_protein_vec_always_fp16(self, raw_1024, small_corpus):
-        for q in [None, 'int4', 'pq', 'binary', 'binary_magnitude']:
+        for q in [None, 'int4', 'int2', 'pq', 'binary', 'binary_magnitude']:
             codec = OneEmbeddingCodec(d_out=768, quantization=q)
             codec.fit(small_corpus)
             encoded = codec.encode(raw_1024)
@@ -274,6 +294,20 @@ class TestSaveLoad:
         loaded = OneEmbeddingCodec.load(str(h5_path), codebook_path=str(cb_path))
         assert loaded["per_residue"].shape == (30, 768)
 
+    def test_int2_h5_roundtrip(self, raw_1024, small_corpus, tmp_path):
+        codec = OneEmbeddingCodec(d_out=768, quantization='int2')
+        codec.fit(small_corpus)
+        cb_path = tmp_path / "codebook.h5"
+        codec.save_codebook(str(cb_path))
+
+        encoded = codec.encode(raw_1024)
+        h5_path = tmp_path / "protein.h5"
+        codec.save(encoded, str(h5_path))
+
+        loaded = OneEmbeddingCodec.load(str(h5_path), codebook_path=str(cb_path))
+        assert loaded["per_residue"].shape == (30, 768)
+        assert loaded["metadata"]["quantization"] == "int2"
+
     def test_binary_h5_roundtrip(self, raw_1024, small_corpus, tmp_path):
         codec = OneEmbeddingCodec(d_out=768, quantization='binary')
         codec.fit(small_corpus)
@@ -347,6 +381,19 @@ class TestBatchEncodeLoad:
         out_h5 = tmp_path / "compressed.h5"
 
         codec = OneEmbeddingCodec(d_out=768, quantization='int4')
+        codec.fit(small_corpus)
+        codec.encode_h5_to_h5(str(raw_h5), str(out_h5))
+
+        loaded = OneEmbeddingCodec.load_batch(str(out_h5))
+        assert len(loaded) == len(small_corpus)
+        for pid in small_corpus:
+            assert loaded[pid]["per_residue"].shape[1] == 768
+
+    def test_int2_batch_roundtrip(self, small_corpus, tmp_path):
+        raw_h5 = self._make_raw_h5(tmp_path, small_corpus)
+        out_h5 = tmp_path / "compressed.h5"
+
+        codec = OneEmbeddingCodec(d_out=768, quantization='int2')
         codec.fit(small_corpus)
         codec.encode_h5_to_h5(str(raw_h5), str(out_h5))
 
