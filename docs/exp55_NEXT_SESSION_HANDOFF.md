@@ -16,9 +16,10 @@ Exp 55 shipped: **binary 896d at 37× retains 99.2% of VEP** [98.4, 100.1] and *
 
 ## What's queued (designed-not-built)
 
-- **Exp 56** — codec mega-sweep on VEP (incl. ABTT, pq64, int2, binary_magnitude, no-RP). Cheapest next experiment; reuses cached embeddings.
-- **Disorder methodology audit** — re-run with CNN probe + per-residue Pearson + AUC; existing memory note hints disorder gap is probe-induced.
-- **pLDDT, perplexity, CPP** — three new task families; pLDDT has the strongest cross-check value for the disorder question.
+- **Exp 56** — codec mega-sweep on VEP (incl. ABTT, pq64, int2, binary_magnitude, no-RP). Cheapest next experiment; reuses cached embeddings. (`project_exp56_codec_megasweep_idea.md`)
+- **Exp 57** — auto-fit centering: empirically validate "200-500 proteins is enough" + ship `OneEmbeddingCodec.auto_fit(plm, n=300)` API. Reuses cached SCOPe-5K embeddings. ~1 day. (`project_exp57_auto_fit_centering.md`)
+- **Disorder methodology audit** — re-run with CNN probe + per-residue Pearson + AUC; existing memory note hints disorder gap is probe-induced. (`project_disorder_methodology_check.md`)
+- **pLDDT, perplexity, CPP** — three new task families; pLDDT has the strongest cross-check value for the disorder question. (`project_earmarks_20260501.md`)
 
 ## What's deferred
 
