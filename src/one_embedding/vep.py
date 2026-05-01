@@ -96,7 +96,10 @@ def select_diversity_subset(
     return picked
 
 
-def prepare_reference_df(df: pd.DataFrame) -> pd.DataFrame:
+def prepare_reference_df(
+    df: pd.DataFrame,
+    max_seq_len: int | None = 2000,
+) -> pd.DataFrame:
     """Rename real ProteinGym DMS_substitutions.csv columns to canonical names.
 
     Maps:
@@ -106,6 +109,14 @@ def prepare_reference_df(df: pd.DataFrame) -> pd.DataFrame:
     Pass-through if the canonical names are already present (so synthetic
     test data with ``family`` / ``fitness_type`` columns still works without
     going through this helper).
+
+    Args:
+        df: ProteinGym reference DataFrame.
+        max_seq_len: Drop assays whose target protein is longer than this many
+            residues. Default 2000 — covers 97.7% of ProteinGym DMS assays.
+            The 5 outliers above 2000 (HCV polyprotein, BRCA2, ZIKV envelope,
+            polio, SCN5A) are huge multi-domain proteins atypical of the VEP
+            use case and would dominate compute cost. Pass ``None`` to disable.
 
     Raises ValueError if neither the canonical nor the source column is
     present, listing what was missing.
@@ -137,6 +148,9 @@ def prepare_reference_df(df: pd.DataFrame) -> pd.DataFrame:
 
     if "DMS_id" not in out.columns:
         raise ValueError("reference df must have 'DMS_id' column")
+
+    if max_seq_len is not None:
+        out = out[out["seq_len"] <= max_seq_len].reset_index(drop=True)
 
     return out
 

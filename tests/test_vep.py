@@ -131,6 +131,20 @@ def test_prepare_reference_df_missing_columns_raises():
         prepare_reference_df(df)
 
 
+def test_prepare_reference_df_max_seq_len_filters():
+    """max_seq_len drops assays whose target protein is longer than the cap."""
+    df = pd.DataFrame({
+        "DMS_id": ["small", "med", "huge"],
+        "taxon": ["Human"] * 3,
+        "coarse_selection_type": ["Activity"] * 3,
+        "seq_len": [100, 1500, 3000],
+    })
+    out = prepare_reference_df(df, max_seq_len=2000)
+    assert list(out["DMS_id"]) == ["small", "med"]
+    out_none = prepare_reference_df(df, max_seq_len=None)
+    assert list(out_none["DMS_id"]) == ["small", "med", "huge"]
+
+
 def test_select_diversity_subset_on_real_proteingym_csv():
     """End-to-end smoke: real CSV -> prepare -> select. Catches column-mapping bugs."""
     real_csv = ROOT / "data" / "proteingym" / "DMS_substitutions.csv"
