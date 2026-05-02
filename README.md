@@ -1,11 +1,11 @@
 # OneEmbedding — universal codec for PLM per-residue embeddings
 
-A single Python class that compresses any of five major protein language model (PLM) outputs by **~37× at 95–100 % task retention** across 4 task families and 9 datasets, with rigorous BCa confidence intervals throughout. Default mode (binary) needs **no codebook** — the receiver decodes with `numpy + h5py` in ~12 lines.
+A single Python class that compresses any of five major protein language model (PLM) outputs by **~37× at 95–100 % task retention** across 5 task families and 10 datasets, with rigorous BCa confidence intervals throughout. Default mode (binary) needs **no codebook** — the receiver decodes with `numpy + h5py` in ~12 lines.
 
 | | |
 |---|---|
 | **Compression\*** | ~37× vs fp32 raw (binary, default) — also int4 (9×), PQ M=224 (18×), fp16 (2.3×), lossless (2×) |
-| **Retention** | 95–100 % across SS3, SS8, retrieval, disorder on 5 PLMs |
+| **Retention** | 95–100 % across SS3, SS8, retrieval, disorder, VEP on 5 PLMs |
 | **Storage** | ~17 KB / protein at L=156 mean (binary 896d) |
 | **Receiver deps** | `numpy + h5py` only for binary / int4 / fp16; PQ requires codebook |
 | **PLMs validated** | ProtT5-XL, ProstT5, ESM-C 600M, ANKH-large, ESM2-650M |
@@ -38,7 +38,7 @@ Centering and random projection are training-free and PLM-agnostic. ABTT is off 
 git clone <repo-url> ProteEmbedExplorations
 cd ProteEmbedExplorations
 uv sync --all-extras --all-groups   # installs deps + dev tooling
-uv run pytest tests/                # 813 tests should pass
+uv run pytest tests/                # 878 tests should pass
 ```
 
 ### Encode
@@ -190,13 +190,15 @@ experiments/            47 numbered experiments, each self-contained
   46_multi_plm_benchmark.py    5-PLM validation
   47_codec_sweep.py            Single-PLM sweep across configs
   50_sequence_to_oe.py         Sequence → binary OE prediction (in-progress)
+  55_vep_retention.py          VEP retention (5th task family)
+  56_vep_codec_megasweep.py    VEP codec mega-sweep (13 arms)
 
-tests/                  813 tests (pytest)
+tests/                  878 tests (pytest)
 
 demo/                   3-form demo (raw / mean_pool / ours) on 10 CASP12 proteins
 
 docs/
-  EXPERIMENTS.md          Full 200+ method enumeration across 47 experiments
+  EXPERIMENTS.md          Full 200+ method enumeration across 49 experiments
   figures/                README + paper figures
 ```
 

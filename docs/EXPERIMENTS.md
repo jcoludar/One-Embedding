@@ -81,6 +81,42 @@ Full rigorous benchmarks with BCa CIs on all 5 PLMs:
 
 Codec sweep (Exp 47) on ProtT5: 6 standard tiers (lossless to binary) + VQ/RVQ retest + old default comparison. All verified.
 
+### Phase 14: RNS, PolarQuant, Sequence→OE (Experiments 48, 50, 51)
+
+**Exp 48 — Random Neighbor Score (RNS) under compression** (Prabakaran & Bromberg, *Nat Methods* 2026). Per-WT RNS computed by mean-pooling per-residue-shuffled embeddings. Headline finding: at the protein level via mean-pool, the shuffle preserves channel sums, so raw and shuffled embeddings are equivalent. RNS is uninformative as a single per-protein scalar with mean-pool. Documented as a known limitation; useful only with non-mean protein vectors. Sub-experiments: 48b (pipeline ablation) and 48c (12-config knob sweep — PQ M=64 beats raw on retrieval, ABTT catastrophic).
+
+**Exp 50 — Sequence → One Embedding prediction.** Dilated CNN trained to predict OneEmbedding binary bits + protein vector directly from amino acid sequence. Ceiling at ~69 % bit accuracy / ~0.55 cosine similarity, replicated across 3 stages and 2 loss types and 2 data scales (continuous regression + 2× data → flat). Architecture-bound, not data-bound. Capacity ceiling motivates a transformer follow-up (Stage 4, queued).
+
+**Exp 51 — PolarQuant (`binary_magnitude`) rejected for disorder.** Hypothesis: keeping per-residue magnitude on top of binary direction recovers disorder retention. Result on disorder: no recovery — magnitude alone doesn't carry the disorder signal. Direction is the bottleneck. (Note: Exp 56 later showed `binary_magnitude` *does* help VEP — the rejection was task-specific.)
+
+### Phase 15: Variant Effect Prediction (Experiments 55, 56)
+
+**Exp 55 — VEP retention as the 5th task family.** ProteinGym diversity subset (15 DMS substitution assays, 37,919 single-substitution variants) + ClinVar split (1,016 proteins ≤500 aa, 15,252 missense variants), ProtT5. Supervised Ridge probe on per-variant 4·d_out features, 5-fold CV with α-grid, 3-seed averaging, paired BCa B=10,000.
+
+| Codec | DMS retention | ClinVar AUC |
+|---|:---:|:---:|
+| Lossless 1024d | 100.0% | 0.602 |
+| PQ M=224 896d (~18×) | 100.0% [99.4, 101.2] | 0.594 |
+| fp16 896d | 99.9% [99.7, 100.2] | 0.600 |
+| int4 896d | 99.8% [99.6, 99.9] | 0.594 |
+| **Binary 896d (~37×)** | **99.2% [98.4, 100.1]** | **0.605** |
+
+Headline: binary 896d at 37× compression retains 99.2% of variant-level mutational sensitivity, *beats* lossless on ClinVar zero-shot AUC (0.605 vs 0.602). VEP becomes the codec's 5th task family. Required a streaming variant-loader to avoid OOM on HIV envelope (12.5 K variants × 852 aa × 1024 dim × n_codecs = 41 GB+ otherwise). 9 distinct bug fixes during execution; 50 unit tests landed in `tests/test_vep.py`.
+
+**Exp 56 — VEP codec mega-sweep, 12 new arms (ABTT-k / dimensionality / alt quantization).** Re-uses Exp 55 cached embeddings. 13-codec configuration with paired retention CIs vs lossless re-baseline. Wall: 2h 50m, M3 Max single-process.
+
+Five things confirmed, two falsified:
+
+- **ABTT prediction falsified** — `binary_896 + ABTT-{1, 3, 8}` retain 98.5/99.0/99.2% on DMS, all overlapping the binary baseline (99.2% from Exp 55). The Exp 45 ABTT-destroys-disorder pathology does *not* generalize to VEP. ABTT is essentially neutral here, even at k=8.
+- **RP, not quantization, is binary's main loss source** — `binary_1024` (no RP, 32×) retains **100.7% [99.5, 103.2]**, the best DMS retention in the entire sweep. The 1.5pp gap between Exp 55's binary_896 (99.2%) and binary_1024 here (100.7%) is the random projection's tax.
+- **`int2` (18× compression, no codebook) is a clean DMS tier — but supervised-only.** 99.9% DMS retention. ClinVar AUC collapses (0.530 vs lossless 0.602). Don't use int2 for zero-shot variant scoring.
+- **PQ M=64 retains 97.6% [96.7, 98.6] on DMS at 64× compression** — the most aggressive DMS-OK setting we have.
+- **`binary_magnitude` rehabilitated for VEP** — 99.6% DMS retention vs binary's 99.2%, and ClinVar AUC 0.605. Exp 51's disorder rejection was task-specific.
+- **ABTT × quantization compounding falsified** — `fp16 + ABTT3` and `int4 + ABTT3` retain 99.8/99.9% (no interaction term).
+- **Surprise: `binary_512` (64×) wins zero-shot ClinVar AUC at 0.609.** Aggressive RP isotropy looks like a positive feature for cosine-distance scoring.
+
+Side lesson: ClinVar zero-shot AUC is far more compression-sensitive than the supervised Ridge probe. Future codec comparisons should report both. New codec API entry: `OneEmbeddingCodec(quantization='int2')`.
+
 ---
 
 ## Idea Space: What's Exhausted, What Remains

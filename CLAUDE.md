@@ -178,7 +178,7 @@ Length stress test: no degradation (short 99.8%, medium 100.7%, long 101.3%).
 
 ## Experiment History & Methodology
 
-See [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) for the full journey (200+ methods rolled up across 47 experiments — exact enumeration in `EXPERIMENTS.md`).
+See [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) for the full journey (200+ methods rolled up across 49 experiments — exact enumeration in `EXPERIMENTS.md`).
 
 **Benchmark methodology (Nature-level, Exp 43):**
 - Bootstrap: BCa (DiCiccio & Efron 1996), B=10,000, percentile fallback for n<25
@@ -236,7 +236,7 @@ VQ/RVQ confirmed genuinely poor (not bug-caused): VQ K=16384 gets 79% SS3 ret, 5
 - `src/training/` — Unified trainer with reconstruction, contrastive, VICReg losses
 - `src/evaluation/` — Retrieval (cosine+euclidean), per-residue probes (SS3/SS8/disorder/TM/SignalP), biological annotations (GO/EC/Pfam/taxonomy), hierarchy, statistical tests, FAISS search index
 - `src/utils/` — Device management (MPS/CPU), H5 I/O
-- `experiments/` — 47 experiment scripts (01–47) + figure generators. Exp 43 = rigorous benchmark, Exp 44 = unified codec sweep, Exp 45 = disorder forensics, Exp 46 = multi-PLM pipeline (5 PLMs), Exp 47 = codec config sweep
+- `experiments/` — experiment scripts numbered 01–56 (gaps at 49, 52–54 are designed-but-not-run earmarks) + figure generators. Exp 43 = rigorous benchmark, Exp 44 = unified codec sweep, Exp 45 = disorder forensics, Exp 46 = multi-PLM pipeline (5 PLMs), Exp 47 = codec config sweep, Exp 55 = VEP retention, Exp 56 = VEP codec mega-sweep
 - `tests/` — 878 tests across multiple modules (50 in `tests/test_vep.py` for Exp 55)
 - `.one.h5 format` — H5-based single/batch protein embedding files (protein_vec + per_residue). Legacy `.oemb` also supported.
 
