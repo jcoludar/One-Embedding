@@ -1,7 +1,7 @@
 # Protein Embedding Codec
 
 ## Project Overview
-Universal codec for PLM per-residue embeddings. **200+ compression methods benchmarked** across 48 experiments, validated on **5 PLMs** (ProtT5, ESM2, ESM-C, ProstT5, ANKH). The unified codec uses center + RP 896d + binary by default, achieving **~17 KB/protein** (~37x compression) with **95–100% retention** across **5 task families** (SS3, SS8, retrieval, disorder, VEP) on **10 datasets** and 5 PLMs (Exp 46/47/55, BCa CIs). Binary skips the PQ codebook fit at encode time (~20× faster than PQ; precise per-PLM timing in Exp 47 logs). Configurable: `d_out` (896), `quantization` ('binary'), `pq_m` (auto), `abtt_k` (0). Use `quantization='pq', pq_m=224` for maximum quality at 18x.
+Universal codec for PLM per-residue embeddings. **200+ compression methods benchmarked** across 49 experiments, validated on **5 PLMs** (ProtT5, ESM2, ESM-C, ProstT5, ANKH). The unified codec uses center + RP 896d + binary by default, achieving **~17 KB/protein** (~37x compression) with **95–100% retention** across **5 task families** (SS3, SS8, retrieval, disorder, VEP) on **10 datasets** and 5 PLMs (Exp 46/47/55/56, BCa CIs). Binary skips the PQ codebook fit at encode time (~20× faster than PQ; precise per-PLM timing in Exp 47 logs). Configurable: `d_out` (896), `quantization` ('binary' / 'int2' / 'int4' / 'pq' / 'binary_magnitude'), `pq_m` (auto), `abtt_k` (0). Use `quantization='pq', pq_m=224` for maximum quality at 18x.
 
 ## Quick Start
 
@@ -188,7 +188,7 @@ See [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) for the full journey (200+ method
 - Probes: CV-tuned (GridSearchCV on train set, 3-fold, C/alpha grids)
 - ABTT leakage: formally tested — PCs differ across corpora but downstream Ret@1 varies <0.2pp (irrelevant)
 
-874 tests, 5 task families (SS3 / SS8 / retrieval / disorder / VEP), 10 datasets (CB513, TS115, CASP12, CheZOD117, TriZOD348, SCOPe 5K, CATH20, DeepLoc test, DeepLoc setHARD, ProteinGym DMS+ClinVar), 5 PLMs. BCa CIs on everything.
+878 tests, 5 task families (SS3 / SS8 / retrieval / disorder / VEP), 10 datasets (CB513, TS115, CASP12, CheZOD117, TriZOD348, SCOPe 5K, CATH20, DeepLoc test, DeepLoc setHARD, ProteinGym DMS+ClinVar), 5 PLMs. BCa CIs on everything.
 
 **Multi-PLM validation (Exp 46, center + RP896 + PQ224, ~18x):**
 
@@ -199,6 +199,22 @@ See [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) for the full journey (200+ method
 | ESM-C 600M | 1152 | 98.3±0.5% | 97.6±0.7% | 102.6±2.9% | 98.1±1.0% |
 | ANKH-large | 1536 | 97.9±0.5% | 96.3±0.8% | 99.9±0.6% | 94.8±2.3% |
 | ESM2-650M | 1280 | 97.6±0.7% | 96.5±0.7% | 97.8±1.6% | 98.8±0.9% |
+
+**VEP codec mega-sweep (Exp 56, ProtT5, paired BCa B=10,000):**
+
+| Config | Compression | DMS retention | ClinVar AUC | Note |
+|--------|:-----------:|:-------------:|:-----------:|------|
+| Lossless 1024d | 2× | 100.0% | 0.602 | baseline |
+| **Binary 1024 (no RP)** | **32×** | **100.7% [99.5, 103.2]** | 0.598 | best DMS retention in sweep |
+| **int2 896d** | **18×** | **99.9% [99.2, 100.7]** | 0.530 | clean DMS, ClinVar collapses (probe-only tier) |
+| binary 896 + ABTT8 | 37× | 99.2% [98.2, 100.2] | 0.598 | ABTT essentially neutral on VEP |
+| binary 896 + ABTT3 | 37× | 99.0% [98.1, 99.7] | 0.588 | falsifies "ABTT-3 destroys signal" outside disorder |
+| binary_magnitude 896 | ~30× | 99.6% [98.9, 100.5] | 0.605 | Exp 51 PolarQuant rehabilitated for VEP |
+| pq128 896d | 32× | 98.9% [98.4, 99.4] | 0.588 | |
+| **binary 512d** | **64×** | 98.1% [96.8, 100.0] | **0.609** | wins ClinVar AUC (RP isotropy effect) |
+| pq64 896d | 64× | 97.6% [96.7, 98.6] | 0.581 | most aggressive DMS-OK setting |
+
+Headlines: ABTT-k is essentially free for VEP at all tested k (≠ disorder); RP — not quantization — is binary's main loss source on DMS; int2 is a real DMS tier but supervised-only; PQ M=64 retains 97.6% at 64× compression. See `docs/exp56_vep_codec_megasweep.md` for the full per-axis breakdown and the per-arm ClinVar table.
 
 **Codec sweep (Exp 47, ProtT5, standard tiers):**
 
@@ -221,7 +237,7 @@ VQ/RVQ confirmed genuinely poor (not bug-caused): VQ K=16384 gets 79% SS3 ret, 5
 - `src/evaluation/` — Retrieval (cosine+euclidean), per-residue probes (SS3/SS8/disorder/TM/SignalP), biological annotations (GO/EC/Pfam/taxonomy), hierarchy, statistical tests, FAISS search index
 - `src/utils/` — Device management (MPS/CPU), H5 I/O
 - `experiments/` — 47 experiment scripts (01–47) + figure generators. Exp 43 = rigorous benchmark, Exp 44 = unified codec sweep, Exp 45 = disorder forensics, Exp 46 = multi-PLM pipeline (5 PLMs), Exp 47 = codec config sweep
-- `tests/` — 874 tests across multiple modules (50 in `tests/test_vep.py` for Exp 55)
+- `tests/` — 878 tests across multiple modules (50 in `tests/test_vep.py` for Exp 55)
 - `.one.h5 format` — H5-based single/batch protein embedding files (protein_vec + per_residue). Legacy `.oemb` also supported.
 
 ## Hardware
