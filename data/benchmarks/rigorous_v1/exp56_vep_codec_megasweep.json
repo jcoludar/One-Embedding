@@ -1,0 +1,426 @@
+{
+  "experiment": "exp56_vep_codec_megasweep",
+  "codecs_evaluated": [
+    "lossless",
+    "binary_896_abtt1",
+    "binary_896_abtt3",
+    "binary_896_abtt8",
+    "binary_1024",
+    "binary_1024_abtt3",
+    "binary_512",
+    "binary_magnitude_896",
+    "pq128_896",
+    "pq64_896",
+    "int2_896",
+    "fp16_896_abtt3",
+    "int4_896_abtt3"
+  ],
+  "smoke_test": false,
+  "dms_retention": {
+    "codecs": {
+      "lossless": {
+        "mean_spearman_rho": 0.6451019448084423,
+        "per_assay_rho": {
+          "A0A192B1T2_9HIV1_Haddox_2018": 0.7847034207410168,
+          "A0A1I9GEU1_NEIME_Kennouche_2019": 0.10675996278418134,
+          "A0A247D711_LISMN_Stadelmann_2021": 0.6514161478643351,
+          "A4GRB6_PSEAI_Chen_2020": 0.8685876924899325,
+          "A4_HUMAN_Seuma_2022": 0.6624039684228771,
+          "ACE2_HUMAN_Chan_2020": 0.7044836808994738,
+          "ADRB2_HUMAN_Jones_2020": 0.6106636620985024,
+          "AICDA_HUMAN_Gajula_2014_3cycles": 0.3160661336348447,
+          "AMFR_HUMAN_Tsuboyama_2023_4G3O": 0.914591891378083,
+          "ARGR_ECOLI_Tsuboyama_2023_1AOY": 0.8320898791518848,
+          "B2L11_HUMAN_Dutta_2010_binding-Mcl-1": 0.7488535121304829,
+          "BBC1_YEAST_Tsuboyama_2023_1TG0": 0.8767015459321907,
+          "D7PM05_CLYGR_Somermeyer_2022": 0.6601730685021675,
+          "ESTA_BACSU_Nutschel_2020": 0.716441023208962,
+          "GCN4_YEAST_Staller_2018": 0.22259358288770054
+        },
+        "retention_pct": 100.0,
+        "retention_ci_low": 99.99999999999999,
+        "retention_ci_high": 100.0,
+        "n_assays": 15
+      },
+      "binary_896_abtt1": {
+        "mean_spearman_rho": 0.6353167448813388,
+        "per_assay_rho": {
+          "A0A192B1T2_9HIV1_Haddox_2018": 0.7879813304312185,
+          "A0A1I9GEU1_NEIME_Kennouche_2019": 0.12180542273598048,
+          "A0A247D711_LISMN_Stadelmann_2021": 0.64480290739572,
+          "A4GRB6_PSEAI_Chen_2020": 0.8592128832288504,
+          "A4_HUMAN_Seuma_2022": 0.6555651770369091,
+          "ACE2_HUMAN_Chan_2020": 0.6941633780510257,
+          "ADRB2_HUMAN_Jones_2020": 0.597272000967785,
+          "AICDA_HUMAN_Gajula_2014_3cycles": 0.30052130439224156,
+          "AMFR_HUMAN_Tsuboyama_2023_4G3O": 0.9100694023898919,
+          "ARGR_ECOLI_Tsuboyama_2023_1AOY": 0.824500059860801,
+          "B2L11_HUMAN_Dutta_2010_binding-Mcl-1": 0.7602848052955222,
+          "BBC1_YEAST_Tsuboyama_2023_1TG0": 0.8751169172720361,
+          "D7PM05_CLYGR_Somermeyer_2022": 0.6407798959274432,
+          "ESTA_BACSU_Nutschel_2020": 0.7022612497319851,
+          "GCN4_YEAST_Staller_2018": 0.1554144385026738
+        },
+        "retention_pct": 98.48315448343453,
+        "retention_ci_low": 96.13188662568632,
+        "retention_ci_high": 99.58420056687592,
+        "n_assays": 15
+      },
+      "binary_896_abtt3": {
+        "mean_spearman_rho": 0.6383627906566244,
+        "per_assay_rho": {
+          "A0A192B1T2_9HIV1_Haddox_2018": 0.7850858600943158,
+          "A0A1I9GEU1_NEIME_Kennouche_2019": 0.11005679404126797,
+          "A0A247D711_LISMN_Stadelmann_2021": 0.6440674879910302,
+          "A4GRB6_PSEAI_Chen_2020": 0.8596516569195403,
+          "A4_HUMAN_Seuma_2022": 0.6607300606629177,
+          "ACE2_HUMAN_Chan_2020": 0.6922614246104073,
+          "ADRB2_HUMAN_Jones_2020": 0.5978181173311714,
+          "AICDA_HUMAN_Gajula_2014_3cycles": 0.29896543993929153,
+          "AMFR_HUMAN_Tsuboyama_2023_4G3O": 0.9113357889745994,
+          "ARGR_ECOLI_Tsuboyama_2023_1AOY": 0.8197317479554278,
+          "B2L11_HUMAN_Dutta_2010_binding-Mcl-1": 0.7655974255164538,
+          "BBC1_YEAST_Tsuboyama_2023_1TG0": 0.8775632972255785,
+          "D7PM05_CLYGR_Somermeyer_2022": 0.638909072873666,
+          "ESTA_BACSU_Nutschel_2020": 0.7004323915960531,
+          "GCN4_YEAST_Staller_2018": 0.21323529411764705
+        },
+        "retention_pct": 98.95533501238799,
+        "retention_ci_low": 98.12192706095867,
+        "retention_ci_high": 99.70807910374133,
+        "n_assays": 15
+      },
+      "binary_896_abtt8": {
+        "mean_spearman_rho": 0.6402197100832531,
+        "per_assay_rho": {
+          "A0A192B1T2_9HIV1_Haddox_2018": 0.7840544096954815,
+          "A0A1I9GEU1_NEIME_Kennouche_2019": 0.11321582321306096,
+          "A0A247D711_LISMN_Stadelmann_2021": 0.6466154674760776,
+          "A4GRB6_PSEAI_Chen_2020": 0.8578857951836577,
+          "A4_HUMAN_Seuma_2022": 0.6799845205050369,
+          "ACE2_HUMAN_Chan_2020": 0.6918585823572307,
+          "ADRB2_HUMAN_Jones_2020": 0.5988502096520375,
+          "AICDA_HUMAN_Gajula_2014_3cycles": 0.33190108390228956,
+          "AMFR_HUMAN_Tsuboyama_2023_4G3O": 0.9128185975813793,
+          "ARGR_ECOLI_Tsuboyama_2023_1AOY": 0.8189193771045149,
+          "B2L11_HUMAN_Dutta_2010_binding-Mcl-1": 0.7554729147965633,
+          "BBC1_YEAST_Tsuboyama_2023_1TG0": 0.874317221643437,
+          "D7PM05_CLYGR_Somermeyer_2022": 0.6370803074937044,
+          "ESTA_BACSU_Nutschel_2020": 0.7024603780774806,
+          "GCN4_YEAST_Staller_2018": 0.19786096256684493
+        },
+        "retention_pct": 99.24318400146214,
+        "retention_ci_low": 98.1891169872689,
+        "retention_ci_high": 100.18664483563764,
+        "n_assays": 15
+      },
+      "binary_1024": {
+        "mean_spearman_rho": 0.6497391222323273,
+        "per_assay_rho": {
+          "A0A192B1T2_9HIV1_Haddox_2018": 0.793232049422097,
+          "A0A1I9GEU1_NEIME_Kennouche_2019": 0.12422678473700625,
+          "A0A247D711_LISMN_Stadelmann_2021": 0.6436497468885601,
+          "A4GRB6_PSEAI_Chen_2020": 0.8608595667525776,
+          "A4_HUMAN_Seuma_2022": 0.6649780233284506,
+          "ACE2_HUMAN_Chan_2020": 0.6985871023242481,
+          "ADRB2_HUMAN_Jones_2020": 0.5960405163332938,
+          "AICDA_HUMAN_Gajula_2014_3cycles": 0.31944166873340135,
+          "AMFR_HUMAN_Tsuboyama_2023_4G3O": 0.9102638209260115,
+          "ARGR_ECOLI_Tsuboyama_2023_1AOY": 0.8267281718664504,
+          "B2L11_HUMAN_Dutta_2010_binding-Mcl-1": 0.7679203229096062,
+          "BBC1_YEAST_Tsuboyama_2023_1TG0": 0.8751779272136133,
+          "D7PM05_CLYGR_Somermeyer_2022": 0.6555420650761555,
+          "ESTA_BACSU_Nutschel_2020": 0.7083027033370759,
+          "GCN4_YEAST_Staller_2018": 0.3011363636363637
+        },
+        "retention_pct": 100.71882862254616,
+        "retention_ci_low": 99.45652794481988,
+        "retention_ci_high": 103.2101070753106,
+        "n_assays": 15
+      },
+      "binary_1024_abtt3": {
+        "mean_spearman_rho": 0.6450217962658182,
+        "per_assay_rho": {
+          "A0A192B1T2_9HIV1_Haddox_2018": 0.7930353638589291,
+          "A0A1I9GEU1_NEIME_Kennouche_2019": 0.12916144058963783,
+          "A0A247D711_LISMN_Stadelmann_2021": 0.6456880271259725,
+          "A4GRB6_PSEAI_Chen_2020": 0.8609125100963356,
+          "A4_HUMAN_Seuma_2022": 0.6491109699678526,
+          "ACE2_HUMAN_Chan_2020": 0.6941748138930051,
+          "ADRB2_HUMAN_Jones_2020": 0.5989235056123836,
+          "AICDA_HUMAN_Gajula_2014_3cycles": 0.3116097168042808,
+          "AMFR_HUMAN_Tsuboyama_2023_4G3O": 0.9125705958776871,
+          "ARGR_ECOLI_Tsuboyama_2023_1AOY": 0.8274938598489886,
+          "B2L11_HUMAN_Dutta_2010_binding-Mcl-1": 0.7716403783562632,
+          "BBC1_YEAST_Tsuboyama_2023_1TG0": 0.8755909596192097,
+          "D7PM05_CLYGR_Somermeyer_2022": 0.6526313810160096,
+          "ESTA_BACSU_Nutschel_2020": 0.7047887689143014,
+          "GCN4_YEAST_Staller_2018": 0.24799465240641713
+        },
+        "retention_pct": 99.98757583304948,
+        "retention_ci_low": 99.09298273073192,
+        "retention_ci_high": 101.17209916004197,
+        "n_assays": 15
+      },
+      "binary_512": {
+        "mean_spearman_rho": 0.6330786903399407,
+        "per_assay_rho": {
+          "A0A192B1T2_9HIV1_Haddox_2018": 0.7660418777247149,
+          "A0A1I9GEU1_NEIME_Kennouche_2019": 0.12546725612777082,
+          "A0A247D711_LISMN_Stadelmann_2021": 0.6403787912547135,
+          "A4GRB6_PSEAI_Chen_2020": 0.8482581039432115,
+          "A4_HUMAN_Seuma_2022": 0.6579402778433727,
+          "ACE2_HUMAN_Chan_2020": 0.6804179231018376,
+          "ADRB2_HUMAN_Jones_2020": 0.5944830455988359,
+          "AICDA_HUMAN_Gajula_2014_3cycles": 0.3183456559728877,
+          "AMFR_HUMAN_Tsuboyama_2023_4G3O": 0.8941576609619745,
+          "ARGR_ECOLI_Tsuboyama_2023_1AOY": 0.8000371785448532,
+          "B2L11_HUMAN_Dutta_2010_binding-Mcl-1": 0.7545691587130025,
+          "BBC1_YEAST_Tsuboyama_2023_1TG0": 0.8363214246028617,
+          "D7PM05_CLYGR_Somermeyer_2022": 0.6140984294013073,
+          "ESTA_BACSU_Nutschel_2020": 0.6959443199708665,
+          "GCN4_YEAST_Staller_2018": 0.2697192513368984
+        },
+        "retention_pct": 98.13622411693832,
+        "retention_ci_low": 96.79263427915481,
+        "retention_ci_high": 99.9967995479483,
+        "n_assays": 15
+      },
+      "binary_magnitude_896": {
+        "mean_spearman_rho": 0.6427577339474434,
+        "per_assay_rho": {
+          "A0A192B1T2_9HIV1_Haddox_2018": 0.7982729025479217,
+          "A0A1I9GEU1_NEIME_Kennouche_2019": 0.11896048831223471,
+          "A0A247D711_LISMN_Stadelmann_2021": 0.6422763738296535,
+          "A4GRB6_PSEAI_Chen_2020": 0.8632211468349286,
+          "A4_HUMAN_Seuma_2022": 0.6710444816587849,
+          "ACE2_HUMAN_Chan_2020": 0.6988595296630994,
+          "ADRB2_HUMAN_Jones_2020": 0.5944766929512514,
+          "AICDA_HUMAN_Gajula_2014_3cycles": 0.31010253479087335,
+          "AMFR_HUMAN_Tsuboyama_2023_4G3O": 0.9099364456186891,
+          "ARGR_ECOLI_Tsuboyama_2023_1AOY": 0.8249453681531579,
+          "B2L11_HUMAN_Dutta_2010_binding-Mcl-1": 0.7669115357136316,
+          "BBC1_YEAST_Tsuboyama_2023_1TG0": 0.8718000528231535,
+          "D7PM05_CLYGR_Somermeyer_2022": 0.6474781316778563,
+          "ESTA_BACSU_Nutschel_2020": 0.7075054583262562,
+          "GCN4_YEAST_Staller_2018": 0.21557486631016043
+        },
+        "retention_pct": 99.63661389027511,
+        "retention_ci_low": 98.8871611813831,
+        "retention_ci_high": 100.49056484954626,
+        "n_assays": 15
+      },
+      "pq128_896": {
+        "mean_spearman_rho": 0.6379416465759198,
+        "per_assay_rho": {
+          "A0A192B1T2_9HIV1_Haddox_2018": 0.7814886901051893,
+          "A0A1I9GEU1_NEIME_Kennouche_2019": 0.11164579347709941,
+          "A0A247D711_LISMN_Stadelmann_2021": 0.6439210954168464,
+          "A4GRB6_PSEAI_Chen_2020": 0.8593750338105411,
+          "A4_HUMAN_Seuma_2022": 0.6600992224682513,
+          "ACE2_HUMAN_Chan_2020": 0.6972197267057262,
+          "ADRB2_HUMAN_Jones_2020": 0.5989964575240528,
+          "AICDA_HUMAN_Gajula_2014_3cycles": 0.32517106557092434,
+          "AMFR_HUMAN_Tsuboyama_2023_4G3O": 0.9014949638460527,
+          "ARGR_ECOLI_Tsuboyama_2023_1AOY": 0.8173655406734046,
+          "B2L11_HUMAN_Dutta_2010_binding-Mcl-1": 0.7460958347836176,
+          "BBC1_YEAST_Tsuboyama_2023_1TG0": 0.8595145762274987,
+          "D7PM05_CLYGR_Somermeyer_2022": 0.6532793676140042,
+          "ESTA_BACSU_Nutschel_2020": 0.7038985068861763,
+          "GCN4_YEAST_Staller_2018": 0.20955882352941177
+        },
+        "retention_pct": 98.89005167475527,
+        "retention_ci_low": 98.41066017484549,
+        "retention_ci_high": 99.3856693561648,
+        "n_assays": 15
+      },
+      "pq64_896": {
+        "mean_spearman_rho": 0.6297437402212196,
+        "per_assay_rho": {
+          "A0A192B1T2_9HIV1_Haddox_2018": 0.7790198494610224,
+          "A0A1I9GEU1_NEIME_Kennouche_2019": 0.09548401491600854,
+          "A0A247D711_LISMN_Stadelmann_2021": 0.6515500520165456,
+          "A4GRB6_PSEAI_Chen_2020": 0.8485360064981448,
+          "A4_HUMAN_Seuma_2022": 0.6495774485695206,
+          "ACE2_HUMAN_Chan_2020": 0.6884409139658613,
+          "ADRB2_HUMAN_Jones_2020": 0.5953600159174736,
+          "AICDA_HUMAN_Gajula_2014_3cycles": 0.31300308716848724,
+          "AMFR_HUMAN_Tsuboyama_2023_4G3O": 0.8850890036653977,
+          "ARGR_ECOLI_Tsuboyama_2023_1AOY": 0.7907472877382945,
+          "B2L11_HUMAN_Dutta_2010_binding-Mcl-1": 0.7616795207650173,
+          "BBC1_YEAST_Tsuboyama_2023_1TG0": 0.842708994025105,
+          "D7PM05_CLYGR_Somermeyer_2022": 0.6450705869262767,
+          "ESTA_BACSU_Nutschel_2020": 0.6896620489578664,
+          "GCN4_YEAST_Staller_2018": 0.21022727272727276
+        },
+        "retention_pct": 97.61925929524469,
+        "retention_ci_low": 96.66764360026885,
+        "retention_ci_high": 98.64789566851802,
+        "n_assays": 15
+      },
+      "int2_896": {
+        "mean_spearman_rho": 0.6445011223742454,
+        "per_assay_rho": {
+          "A0A192B1T2_9HIV1_Haddox_2018": 0.7983563267232934,
+          "A0A1I9GEU1_NEIME_Kennouche_2019": 0.09808932482590164,
+          "A0A247D711_LISMN_Stadelmann_2021": 0.6511746979546381,
+          "A4GRB6_PSEAI_Chen_2020": 0.8625135043794951,
+          "A4_HUMAN_Seuma_2022": 0.6757846665680858,
+          "ACE2_HUMAN_Chan_2020": 0.705877250046969,
+          "ADRB2_HUMAN_Jones_2020": 0.5958368832180461,
+          "AICDA_HUMAN_Gajula_2014_3cycles": 0.3329168364246383,
+          "AMFR_HUMAN_Tsuboyama_2023_4G3O": 0.8988518903138195,
+          "ARGR_ECOLI_Tsuboyama_2023_1AOY": 0.826622776551778,
+          "B2L11_HUMAN_Dutta_2010_binding-Mcl-1": 0.7539047758623849,
+          "BBC1_YEAST_Tsuboyama_2023_1TG0": 0.8714490289776967,
+          "D7PM05_CLYGR_Somermeyer_2022": 0.66208744048456,
+          "ESTA_BACSU_Nutschel_2020": 0.7084498290042984,
+          "GCN4_YEAST_Staller_2018": 0.22560160427807488
+        },
+        "retention_pct": 99.90686395552949,
+        "retention_ci_low": 99.16611948250716,
+        "retention_ci_high": 100.67724380413408,
+        "n_assays": 15
+      },
+      "fp16_896_abtt3": {
+        "mean_spearman_rho": 0.6437440119656639,
+        "per_assay_rho": {
+          "A0A192B1T2_9HIV1_Haddox_2018": 0.7817371114042552,
+          "A0A1I9GEU1_NEIME_Kennouche_2019": 0.10875713228755189,
+          "A0A247D711_LISMN_Stadelmann_2021": 0.6501938128440994,
+          "A4GRB6_PSEAI_Chen_2020": 0.8666217586088508,
+          "A4_HUMAN_Seuma_2022": 0.6627924547336003,
+          "ACE2_HUMAN_Chan_2020": 0.7038833620058478,
+          "ADRB2_HUMAN_Jones_2020": 0.610491754059592,
+          "AICDA_HUMAN_Gajula_2014_3cycles": 0.31496814726191713,
+          "AMFR_HUMAN_Tsuboyama_2023_4G3O": 0.9100692500413246,
+          "ARGR_ECOLI_Tsuboyama_2023_1AOY": 0.8327491979699702,
+          "B2L11_HUMAN_Dutta_2010_binding-Mcl-1": 0.7450504088274987,
+          "BBC1_YEAST_Tsuboyama_2023_1TG0": 0.8730125924387522,
+          "D7PM05_CLYGR_Somermeyer_2022": 0.657186709368799,
+          "ESTA_BACSU_Nutschel_2020": 0.7157186801462692,
+          "GCN4_YEAST_Staller_2018": 0.22292780748663105
+        },
+        "retention_pct": 99.789501046508,
+        "retention_ci_low": 99.67183098128349,
+        "retention_ci_high": 99.91819519771104,
+        "n_assays": 15
+      },
+      "int4_896_abtt3": {
+        "mean_spearman_rho": 0.6443658654488831,
+        "per_assay_rho": {
+          "A0A192B1T2_9HIV1_Haddox_2018": 0.784057596101264,
+          "A0A1I9GEU1_NEIME_Kennouche_2019": 0.10962513767865185,
+          "A0A247D711_LISMN_Stadelmann_2021": 0.650632054034634,
+          "A4GRB6_PSEAI_Chen_2020": 0.8666885390996993,
+          "A4_HUMAN_Seuma_2022": 0.6637143007716312,
+          "ACE2_HUMAN_Chan_2020": 0.7045624471863783,
+          "ADRB2_HUMAN_Jones_2020": 0.6098302889293359,
+          "AICDA_HUMAN_Gajula_2014_3cycles": 0.31337281056068933,
+          "AMFR_HUMAN_Tsuboyama_2023_4G3O": 0.9149216607343221,
+          "ARGR_ECOLI_Tsuboyama_2023_1AOY": 0.8320679140545257,
+          "B2L11_HUMAN_Dutta_2010_binding-Mcl-1": 0.7449844590592389,
+          "BBC1_YEAST_Tsuboyama_2023_1TG0": 0.8744754178971382,
+          "D7PM05_CLYGR_Somermeyer_2022": 0.6576545055931282,
+          "ESTA_BACSU_Nutschel_2020": 0.7146361441502568,
+          "GCN4_YEAST_Staller_2018": 0.22426470588235295
+        },
+        "retention_pct": 99.88589720346019,
+        "retention_ci_low": 99.75491614552014,
+        "retention_ci_high": 100.02636444766016,
+        "n_assays": 15
+      }
+    },
+    "assay_ids": [
+      "A0A192B1T2_9HIV1_Haddox_2018",
+      "A0A1I9GEU1_NEIME_Kennouche_2019",
+      "A0A247D711_LISMN_Stadelmann_2021",
+      "A4GRB6_PSEAI_Chen_2020",
+      "A4_HUMAN_Seuma_2022",
+      "ACE2_HUMAN_Chan_2020",
+      "ADRB2_HUMAN_Jones_2020",
+      "AICDA_HUMAN_Gajula_2014_3cycles",
+      "AMFR_HUMAN_Tsuboyama_2023_4G3O",
+      "ARGR_ECOLI_Tsuboyama_2023_1AOY",
+      "B2L11_HUMAN_Dutta_2010_binding-Mcl-1",
+      "BBC1_YEAST_Tsuboyama_2023_1TG0",
+      "D7PM05_CLYGR_Somermeyer_2022",
+      "ESTA_BACSU_Nutschel_2020",
+      "GCN4_YEAST_Staller_2018"
+    ]
+  },
+  "clinvar_auc": {
+    "codecs": {
+      "lossless": {
+        "auc": 0.6019487196889408,
+        "n_variants": 15252,
+        "n_proteins": 1016
+      },
+      "binary_896_abtt1": {
+        "auc": 0.5985636451664378,
+        "n_variants": 15252,
+        "n_proteins": 1016
+      },
+      "binary_896_abtt3": {
+        "auc": 0.5879093832020086,
+        "n_variants": 15252,
+        "n_proteins": 1016
+      },
+      "binary_896_abtt8": {
+        "auc": 0.5975657871197744,
+        "n_variants": 15252,
+        "n_proteins": 1016
+      },
+      "binary_1024": {
+        "auc": 0.5981474929281415,
+        "n_variants": 15252,
+        "n_proteins": 1016
+      },
+      "binary_1024_abtt3": {
+        "auc": 0.5874938776944968,
+        "n_variants": 15252,
+        "n_proteins": 1016
+      },
+      "binary_512": {
+        "auc": 0.6090877050067633,
+        "n_variants": 15252,
+        "n_proteins": 1016
+      },
+      "binary_magnitude_896": {
+        "auc": 0.6047548940733913,
+        "n_variants": 15252,
+        "n_proteins": 1016
+      },
+      "pq128_896": {
+        "auc": 0.5881939257256704,
+        "n_variants": 15252,
+        "n_proteins": 1016
+      },
+      "pq64_896": {
+        "auc": 0.5806986297886063,
+        "n_variants": 15252,
+        "n_proteins": 1016
+      },
+      "int2_896": {
+        "auc": 0.5300737042934194,
+        "n_variants": 15252,
+        "n_proteins": 1016
+      },
+      "fp16_896_abtt3": {
+        "auc": 0.5854143529001035,
+        "n_variants": 15252,
+        "n_proteins": 1016
+      },
+      "int4_896_abtt3": {
+        "auc": 0.5784962927203964,
+        "n_variants": 15252,
+        "n_proteins": 1016
+      }
+    }
+  },
+  "rns": {
+    "skipped": true,
+    "reason": "--skip-rns flag"
+  },
+  "total_time_s": 10245.269778966904
+}
