@@ -29,6 +29,7 @@ results/
 *.npy
 *.bin
 data/residue_embeddings/
+data/residue_embeddings
 data/benchmark_suite/plm_embeddings/
 data/codebooks/
 data/structures/pdb/
