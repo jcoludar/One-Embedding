@@ -1,0 +1,30 @@
+# paperwork-enforcement contract for ProteEmbedExplorations.
+# Validate: .claude/hooks/stop_paperwork_check.py --validate-config .claude/paperwork.yaml
+#
+# Intentionally conservative: requires today's session log to EXIST with valid
+# frontmatter, but does NOT use `must-be-modified-this-session` (that depends on
+# the PostToolUse edit-log, which is fragile across hook-deployment boundaries).
+# Tighten later once the begin-session/debrief loop is the norm.
+
+session-log-dir: "sessions"
+
+files:
+  - path: "sessions/{today}-{session-slug}.md"
+    must-exist: true
+    frontmatter:
+      date:
+        required: true
+        equals: "{today}"
+      started_at:
+        required: true
+        matches: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[+-]\\d{2}:\\d{2}$"
+      slug:
+        required: true
+        equals: "{session-slug}"
+      status:
+        required: true
+        in: [done, paused]
+      followups:
+        required: true
+
+consistency: []
