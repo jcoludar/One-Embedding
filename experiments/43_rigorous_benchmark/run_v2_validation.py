@@ -11,7 +11,7 @@ the Exp 43 rigorous benchmark framework with:
 
 This replaces the Exp 34 results which used hardcoded C=1.0 probes.
 """
-
+import argparse
 import json
 import sys
 import time
@@ -30,6 +30,7 @@ from config import (
 from runners.per_residue import run_ss3_benchmark, run_ss8_benchmark, run_disorder_benchmark
 from runners.protein_level import compute_protein_vectors, run_retrieval_benchmark
 from metrics.statistics import paired_bootstrap_retention, paired_cluster_bootstrap_retention
+from runners.localization import (parse_deeploc_metadata_csv, run_localization_probe_benchmark, macro_f1_from_clusters,)
 from rules import MetricResult
 
 from src.one_embedding.codec_v2 import OneEmbeddingCodec
@@ -86,7 +87,224 @@ def metric_to_dict(m):
 from runners.per_residue import pooled_spearman as _pooled_spearman
 
 
+def run_deeploc_only(args):
+    """Run only the DeepLoc H5+CSV localization benchmark.
+
+    This avoids requiring SCOPe/CB513/CheZOD files and is useful for local testing.
+    """
+    print("=" * 70)
+    print("DeepLoc-only V2 validation")
+    print("=" * 70)
+
+    deeploc_h5 = RAW_EMBEDDINGS.get("prot_t5_deeploc1")
+    deeploc_csv = METADATA.get("deeploc1")
+
+    if deeploc_h5 is None or not deeploc_h5.exists():
+        raise FileNotFoundError(f"Missing DeepLoc H5: {deeploc_h5}")
+    if deeploc_csv is None or not deeploc_csv.exists():
+        raise FileNotFoundError(f"Missing DeepLoc CSV: {deeploc_csv}")
+
+    print(f"Loading DeepLoc H5:  {deeploc_h5}")
+    print(f"Loading DeepLoc CSV: {deeploc_csv}")
+
+    raw_deeploc = load_residue_embeddings(deeploc_h5)
+    train_labels, test_labels = parse_deeploc_metadata_csv(deeploc_csv, max_length=2000)
+
+    raw_ids = set(raw_deeploc.keys())
+    train_ids = sorted(raw_ids & set(train_labels.keys()))
+    test_ids = sorted(raw_ids & set(test_labels.keys()))
+
+    if args.max_train is not None:
+        train_ids = train_ids[:args.max_train]
+    if args.max_test is not None:
+        test_ids = test_ids[:args.max_test]
+
+    train_labels = {pid: train_labels[pid] for pid in train_ids}
+    test_labels = {pid: test_labels[pid] for pid in test_ids}
+    raw_deeploc = {
+        pid: raw_deeploc[pid]
+        for pid in sorted(set(train_ids) | set(test_ids))
+    }
+
+    print(f"DeepLoc embeddings used: {len(raw_deeploc)}")
+    print(f"DeepLoc train labels:    {len(train_labels)}")
+    print(f"DeepLoc test labels:     {len(test_labels)}")
+
+    print("\nRunning raw DeepLoc baseline...")
+    raw_loc = run_localization_probe_benchmark(
+        embeddings=raw_deeploc,
+        train_labels=train_labels,
+        test_labels=test_labels,
+        test_name="deeploc1_raw",
+        C_grid=C_GRID,
+        cv_folds=CV_FOLDS,
+        seeds=SEEDS,
+        n_bootstrap=BOOTSTRAP_N,
+    )
+
+    if raw_loc.get("status") != "done":
+        raise RuntimeError(f"DeepLoc raw benchmark failed/skipped: {raw_loc}")
+
+    print(f"Raw DeepLoc Q10:        {raw_loc['q10'].value:.4f}")
+    print(f"Raw DeepLoc macro F1:   {raw_loc['macro_f1'].value:.4f}")
+    print(f"Raw DeepLoc weighted F1:{raw_loc['weighted_f1'].value:.4f}")
+
+    modes = ["full", "balanced", "compact", "micro", "binary"]
+    all_results = {}
+
+    codec_fit_ids = train_ids
+    if args.codec_fit_max is not None:
+        codec_fit_ids = codec_fit_ids[:args.codec_fit_max]
+
+    train_embs = {pid: raw_deeploc[pid] for pid in codec_fit_ids}
+    print(f"\nCodec fitting proteins: {len(train_embs)}")
+
+    for mode in modes:
+        print("\n" + "=" * 70)
+        print(f"MODE: {mode} — {V2_CONFIGS[mode]['desc']}")
+        print("=" * 70)
+
+        t0 = time.time()
+        cfg = V2_CONFIGS[mode]
+
+        codec = OneEmbeddingCodec(
+            d_out=cfg["d_out"],
+            quantization=cfg["quantization"],
+            pq_m=cfg["pq_m"],
+        )
+
+        print(f"Fitting codec on {len(train_embs)} DeepLoc train proteins...")
+        codec.fit(train_embs)
+
+        print("Encoding/decoding DeepLoc embeddings and storing pooled vectors only...")
+        deeploc_pooled = {}
+
+        for i, (pid, emb) in enumerate(raw_deeploc.items(), start=1):
+            enc = codec.encode(emb)
+            decoded = codec.decode_per_residue(enc).astype(np.float32)
+
+            # Store only one protein-level vector instead of full residue matrix
+            deeploc_pooled[pid] = decoded.mean(axis=0)
+
+            # Explicitly release the large decoded residue matrix
+            del decoded
+
+            if i % 1000 == 0:
+                print(f"  processed {i}/{len(raw_deeploc)} proteins")
+
+        v2_loc = run_localization_probe_benchmark(
+            embeddings=deeploc_pooled,
+            train_labels=train_labels,
+            test_labels=test_labels,
+            test_name=f"deeploc1_{mode}",
+            C_grid=C_GRID,
+            cv_folds=CV_FOLDS,
+            seeds=SEEDS,
+            n_bootstrap=BOOTSTRAP_N,
+        )
+
+        if v2_loc.get("status") != "done":
+            raise RuntimeError(f"DeepLoc benchmark failed for {mode}: {v2_loc}")
+
+        loc_q10_ret_ci = paired_bootstrap_retention(
+            raw_loc["per_protein_scores"],
+            v2_loc["per_protein_scores"],
+            n_bootstrap=BOOTSTRAP_N,
+            seed=SEEDS[0],
+        )
+
+        loc_macro_ret_ci = paired_cluster_bootstrap_retention(
+            raw_loc["per_protein_predictions"],
+            v2_loc["per_protein_predictions"],
+            statistic_fn=macro_f1_from_clusters,
+            n_bootstrap=BOOTSTRAP_N,
+            seed=SEEDS[0],
+        )
+
+        elapsed = time.time() - t0
+
+        all_results[mode] = {
+            "deeploc_q10": metric_to_dict(v2_loc["q10"]),
+            "deeploc_macro_f1": metric_to_dict(v2_loc["macro_f1"]),
+            "deeploc_weighted_f1": metric_to_dict(v2_loc["weighted_f1"]),
+            "deeploc_q10_retention": metric_to_dict(loc_q10_ret_ci),
+            "deeploc_macro_f1_retention": metric_to_dict(loc_macro_ret_ci),
+            "deeploc_per_class_f1": v2_loc["per_class_f1"],
+            "best_C_deeploc": v2_loc["best_C"],
+            "time_s": elapsed,
+        }
+
+        print(f"DeepLoc Q10:      {v2_loc['q10'].value:.4f} ({loc_q10_ret_ci.value:.1f}% retention)")
+        print(f"DeepLoc macro F1: {v2_loc['macro_f1'].value:.4f} ({loc_macro_ret_ci.value:.1f}% retention)")
+        print(f"Mode {mode} took {elapsed:.1f}s")
+
+    def fmt_ret(mr_dict):
+        v = mr_dict["value"]
+        hw = (mr_dict["ci_upper"] - mr_dict["ci_lower"]) / 2
+        return f"{v:.1f}±{hw:.1f}%"
+
+    print("\n" + "=" * 70)
+    print("SUMMARY: DeepLoc-only V2 Retention")
+    print("=" * 70)
+    print(
+        f"{'Mode':>10s}  "
+        f"{'Q10':>8s}  {'Macro F1':>10s}  {'Weighted F1':>12s}  "
+        f"{'Q10 Ret':>14s}  {'Macro F1 Ret':>16s}"
+    )
+    print("-" * 80)
+
+    for mode in modes:
+        r = all_results[mode]
+        print(
+            f"{mode:>10s}  "
+            f"{r['deeploc_q10']['value']:>8.4f}  "
+            f"{r['deeploc_macro_f1']['value']:>10.4f}  "
+            f"{r['deeploc_weighted_f1']['value']:>12.4f}  "
+            f"{fmt_ret(r['deeploc_q10_retention']):>14s}  "
+            f"{fmt_ret(r['deeploc_macro_f1_retention']):>16s}"
+        )
+
+    output = {
+        "raw_baselines": {
+            "deeploc_q10": metric_to_dict(raw_loc["q10"]),
+            "deeploc_macro_f1": metric_to_dict(raw_loc["macro_f1"]),
+            "deeploc_weighted_f1": metric_to_dict(raw_loc["weighted_f1"]),
+            "deeploc_per_class_f1": raw_loc["per_class_f1"],
+        },
+        "modes": all_results,
+        "_meta": {
+            "script": "run_v2_validation.py --deeploc-only",
+            "methodology": "DeepLoc-only H5+CSV benchmark, mean pooling, CV-tuned LogReg",
+            "seeds": SEEDS,
+            "n_bootstrap": BOOTSTRAP_N,
+            "C_grid": C_GRID,
+            "max_train": args.max_train,
+            "max_test": args.max_test,
+            "codec_fit_max": args.codec_fit_max,
+        },
+    }
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    results_path = RESULTS_DIR / "v2_deeploc_only_results.json"
+
+    with open(results_path, "w") as f:
+        json.dump(output, f, indent=2)
+
+    print(f"\nDeepLoc-only results saved to {results_path}")
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--deeploc-only", action="store_true")
+    parser.add_argument("--max-train", type=int, default=None)
+    parser.add_argument("--max-test", type=int, default=None)
+    parser.add_argument("--codec-fit-max", type=int, default=None)
+    args = parser.parse_args()
+
+    if args.deeploc_only:
+        run_deeploc_only(args)
+        return
+
+
     print("=" * 70)
     print("V2 Extreme Compression — Rigorous Re-validation")
     print("BCa CIs, CV-tuned probes, averaged seeds, pooled disorder rho")
@@ -151,6 +369,49 @@ def main():
     raw_ret = run_retrieval_benchmark(raw_ret_vecs, metadata, n_bootstrap=BOOTSTRAP_N)
     print(f"  Raw Ret@1 cosine: {raw_ret['ret1_cosine'].value:.4f}")
     print()
+    # DeepLoc raw baseline: H5 embeddings + CSV metadata
+    raw_deeploc = None
+    deeploc_train_labels = None
+    deeploc_test_labels = None
+    raw_loc = None
+
+    deeploc_h5 = RAW_EMBEDDINGS.get("prot_t5_deeploc1")
+    deeploc_csv = METADATA.get("deeploc1")
+
+    if deeploc_h5 is not None and deeploc_csv is not None and deeploc_h5.exists() and deeploc_csv.exists():
+        print("  Loading DeepLoc from H5 + CSV metadata...")
+        raw_deeploc = load_residue_embeddings(deeploc_h5)
+        deeploc_train_labels, deeploc_test_labels = parse_deeploc_metadata_csv(deeploc_csv, max_length=2000)
+
+        print(
+            f"  DeepLoc: {len(raw_deeploc)} embeddings, "
+            f"{len(deeploc_train_labels)} train labels, "
+            f"{len(deeploc_test_labels)} test labels"
+        )
+
+        raw_loc = run_localization_probe_benchmark(
+            embeddings=raw_deeploc,
+            train_labels=deeploc_train_labels,
+            test_labels=deeploc_test_labels,
+            test_name="deeploc1_raw",
+            C_grid=C_GRID,
+            cv_folds=CV_FOLDS,
+            seeds=SEEDS,
+            n_bootstrap=BOOTSTRAP_N,
+        )
+
+        if raw_loc.get("status") == "done":
+            print(f"  Raw DeepLoc Q10: {raw_loc['q10'].value:.4f}")
+            print(f"  Raw DeepLoc macro F1: {raw_loc['macro_f1'].value:.4f}")
+        else:
+            print(f"  SKIP DeepLoc raw baseline: {raw_loc}")
+            raw_deeploc = None
+            raw_loc = None
+    else:
+        print("  SKIP DeepLoc: missing H5 or CSV metadata")
+        print(f"    H5:  {deeploc_h5}")
+        print(f"    CSV: {deeploc_csv}")
+
 
     # ── Benchmark each V2 mode ──
     modes = ["full", "balanced", "compact", "micro", "binary"]
@@ -241,6 +502,56 @@ def main():
             n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
         )
         print(f"    Ret@1 cosine: {v2_ret['ret1_cosine'].value:.4f} (retention: {ret_ret_ci.value:.1f} ± {(ret_ret_ci.ci_upper - ret_ret_ci.ci_lower) / 2:.1f}%)")
+   
+        # DeepLoc localization
+        v2_loc = None
+        loc_q10_ret_ci = None
+        loc_macro_ret_ci = None
+
+        if raw_deeploc is not None and raw_loc is not None:
+            print("  Running DeepLoc localization...")
+            deeploc_decoded = {}
+
+            for pid, emb in raw_deeploc.items():
+                enc = codec.encode(emb)
+                deeploc_decoded[pid] = codec.decode_per_residue(enc).astype(np.float32)
+
+            v2_loc = run_localization_probe_benchmark(
+                embeddings=deeploc_decoded,
+                train_labels=deeploc_train_labels,
+                test_labels=deeploc_test_labels,
+                test_name=f"deeploc1_{mode}",
+                C_grid=C_GRID,
+                cv_folds=CV_FOLDS,
+                seeds=SEEDS,
+                n_bootstrap=BOOTSTRAP_N,
+            )
+
+            if v2_loc.get("status") == "done":
+                loc_q10_ret_ci = paired_bootstrap_retention(
+                    raw_loc["per_protein_scores"],
+                    v2_loc["per_protein_scores"],
+                    n_bootstrap=BOOTSTRAP_N,
+                    seed=SEEDS[0],
+                )
+
+                loc_macro_ret_ci = paired_cluster_bootstrap_retention(
+                    raw_loc["per_protein_predictions"],
+                    v2_loc["per_protein_predictions"],
+                    statistic_fn=macro_f1_from_clusters,
+                    n_bootstrap=BOOTSTRAP_N,
+                    seed=SEEDS[0],
+                )
+
+                print(
+                    f"    DeepLoc Q10: {v2_loc['q10'].value:.4f} "
+                    f"(retention: {loc_q10_ret_ci.value:.1f}%)"
+                )
+                print(
+                    f"    DeepLoc macro F1: {v2_loc['macro_f1'].value:.4f} "
+                    f"(retention: {loc_macro_ret_ci.value:.1f}%)"
+                )
+
 
         elapsed = time.time() - t0
         print(f"  Mode {mode} took {elapsed:.1f}s")
@@ -258,6 +569,15 @@ def main():
             "best_C_ss3": v2_ss3["best_C"],
             "best_C_ss8": v2_ss8["best_C"],
             "best_alpha_disorder": v2_dis["best_alpha"],
+            
+            "deeploc_q10": metric_to_dict(v2_loc["q10"]) if v2_loc is not None and v2_loc.get("status") == "done" else None,
+            "deeploc_macro_f1": metric_to_dict(v2_loc["macro_f1"]) if v2_loc is not None and v2_loc.get("status") == "done" else None,
+            "deeploc_weighted_f1": metric_to_dict(v2_loc["weighted_f1"]) if v2_loc is not None and v2_loc.get("status") == "done" else None,
+            "deeploc_q10_retention": metric_to_dict(loc_q10_ret_ci) if loc_q10_ret_ci is not None else None,
+            "deeploc_macro_f1_retention": metric_to_dict(loc_macro_ret_ci) if loc_macro_ret_ci is not None else None,
+            "deeploc_per_class_f1": v2_loc["per_class_f1"] if v2_loc is not None and v2_loc.get("status") == "done" else None,
+            "best_C_deeploc": v2_loc["best_C"] if v2_loc is not None and v2_loc.get("status") == "done" else None,
+            
             "time_s": elapsed,
         }
         print()
@@ -288,9 +608,50 @@ def main():
               f"{fmt_ret(r['disorder_retention']):>14s}  "
               f"{fmt_ret(r['ret1_retention']):>14s}")
 
+    # ── DeepLoc summary table ──
+    if raw_loc is not None and raw_loc.get("status") == "done":
+        print()
+        print("=" * 70)
+        print("SUMMARY: DeepLoc Localization — V2 Retention")
+        print("=" * 70)
+        print(
+            f"{'Mode':>10s}  "
+            f"{'Q10':>8s}  {'Macro F1':>10s}  {'Weighted F1':>12s}  "
+            f"{'Q10 Ret':>14s}  {'Macro F1 Ret':>16s}"
+        )
+        print("-" * 80)
+
+        for mode in modes:
+            r = all_results[mode]
+
+            if r["deeploc_q10"] is None:
+                print(f"{mode:>10s}  {'SKIPPED':>8s}")
+                continue
+
+            print(
+                f"{mode:>10s}  "
+                f"{r['deeploc_q10']['value']:>8.4f}  "
+                f"{r['deeploc_macro_f1']['value']:>10.4f}  "
+                f"{r['deeploc_weighted_f1']['value']:>12.4f}  "
+                f"{fmt_ret(r['deeploc_q10_retention']):>14s}  "
+                f"{fmt_ret(r['deeploc_macro_f1_retention']):>16s}"
+            )
+
     print()
-    print(f"Raw baselines: SS3={raw_ss3['q3'].value:.4f}, SS8={raw_ss8['q8'].value:.4f}, "
-          f"Dis={raw_dis['pooled_spearman_rho'].value:.4f}, Ret@1={raw_ret['ret1_cosine'].value:.4f}")
+    raw_summary = (
+        f"Raw baselines: SS3={raw_ss3['q3'].value:.4f}, "
+        f"SS8={raw_ss8['q8'].value:.4f}, "
+        f"Dis={raw_dis['pooled_spearman_rho'].value:.4f}, "
+        f"Ret@1={raw_ret['ret1_cosine'].value:.4f}"
+    )
+
+    if raw_loc is not None and raw_loc.get("status") == "done":
+        raw_summary += (
+            f", DeepLoc Q10={raw_loc['q10'].value:.4f}, "
+            f"DeepLoc MacroF1={raw_loc['macro_f1'].value:.4f}"
+        )
+
+    print(raw_summary)
 
     # ── Save results ──
     output = {
@@ -299,6 +660,10 @@ def main():
             "ss8_q8": metric_to_dict(raw_ss8["q8"]),
             "disorder_pooled_rho": metric_to_dict(raw_dis["pooled_spearman_rho"]),
             "ret1_cosine": metric_to_dict(raw_ret["ret1_cosine"]),
+            "deeploc_q10": metric_to_dict(raw_loc["q10"]) if raw_loc is not None and raw_loc.get("status") == "done" else None,
+            "deeploc_macro_f1": metric_to_dict(raw_loc["macro_f1"]) if raw_loc is not None and raw_loc.get("status") == "done" else None,
+            "deeploc_weighted_f1": metric_to_dict(raw_loc["weighted_f1"]) if raw_loc is not None and raw_loc.get("status") == "done" else None,
+            "deeploc_per_class_f1": raw_loc["per_class_f1"] if raw_loc is not None and raw_loc.get("status") == "done" else None,
         },
         "modes": all_results,
         "_meta": {
@@ -310,6 +675,7 @@ def main():
             "alpha_grid": ALPHA_GRID,
         },
     }
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     results_path = RESULTS_DIR / "v2_rigorous_results.json"
     with open(results_path, "w") as f:

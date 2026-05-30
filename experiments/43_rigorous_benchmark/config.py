@@ -12,6 +12,7 @@ RAW_EMBEDDINGS = {
     "prot_t5_cb513": DATA / "residue_embeddings" / "prot_t5_xl_cb513.h5",
     "prot_t5_chezod": DATA / "residue_embeddings" / "prot_t5_xl_chezod.h5",
     "prot_t5_trizod": DATA / "residue_embeddings" / "prot_t5_xl_trizod.h5",
+    "prot_t5_deeploc1": DATA / "residue_embeddings" / "prot_t5_xl_deeploc1.h5",
 }
 
 # Compressed embedding paths (may not exist yet — script compresses on-the-fly)
@@ -38,16 +39,26 @@ LABELS = {
 # Metadata
 METADATA = {
     "scope_5k": DATA / "proteins" / "metadata_5k.csv",
+    "deeploc1": DATA / "deeploc" / "deeploc1_metadata.csv",
 }
 
 # Results output
 RESULTS_DIR = DATA / "benchmarks" / "rigorous_v1"
 
 # Golden rule thresholds
-SEEDS = [42, 123, 456]
-BOOTSTRAP_N = 10_000
-CV_FOLDS = 3
-C_GRID = [0.01, 0.1, 1.0, 10.0]
-ALPHA_GRID = [0.01, 0.1, 1.0, 10.0, 100.0]
+#SEEDS = [42, 123, 456]
+# BOOTSTRAP_N = 10_000
+#CV_FOLDS = 3
+#C_GRID = [0.01, 0.1, 1.0, 10.0]
+#ALPHA_GRID = [0.01, 0.1, 1.0, 10.0, 100.0]
+#CROSS_CHECK_WARN_PP = 3.0
+#CROSS_CHECK_BLOCK_PP = 5.0
+
+# Quick local integration test settings
+SEEDS = [42]
+BOOTSTRAP_N = 100
+CV_FOLDS = 2
+C_GRID = [1.0]
+ALPHA_GRID = [1.0]
 CROSS_CHECK_WARN_PP = 3.0
 CROSS_CHECK_BLOCK_PP = 5.0
