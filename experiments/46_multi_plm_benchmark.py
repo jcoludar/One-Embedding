@@ -122,15 +122,19 @@ def _extract_prot_t5_half(fasta_dict, model_name, batch_size, device=None, **kw)
     embed_dim = model.config.d_model
     print(f"Loaded {model_name} (fp16, dim={embed_dim}) on {device}")
 
-    ids = list(fasta_dict.keys())
+    max_residues = 2000  # OOM guard; skip (never truncate) over-length proteins
+    skipped = [sid for sid, s in fasta_dict.items() if len(s) > max_residues]
+    for sid in skipped:
+        print(f"⚠️  Skipping {sid} (len {len(fasta_dict[sid])} > {max_residues}) — NOT truncated.")
+    ids = [sid for sid, s in fasta_dict.items() if 0 < len(s) <= max_residues]
     embeddings = {}
 
     for i in tqdm(range(0, len(ids), batch_size), desc="Extracting ProtT5 fp16"):
         batch_ids = ids[i:i + batch_size]
         batch_seqs = [" ".join(list(re.sub(r"[UZOB]", "X", fasta_dict[sid])))
                       for sid in batch_ids]
-        encoded = tokenizer(batch_seqs, padding=True, truncation=True,
-                            max_length=512, return_tensors="pt")
+        # ProtT5 (T5, relative position bias) has NO length limit — never truncate.
+        encoded = tokenizer(batch_seqs, padding=True, return_tensors="pt")
         input_ids = encoded["input_ids"].to(device)
         attention_mask = encoded["attention_mask"].to(device)
 
@@ -138,6 +142,10 @@ def _extract_prot_t5_half(fasta_dict, model_name, batch_size, device=None, **kw)
             output = model(input_ids=input_ids, attention_mask=attention_mask)
         for j, sid in enumerate(batch_ids):
             seq_len = len(fasta_dict[sid])
+            assert output.last_hidden_state.shape[1] >= seq_len, (
+                f"{sid}: {output.last_hidden_state.shape[1]} hidden positions < "
+                f"{seq_len} aa — truncation regression!"
+            )
             emb = output.last_hidden_state[j, :seq_len].cpu().numpy().astype(np.float32)
             embeddings[sid] = emb
 
@@ -176,7 +184,9 @@ def _extract_esmc(fasta_dict, model_name, batch_size, device=None, max_len=2000,
     for pid in tqdm(ids, desc=f"Extracting {model_name}"):
         seq = fasta_dict[pid]
         if len(seq) > max_len:
-            seq = seq[:max_len]
+            # Skip-don't-truncate: an OOM guard must not fabricate a short embedding.
+            print(f"⚠️  Skipping {pid} (len {len(seq)} > max_len {max_len}) — NOT truncated.")
+            continue
         if not seq:
             continue
 
@@ -225,15 +235,19 @@ def _extract_ankh(fasta_dict, model_name, batch_size, device=None, **kw):
     embed_dim = model.config.d_model
     print(f"Loaded {model_name} (dim={embed_dim}) on {device}")
 
-    ids = list(fasta_dict.keys())
+    max_residues = 2000  # OOM guard; skip (never truncate) over-length proteins
+    skipped = [sid for sid, s in fasta_dict.items() if len(s) > max_residues]
+    for sid in skipped:
+        print(f"⚠️  Skipping {sid} (len {len(fasta_dict[sid])} > {max_residues}) — NOT truncated.")
+    ids = [sid for sid, s in fasta_dict.items() if 0 < len(s) <= max_residues]
     embeddings = {}
 
     for i in tqdm(range(0, len(ids), batch_size), desc="Extracting ANKH"):
         batch_ids = ids[i:i + batch_size]
         # ANKH: raw sequence, no space separation
         batch_seqs = [fasta_dict[sid] for sid in batch_ids]
-        encoded = tokenizer(batch_seqs, padding=True, truncation=True,
-                            max_length=514, return_tensors="pt")
+        # ANKH is T5-based (relative position bias) — no length limit; never truncate.
+        encoded = tokenizer(batch_seqs, padding=True, return_tensors="pt")
         input_ids = encoded["input_ids"].to(device)
         attention_mask = encoded["attention_mask"].to(device)
 
@@ -243,6 +257,10 @@ def _extract_ankh(fasta_dict, model_name, batch_size, device=None, **kw):
         for j, sid in enumerate(batch_ids):
             seq_len = len(fasta_dict[sid])
             # Skip BOS token at position 0, take L residue positions
+            assert output.last_hidden_state.shape[1] >= seq_len + 1, (
+                f"{sid}: {output.last_hidden_state.shape[1]} hidden positions < "
+                f"BOS+{seq_len} aa — truncation regression!"
+            )
             emb = output.last_hidden_state[j, 1:seq_len + 1].cpu().numpy().astype(np.float32)
             embeddings[sid] = emb
 

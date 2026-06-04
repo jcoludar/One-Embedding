@@ -86,12 +86,12 @@ def _embed_one(seq: str, tokenizer, model, device: torch.device) -> np.ndarray:
     """
     seq_clean = re.sub(r"[UZOB]", "X", seq.upper())
     seq_spaced = " ".join(list(seq_clean))
+    # ProtT5 (T5, relative position bias) has NO length limit — never truncate.
+    # Callers (extract_diversity / extract_clinvar) already SKIP over-long proteins.
     encoded = tokenizer(
         [seq_spaced],
         return_tensors="pt",
         padding=False,
-        truncation=True,
-        max_length=1024,  # hard limit — skip longer proteins
     )
     input_ids = encoded["input_ids"].to(device)
     attention_mask = encoded["attention_mask"].to(device)
@@ -99,6 +99,9 @@ def _embed_one(seq: str, tokenizer, model, device: torch.device) -> np.ndarray:
         out = model(input_ids=input_ids, attention_mask=attention_mask)
     # last_hidden_state: (1, L_tokens, 1024).  First L positions = residues.
     L = len(seq_clean)
+    assert out.last_hidden_state.shape[1] >= L, (
+        f"hidden positions {out.last_hidden_state.shape[1]} < {L} aa — truncation regression!"
+    )
     emb = out.last_hidden_state[0, :L].cpu().numpy().astype(np.float16)
     return emb
 

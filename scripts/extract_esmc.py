@@ -235,8 +235,10 @@ def extract(dataset_name: str):
     for i, (pid, seq) in enumerate(protein_items):
         # Cap sequence length
         if len(seq) > MAX_SEQ_LEN:
-            seq = seq[:MAX_SEQ_LEN]
+            # Skip-don't-truncate: a truncated ESM-C embedding is silently wrong.
+            print(f"⚠️  Skipping {pid} (len {len(seq)} > MAX_SEQ_LEN {MAX_SEQ_LEN}) — NOT truncated.")
             n_skipped_long += 1
+            continue
 
         # Skip empty/invalid sequences
         if not seq:

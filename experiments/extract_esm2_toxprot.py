@@ -43,11 +43,14 @@ def main() -> None:
         if not seq or any(c not in "ACDEFGHIKLMNPQRSTVWYBXZJUO" for c in seq.upper()):
             continue
         if len(seq) > MAX_LEN:
-            seq = seq[:MAX_LEN]
+            # Skip-don't-truncate: ESM2 has no hard length limit; a truncated
+            # embedding would be silently wrong. Drop over-length sequences.
+            print(f"⚠️  Skipping {sid} (len {len(seq)} > MAX_LEN {MAX_LEN}) — NOT truncated.")
             n_capped += 1
+            continue
         fasta[sid] = seq
 
-    print(f"  {len(fasta)} valid sequences (capped {n_capped} at L={MAX_LEN})")
+    print(f"  {len(fasta)} valid sequences ({n_capped} skipped, len > {MAX_LEN})")
 
     OUT_H5.parent.mkdir(parents=True, exist_ok=True)
 
