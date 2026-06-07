@@ -140,6 +140,8 @@ def run_deeploc_only(args):
         cv_folds=CV_FOLDS,
         seeds=SEEDS,
         n_bootstrap=BOOTSTRAP_N,
+        feature_method=args.feature_method,
+        dct_k=8 if args.feature_method == "dct_k8" else 4,
     )
 
     if raw_loc.get("status") != "done":
@@ -159,6 +161,39 @@ def run_deeploc_only(args):
     train_embs = {pid: raw_deeploc[pid] for pid in codec_fit_ids}
     print(f"\nCodec fitting proteins: {len(train_embs)}")
 
+    def _to_deeploc_dct_vector(decoded, dct_k):
+        from scipy.fft import dct
+
+        coeffs = dct(decoded, axis=0, type=2, norm="ortho")[:dct_k]
+        return coeffs.flatten().astype(np.float32)
+
+    def extract_feature_vectors_from_codec(raw_embeddings, codec, feature_method):
+        """Memory-safe feature extraction for DeepLoc.
+
+        Processes one protein at a time and stores only the final protein vector.
+        """
+        vectors = {}
+
+        for i, (pid, emb) in enumerate(raw_embeddings.items(), start=1):
+            enc = codec.encode(emb)
+            decoded = codec.decode_per_residue(enc).astype(np.float32)
+
+            if feature_method == "mean":
+                vectors[pid] = decoded.mean(axis=0).astype(np.float32)
+            elif feature_method == "dct_k4":
+                vectors[pid] = _to_deeploc_dct_vector(decoded, dct_k=4)
+            elif feature_method == "dct_k8":
+                vectors[pid] = _to_deeploc_dct_vector(decoded, dct_k=8)
+            else:
+                raise ValueError(f"Unknown feature method: {feature_method}")
+
+            del decoded
+
+            if i % 1000 == 0:
+                print(f"  processed {i}/{len(raw_embeddings)} proteins")
+
+        return vectors
+
     for mode in modes:
         print("\n" + "=" * 70)
         print(f"MODE: {mode} — {V2_CONFIGS[mode]['desc']}")
@@ -176,24 +211,19 @@ def run_deeploc_only(args):
         print(f"Fitting codec on {len(train_embs)} DeepLoc train proteins...")
         codec.fit(train_embs)
 
-        print("Encoding/decoding DeepLoc embeddings and storing pooled vectors only...")
-        deeploc_pooled = {}
+        print(
+            "Encoding/decoding DeepLoc embeddings and storing "
+            f"{args.feature_method} protein vectors only..."
+        )
 
-        for i, (pid, emb) in enumerate(raw_deeploc.items(), start=1):
-            enc = codec.encode(emb)
-            decoded = codec.decode_per_residue(enc).astype(np.float32)
-
-            # Store only one protein-level vector instead of full residue matrix
-            deeploc_pooled[pid] = decoded.mean(axis=0)
-
-            # Explicitly release the large decoded residue matrix
-            del decoded
-
-            if i % 1000 == 0:
-                print(f"  processed {i}/{len(raw_deeploc)} proteins")
+        deeploc_features = extract_feature_vectors_from_codec(
+            raw_embeddings=raw_deeploc,
+            codec=codec,
+            feature_method=args.feature_method,
+        )
 
         v2_loc = run_localization_probe_benchmark(
-            embeddings=deeploc_pooled,
+            embeddings=deeploc_features,
             train_labels=train_labels,
             test_labels=test_labels,
             test_name=f"deeploc1_{mode}",
@@ -201,6 +231,8 @@ def run_deeploc_only(args):
             cv_folds=CV_FOLDS,
             seeds=SEEDS,
             n_bootstrap=BOOTSTRAP_N,
+            feature_method=args.feature_method,
+            dct_k=8 if args.feature_method == "dct_k8" else 4,
         )
 
         if v2_loc.get("status") != "done":
@@ -274,7 +306,8 @@ def run_deeploc_only(args):
         "modes": all_results,
         "_meta": {
             "script": "run_v2_validation.py --deeploc-only",
-            "methodology": "DeepLoc-only H5+CSV benchmark, mean pooling, CV-tuned LogReg",
+            "methodology": f"DeepLoc-only H5+CSV benchmark, {args.feature_method}, CV-tuned LogReg",
+            "feature_method": args.feature_method,
             "seeds": SEEDS,
             "n_bootstrap": BOOTSTRAP_N,
             "C_grid": C_GRID,
@@ -285,12 +318,13 @@ def run_deeploc_only(args):
     }
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    results_path = RESULTS_DIR / "v2_deeploc_only_results.json"
+    results_path = RESULTS_DIR / f"v2_deeploc_only_{args.feature_method}_results.json"
 
     with open(results_path, "w") as f:
         json.dump(output, f, indent=2)
 
     print(f"\nDeepLoc-only results saved to {results_path}")
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -298,6 +332,12 @@ def main():
     parser.add_argument("--max-train", type=int, default=None)
     parser.add_argument("--max-test", type=int, default=None)
     parser.add_argument("--codec-fit-max", type=int, default=None)
+    parser.add_argument(
+        "--feature-method",
+        choices=["mean", "dct_k4", "dct_k8"],
+        default="mean",
+        help="Protein-level feature method for DeepLoc-only mode.",
+    )
     args = parser.parse_args()
 
     if args.deeploc_only:
@@ -398,6 +438,8 @@ def main():
             cv_folds=CV_FOLDS,
             seeds=SEEDS,
             n_bootstrap=BOOTSTRAP_N,
+            feature_method=args.feature_method,
+            dct_k=8 if args.feature_method == "dct_k8" else 4,
         )
 
         if raw_loc.get("status") == "done":
@@ -510,6 +552,9 @@ def main():
 
         if raw_deeploc is not None and raw_loc is not None:
             print("  Running DeepLoc localization...")
+            # Note: the full integrated path keeps decoded residue-level
+            # DeepLoc embeddings in memory. For memory-safe DeepLoc feature
+            # extraction, use --deeploc-only.
             deeploc_decoded = {}
 
             for pid, emb in raw_deeploc.items():
@@ -525,6 +570,8 @@ def main():
                 cv_folds=CV_FOLDS,
                 seeds=SEEDS,
                 n_bootstrap=BOOTSTRAP_N,
+                feature_method=args.feature_method,
+                dct_k=8 if args.feature_method == "dct_k8" else 4,
             )
 
             if v2_loc.get("status") == "done":

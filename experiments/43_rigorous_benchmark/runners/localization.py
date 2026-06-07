@@ -1,7 +1,7 @@
 """Protein-level localization benchmark runner (DeepLoc / Light Attention).
 
-Mean-pools per-residue embeddings, trains CV-tuned LogReg probes over seeds,
-and returns MetricResult outputs with bootstrap CIs (Rule 4).
+Converts per-residue embeddings to protein-level features, trains CV-tuned
+LogReg probes over seeds, and returns MetricResult outputs with bootstrap CIs.
 """
 
 import sys
@@ -10,6 +10,8 @@ from pathlib import Path
 
 import numpy as np
 from sklearn.metrics import f1_score
+
+from scipy.fft import dct
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -59,7 +61,7 @@ def parse_deeploc_fasta(fasta_path: Path) -> tuple[dict[str, str], dict[str, str
 
     return sequences, labels
 
-def parse_deeploc_metadata_csv(csv_path: Path,max_length: int | None = None,) -> tuple[dict[str, str], dict[str, str]]:
+def parse_deeploc_metadata_csv(csv_path: Path, max_length: int | None = None,) -> tuple[dict[str, str], dict[str, str]]:
     """Parse DeepLoc metadata CSV to train/test label dictionaries.
 
     Expected columns:
@@ -145,9 +147,36 @@ def _per_class_f1_from_clusters(cluster_list: list[dict]) -> dict[str, float]:
     scores = f1_score(y_true, y_pred, labels=labels, average=None, zero_division=0)
     return {label: float(score) for label, score in zip(labels, scores)}
 
-def _to_protein_vector(x: np.ndarray) -> np.ndarray:
-    """Convert residue-level or already pooled embedding to one protein vector."""
-    return x.mean(axis=0) if x.ndim == 2 else x
+
+def _to_protein_vector(
+    x: np.ndarray,
+    method: str = "mean",
+    dct_k: int = 4,
+) -> np.ndarray:
+    """Convert residue-level or already-pooled embedding to one protein vector.
+
+    Args:
+        x: Either a residue-level matrix (L, D) or an already-pooled vector (D,).
+        method: "mean", "dct_k4", "dct_k8", or "protein_vec".
+        dct_k: Number of DCT coefficients for DCT-based methods.
+
+    Returns:
+        Protein-level vector.
+    """
+    x = np.asarray(x, dtype=np.float32)
+
+    # Already a protein-level vector
+    if x.ndim == 1:
+        return x
+
+    if method == "mean":
+        return x.mean(axis=0).astype(np.float32)
+
+    if method in {"dct_k4", "dct_k8"}:
+        coeffs = dct(x, axis=0, type=2, norm="ortho")[:dct_k]
+        return coeffs.flatten().astype(np.float32)
+
+    raise ValueError(f"Unknown feature method: {method}")
 
 
 def run_localization_probe_benchmark(
@@ -162,8 +191,10 @@ def run_localization_probe_benchmark(
     train_ids: list[str] | None = None,
     test_ids: list[str] | None = None,
     quiet: bool = False,
+    feature_method: str = "mean",
+    dct_k: int = 4,
 ) -> dict:
-    """Run localization on one embedding space (mean-pool + LogReg).
+    """Run localization on one embedding space using protein-level features + LogReg.
 
     Returns Q10 accuracy, macro/weighted F1 (with bootstrap CIs), per-class F1,
     and per-protein scores for paired retention vs another embedding space.
@@ -182,8 +213,8 @@ def run_localization_probe_benchmark(
     if not quiet:
         print(f"  {test_name}: train={len(train_ids)}, test={len(test_ids)}")
 
-    train_vecs = np.array([_to_protein_vector(embeddings[pid]) for pid in train_ids])
-    test_vecs = np.array([_to_protein_vector(embeddings[pid]) for pid in test_ids])
+    train_vecs = np.array([_to_protein_vector(embeddings[pid], method=feature_method, dct_k=dct_k) for pid in train_ids])
+    test_vecs = np.array([_to_protein_vector(embeddings[pid], method=feature_method, dct_k=dct_k) for pid in test_ids])
     y_train = np.array([train_labels[pid] for pid in train_ids])
     y_test = np.array([test_labels[pid] for pid in test_ids])
 
