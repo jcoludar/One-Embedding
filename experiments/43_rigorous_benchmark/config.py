@@ -55,10 +55,8 @@ RESULTS_DIR = DATA / "benchmarks" / "rigorous_v1"
 #CROSS_CHECK_BLOCK_PP = 5.0
 
 # Quick local integration test settings
-SEEDS = [42]
-BOOTSTRAP_N = 100
-CV_FOLDS = 2
-C_GRID = [1.0]
-ALPHA_GRID = [1.0]
-CROSS_CHECK_WARN_PP = 3.0
-CROSS_CHECK_BLOCK_PP = 5.0
+SEEDS = [42, 123, 456]
+BOOTSTRAP_N = 10_000
+CV_FOLDS = 3
+C_GRID = [0.01, 0.1, 1.0, 10.0]
+ALPHA_GRID = [0.01, 0.1, 1.0, 10.0, 100.0]
