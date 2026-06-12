@@ -30,7 +30,12 @@ from config import (
 from runners.per_residue import run_ss3_benchmark, run_ss8_benchmark, run_disorder_benchmark
 from runners.protein_level import compute_protein_vectors, run_retrieval_benchmark
 from metrics.statistics import paired_bootstrap_retention, paired_cluster_bootstrap_retention
-from runners.localization import (parse_deeploc_metadata_csv, run_localization_probe_benchmark, macro_f1_from_clusters,)
+from runners.localization import (
+    parse_deeploc_metadata_csv,
+    run_localization_probe_benchmark,
+    macro_f1_from_clusters,
+    extract_protein_features_from_codec,
+)
 from rules import MetricResult
 
 from src.one_embedding.codec_v2 import OneEmbeddingCodec
@@ -141,7 +146,6 @@ def run_deeploc_only(args):
         seeds=SEEDS,
         n_bootstrap=BOOTSTRAP_N,
         feature_method=args.feature_method,
-        dct_k=8 if args.feature_method == "dct_k8" else 4,
     )
 
     if raw_loc.get("status") != "done":
@@ -160,39 +164,6 @@ def run_deeploc_only(args):
 
     train_embs = {pid: raw_deeploc[pid] for pid in codec_fit_ids}
     print(f"\nCodec fitting proteins: {len(train_embs)}")
-
-    def _to_deeploc_dct_vector(decoded, dct_k):
-        from scipy.fft import dct
-
-        coeffs = dct(decoded, axis=0, type=2, norm="ortho")[:dct_k]
-        return coeffs.flatten().astype(np.float32)
-
-    def extract_feature_vectors_from_codec(raw_embeddings, codec, feature_method):
-        """Memory-safe feature extraction for DeepLoc.
-
-        Processes one protein at a time and stores only the final protein vector.
-        """
-        vectors = {}
-
-        for i, (pid, emb) in enumerate(raw_embeddings.items(), start=1):
-            enc = codec.encode(emb)
-            decoded = codec.decode_per_residue(enc).astype(np.float32)
-
-            if feature_method == "mean":
-                vectors[pid] = decoded.mean(axis=0).astype(np.float32)
-            elif feature_method == "dct_k4":
-                vectors[pid] = _to_deeploc_dct_vector(decoded, dct_k=4)
-            elif feature_method == "dct_k8":
-                vectors[pid] = _to_deeploc_dct_vector(decoded, dct_k=8)
-            else:
-                raise ValueError(f"Unknown feature method: {feature_method}")
-
-            del decoded
-
-            if i % 1000 == 0:
-                print(f"  processed {i}/{len(raw_embeddings)} proteins")
-
-        return vectors
 
     for mode in modes:
         print("\n" + "=" * 70)
@@ -216,7 +187,7 @@ def run_deeploc_only(args):
             f"{args.feature_method} protein vectors only..."
         )
 
-        deeploc_features = extract_feature_vectors_from_codec(
+        deeploc_features = extract_protein_features_from_codec(
             raw_embeddings=raw_deeploc,
             codec=codec,
             feature_method=args.feature_method,
@@ -232,7 +203,6 @@ def run_deeploc_only(args):
             seeds=SEEDS,
             n_bootstrap=BOOTSTRAP_N,
             feature_method=args.feature_method,
-            dct_k=8 if args.feature_method == "dct_k8" else 4,
         )
 
         if v2_loc.get("status") != "done":
@@ -344,7 +314,6 @@ def main():
         run_deeploc_only(args)
         return
 
-
     print("=" * 70)
     print("V2 Extreme Compression — Rigorous Re-validation")
     print("BCa CIs, CV-tuned probes, averaged seeds, pooled disorder rho")
@@ -439,7 +408,6 @@ def main():
             seeds=SEEDS,
             n_bootstrap=BOOTSTRAP_N,
             feature_method=args.feature_method,
-            dct_k=8 if args.feature_method == "dct_k8" else 4,
         )
 
         if raw_loc.get("status") == "done":
@@ -544,7 +512,7 @@ def main():
             n_bootstrap=BOOTSTRAP_N, seed=SEEDS[0],
         )
         print(f"    Ret@1 cosine: {v2_ret['ret1_cosine'].value:.4f} (retention: {ret_ret_ci.value:.1f} ± {(ret_ret_ci.ci_upper - ret_ret_ci.ci_lower) / 2:.1f}%)")
-   
+
         # DeepLoc localization
         v2_loc = None
         loc_q10_ret_ci = None
@@ -552,17 +520,17 @@ def main():
 
         if raw_deeploc is not None and raw_loc is not None:
             print("  Running DeepLoc localization...")
-            # Note: the full integrated path keeps decoded residue-level
-            # DeepLoc embeddings in memory. For memory-safe DeepLoc feature
-            # extraction, use --deeploc-only.
-            deeploc_decoded = {}
-
-            for pid, emb in raw_deeploc.items():
-                enc = codec.encode(emb)
-                deeploc_decoded[pid] = codec.decode_per_residue(enc).astype(np.float32)
+            # Memory-safe: decode one protein at a time, pool to a protein vector,
+            # discard the (L, D) residue matrix. Same extractor as --deeploc-only,
+            # so the integrated and standalone paths build identical features.
+            deeploc_features = extract_protein_features_from_codec(
+                raw_embeddings=raw_deeploc,
+                codec=codec,
+                feature_method=args.feature_method,
+            )
 
             v2_loc = run_localization_probe_benchmark(
-                embeddings=deeploc_decoded,
+                embeddings=deeploc_features,
                 train_labels=deeploc_train_labels,
                 test_labels=deeploc_test_labels,
                 test_name=f"deeploc1_{mode}",
@@ -571,7 +539,6 @@ def main():
                 seeds=SEEDS,
                 n_bootstrap=BOOTSTRAP_N,
                 feature_method=args.feature_method,
-                dct_k=8 if args.feature_method == "dct_k8" else 4,
             )
 
             if v2_loc.get("status") == "done":
@@ -616,7 +583,6 @@ def main():
             "best_C_ss3": v2_ss3["best_C"],
             "best_C_ss8": v2_ss8["best_C"],
             "best_alpha_disorder": v2_dis["best_alpha"],
-            
             "deeploc_q10": metric_to_dict(v2_loc["q10"]) if v2_loc is not None and v2_loc.get("status") == "done" else None,
             "deeploc_macro_f1": metric_to_dict(v2_loc["macro_f1"]) if v2_loc is not None and v2_loc.get("status") == "done" else None,
             "deeploc_weighted_f1": metric_to_dict(v2_loc["weighted_f1"]) if v2_loc is not None and v2_loc.get("status") == "done" else None,
@@ -624,7 +590,6 @@ def main():
             "deeploc_macro_f1_retention": metric_to_dict(loc_macro_ret_ci) if loc_macro_ret_ci is not None else None,
             "deeploc_per_class_f1": v2_loc["per_class_f1"] if v2_loc is not None and v2_loc.get("status") == "done" else None,
             "best_C_deeploc": v2_loc["best_C"] if v2_loc is not None and v2_loc.get("status") == "done" else None,
-            
             "time_s": elapsed,
         }
         print()
