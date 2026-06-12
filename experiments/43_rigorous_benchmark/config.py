@@ -12,6 +12,7 @@ RAW_EMBEDDINGS = {
     "prot_t5_cb513": DATA / "residue_embeddings" / "prot_t5_xl_cb513.h5",
     "prot_t5_chezod": DATA / "residue_embeddings" / "prot_t5_xl_chezod.h5",
     "prot_t5_trizod": DATA / "residue_embeddings" / "prot_t5_xl_trizod.h5",
+    "prot_t5_deeploc1": DATA / "residue_embeddings" / "prot_t5_xl_deeploc1.h5",
 }
 
 # Compressed embedding paths (may not exist yet — script compresses on-the-fly)
@@ -38,6 +39,7 @@ LABELS = {
 # Metadata
 METADATA = {
     "scope_5k": DATA / "proteins" / "metadata_5k.csv",
+    "deeploc1": DATA / "deeploc" / "deeploc1_metadata.csv",
 }
 
 # Results output
