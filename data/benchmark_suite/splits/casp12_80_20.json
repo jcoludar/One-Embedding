@@ -1,0 +1,27 @@
+{
+  "train_ids": [
+    "casp12_5",
+    "casp12_11",
+    "casp12_3",
+    "casp12_18",
+    "casp12_16",
+    "casp12_13",
+    "casp12_2",
+    "casp12_9",
+    "casp12_20",
+    "casp12_4",
+    "casp12_12",
+    "casp12_7",
+    "casp12_10",
+    "casp12_14",
+    "casp12_19",
+    "casp12_6"
+  ],
+  "test_ids": [
+    "casp12_0",
+    "casp12_17",
+    "casp12_15",
+    "casp12_1",
+    "casp12_8"
+  ]
+}

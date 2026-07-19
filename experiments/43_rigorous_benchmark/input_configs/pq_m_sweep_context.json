@@ -1,0 +1,14 @@
+{"config":
+[
+["lossless",     {"d_out": 1024, "quantization": null,   "pq_m": null,"dct_k":1,"context":true,"prefix":"baseline_lossless"}],
+["PQ512", {"d_out": 512, "quantization": "pq",     "pq_m": 512,"dct_k":1,"context":true,"pooling_mode":"dct_k","prefix":"d512_PQ512_dct1",  "desc": "PQ512"}],
+["PQ256", {"d_out": 512, "quantization": "pq",     "pq_m": 256,"dct_k":1,"context":true,"pooling_mode":"dct_k","prefix":"d512_PQ256_dct1",  "desc": "256"}],
+["PQ128",  {"d_out": 512, "quantization": "pq",     "pq_m": 128,"dct_k":1,"context":true,"pooling_mode":"dct_k","prefix":"d512_PQ128_dct1",   "desc": "PQ M=128 "}],
+["PQ64",  {"d_out": 512, "quantization": "pq",     "pq_m": 64,"dct_k":1,"context":true,"pooling_mode":"dct_k","prefix":"d512_PQ64_dct1",   "desc": "PQ M=64"}],
+["PQ32",  {"d_out": 512, "quantization": "pq",     "pq_m": 32,"dct_k":1,"context":true,"pooling_mode":"dct_k","prefix":"d512_PQ32_dct1",   "desc": "PQ M=32"}],
+["PQ16",  {"d_out": 512, "quantization": "pq",     "pq_m": 16,"dct_k":1,"context":true,"pooling_mode":"dct_k","prefix":"d512_PQ16_dct1",   "desc": "PQ M=16"}],
+["PQ8",  {"d_out": 512, "quantization": "pq",     "pq_m": 8,"dct_k":1,"context":true,"pooling_mode":"dct_k","prefix":"d512_PQ8_dct1",   "desc": "PQ M=8"}],
+["PQ4",  {"d_out": 512, "quantization": "pq",     "pq_m": 4,"dct_k":1,"context":true,"pooling_mode":"dct_k","prefix":"d512_PQ4_dct1",   "desc": "PQ M=4"}],
+["PQ2",  {"d_out": 512, "quantization": "pq",     "pq_m": 2,"dct_k":1,"context":true,"pooling_mode":"dct_k","prefix":"d512_PQ2_dct1",   "desc": "PQ M=2"}]
+]
+}

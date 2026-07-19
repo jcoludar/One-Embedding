@@ -5,6 +5,7 @@ information by training linear probes on compressed vs. original embeddings.
 """
 
 import csv
+import json
 import numpy as np
 from pathlib import Path
 from collections import defaultdict
@@ -51,6 +52,47 @@ SS8_TO_SS3 = {
     "T": "C", "S": "C", "C": "C", " ": "C", "-": "C",  # Coil/other → C
 }
 
+def load_ss_csv(csv_path: Path | str,prefix="cb513") -> tuple[dict, dict, dict, dict]:
+    """Load ss3 dataset from CSV file.
+
+    Expected CSV columns: input, dssp3, dssp8, disorder, cb513_mask
+
+    Returns:
+        sequences: {protein_id: amino_acid_string}
+        ss3_labels: {protein_id: SS3_label_string}  (H/E/C per residue)
+        ss8_labels: {protein_id: SS8_label_string}  (H/B/E/G/I/T/S/C per residue)
+        disorder_labels: {protein_id: ndarray}  (binary 0/1 per residue)
+    """
+    csv_path = Path(csv_path)
+    if not csv_path.exists():
+        
+        return {}, {}, {}, {}
+
+    sequences = {}
+    ss3_labels = {}
+    ss8_labels = {}
+    disorder_labels = {}
+
+    with open(csv_path) as f:
+        reader = csv.DictReader(f)
+        for i, row in enumerate(reader):
+            pid = f"{prefix}_{i}"
+            seq = row["input"]
+            ss3 = row["dssp3"]
+            ss8 = row["dssp8"]
+
+            if len(ss3) != len(seq) or len(ss8) != len(seq):
+                continue
+
+            sequences[pid] = seq
+            ss3_labels[pid] = ss3
+            ss8_labels[pid] = ss8
+
+            disorder_vals = [float(x) for x in row["disorder"].split()]
+            if len(disorder_vals) == len(seq):
+                disorder_labels[pid] = np.array(disorder_vals, dtype=np.float32)
+
+    return sequences, ss3_labels, ss8_labels, disorder_labels
 
 def load_cb513_csv(csv_path: Path | str) -> tuple[dict, dict, dict, dict]:
     """Load CB513 dataset from CSV file.
@@ -65,6 +107,7 @@ def load_cb513_csv(csv_path: Path | str) -> tuple[dict, dict, dict, dict]:
     """
     csv_path = Path(csv_path)
     if not csv_path.exists():
+        
         return {}, {}, {}, {}
 
     sequences = {}
@@ -335,7 +378,8 @@ def load_chezod_seth(data_dir: Path | str) -> tuple[dict, dict, list, list]:
         test_ids: list of test protein IDs
     """
     data_dir = Path(data_dir)
-    seth_dir = data_dir / "SETH"
+    #seth_dir = data_dir / "SETH"
+    seth_dir = data_dir 
 
     sequences: dict[str, str] = {}
     disorder_scores: dict[str, np.ndarray] = {}
@@ -421,6 +465,105 @@ def load_chezod_seth(data_dir: Path | str) -> tuple[dict, dict, list, list]:
 
     return sequences, disorder_scores, train_ids, test_ids
 
+def load_trizod_data(data_dir: Path | str) -> tuple[dict, dict, list, list]:
+    """Load TriZOD dataset from downloaded figshare files.
+
+    Reads the unfiltered_rest_set.fasta for training sequences,
+    TriZOD_test_set.fasta for test sequences, and extracts G-scores
+    from unfiltered.json (JSON Lines format).
+
+    Args:
+        data_dir: Directory containing the TriZOD files:
+                  - unfiltered_rest_set.fasta
+                  - TriZOD_test_set.fasta
+                  - unfiltered.json
+
+    Returns:
+        sequences:       {protein_id: amino_acid_string}
+        disorder_scores: {protein_id: ndarray of g-scores} (None → NaN)
+        train_ids:       list of training protein IDs
+        test_ids:        list of test protein IDs
+    """
+    data_dir = data_dir
+
+    sequences: dict[str, str] = {}
+    disorder_scores: dict[str, np.ndarray] = {}
+    train_ids: list[str] = []
+    test_ids: list[str] = []
+
+    # ── Parse helper ──────────────────────────────────────────
+    def parse_fasta(path: Path) -> dict[str, str]:
+        seqs = {}
+        current_id = None
+        current_seq = []
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                if line.startswith(">"):
+                    if current_id is not None:
+                        seqs[current_id] = "".join(current_seq)
+                    current_id = line[1:].strip()
+                    current_seq = []
+                else:
+                    current_seq.append(line)
+        if current_id is not None:
+            seqs[current_id] = "".join(current_seq)
+        return seqs
+
+    # ── Load G-scores from JSON Lines ─────────────────────────
+    gscores_map: dict[str, list] = {}
+    json_path = data_dir / "unfiltered.json"
+    with open(json_path,"r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entry = json.loads(line)
+                pid = entry["ID"]
+                gscores_map[pid] = entry.get("gscores", [])
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+    # ── Training set ──────────────────────────────────────────
+    train_fasta = data_dir / "unfiltered_rest_set.fasta"
+    if train_fasta.exists():
+        train_seqs = parse_fasta(train_fasta)
+        for pid, seq in train_seqs.items():
+            if pid not in gscores_map:
+                continue
+            raw = gscores_map[pid]
+            if len(raw) != len(seq):
+                continue
+            arr = np.array(
+                [np.nan if v is None else float(v) for v in raw],
+                dtype=np.float32,
+            )
+            sequences[pid] = seq
+            disorder_scores[pid] = arr
+            train_ids.append(pid)
+
+    # ── Test set ──────────────────────────────────────────────
+    test_fasta = data_dir / "TriZOD_test_set.fasta"
+    if test_fasta.exists():
+        test_seqs = parse_fasta(test_fasta)
+        for pid, seq in test_seqs.items():
+            if pid not in gscores_map:
+                continue
+            raw = gscores_map[pid]
+            if len(raw) != len(seq):
+                continue
+            arr = np.array(
+                [np.nan if v is None else float(v) for v in raw],
+                dtype=np.float32,
+            )
+            sequences[pid] = seq
+            disorder_scores[pid] = arr
+            test_ids.append(pid)
+
+    return sequences, disorder_scores, train_ids, test_ids
 
 def evaluate_disorder_probe(
     embeddings: dict[str, np.ndarray],

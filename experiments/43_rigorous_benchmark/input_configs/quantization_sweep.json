@@ -1,0 +1,11 @@
+{"config":
+[
+["float16",     {"d_out": 896, "quantization": null,   "pq_m": null, "desc": "lossless 896d"}],
+["int4",     {"d_out": 896, "quantization": "int4",   "pq_m": null, "desc": "int4 896d"}],
+["int2",     {"d_out": 896, "quantization": "int2",   "pq_m": null, "desc": "int2 896d"}],
+["binary",     {"d_out": 896, "quantization": "binary",   "pq_m": null, "desc": "binary 896d"}]
+
+
+
+]
+}

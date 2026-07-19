@@ -1,0 +1,34 @@
+{"config":
+[
+["dct_k_1_d1024", {"d_out": 1024, "quantization": null,     "pq_m": null,"dct_k":1,"pooling_mode":"dct_k",  "desc": "dct_k_1"}],
+["dct_k_2_d1024", {"d_out": 1024, "quantization": null,     "pq_m": null,"dct_k":2,"pooling_mode":"dct_k",  "desc": "dct_k_2"}],
+["dct_k_3_d1024", {"d_out": 1024, "quantization": null,     "pq_m": null,"dct_k":3,"pooling_mode":"dct_k",  "desc": "dct_k_3"}],
+["dct_k_4_d1024", {"d_out": 1024, "quantization": null,     "pq_m": null,"dct_k":4,"pooling_mode":"dct_k",  "desc": "dct_k_4"}],
+["dct_k_6_d1024", {"d_out": 1024, "quantization": null,     "pq_m": null,"dct_k":6,"pooling_mode":"dct_k",  "desc": "dct_k_6"}],
+["dct_k_8_d1024", {"d_out": 1024, "quantization": null,     "pq_m": null,"dct_k":8,"pooling_mode":"dct_k",  "desc": "dct_k_8"}],
+["dct_k_12_d1024", {"d_out": 1024, "quantization": null,     "pq_m": null,"dct_k":12,"pooling_mode":"dct_k",  "desc": "dct_k_12"}],
+["dct_k_1_d512", {"d_out": 512, "quantization": null,     "pq_m": null,"dct_k":1,"pooling_mode":"dct_k",  "desc": "dct_k_1"}],
+["dct_k_2_d512", {"d_out": 512, "quantization": null,     "pq_m": null,"dct_k":2,"pooling_mode":"dct_k",  "desc": "dct_k_2"}],
+["dct_k_3_d512", {"d_out": 512, "quantization": null,     "pq_m": null,"dct_k":3,"pooling_mode":"dct_k",  "desc": "dct_k_3"}],
+["dct_k_4_d512", {"d_out": 512, "quantization": null,     "pq_m": null,"dct_k":4,"pooling_mode":"dct_k",  "desc": "dct_k_4"}],
+["dct_k_6_d512", {"d_out": 512, "quantization": null,     "pq_m": null,"dct_k":6,"pooling_mode":"dct_k",  "desc": "dct_k_6"}],
+["dct_k_8_d512", {"d_out": 512, "quantization": null,     "pq_m": null,"dct_k":8,"pooling_mode":"dct_k",  "desc": "dct_k_8"}],
+["dct_k_12_d512", {"d_out": 512, "quantization": null,     "pq_m": null,"dct_k":12,"pooling_mode":"dct_k",  "desc": "dct_k_12"}],
+["dct_k_1_d256", {"d_out": 256, "quantization": null,     "pq_m": null,"dct_k":1,"pooling_mode":"dct_k",  "desc": "dct_k_1"}],
+["dct_k_2_d256", {"d_out": 256, "quantization": null,     "pq_m": null,"dct_k":2,"pooling_mode":"dct_k",  "desc": "dct_k_2"}],
+["dct_k_3_d256", {"d_out": 256, "quantization": null,     "pq_m": null,"dct_k":3,"pooling_mode":"dct_k",  "desc": "dct_k_3"}],
+["dct_k_4_d256", {"d_out": 256, "quantization": null,     "pq_m": null,"dct_k":4,"pooling_mode":"dct_k",  "desc": "dct_k_4"}],
+["dct_k_6_d256", {"d_out": 256, "quantization": null,     "pq_m": null,"dct_k":6,"pooling_mode":"dct_k",  "desc": "dct_k_6"}],
+["dct_k_8_d256", {"d_out": 256, "quantization": null,     "pq_m": null,"dct_k":8,"pooling_mode":"dct_k",  "desc": "dct_k_8"}],
+["dct_k_12_d256", {"d_out": 256, "quantization": null,     "pq_m": null,"dct_k":12,"pooling_mode":"dct_k",  "desc": "dct_k_12"}],
+["dct_k_1_d64", {"d_out": 64, "quantization": null,     "pq_m": null,"dct_k":1,"pooling_mode":"dct_k",  "desc": "dct_k_1"}],
+["dct_k_2_d64", {"d_out": 64, "quantization": null,     "pq_m": null,"dct_k":2,"pooling_mode":"dct_k",  "desc": "dct_k_2"}],
+["dct_k_3_d64", {"d_out": 64, "quantization": null,     "pq_m": null,"dct_k":3,"pooling_mode":"dct_k",  "desc": "dct_k_3"}],
+["dct_k_4_d64", {"d_out": 64, "quantization": null,     "pq_m": null,"dct_k":4,"pooling_mode":"dct_k",  "desc": "dct_k_4"}],
+["dct_k_6_d64", {"d_out": 64, "quantization": null,     "pq_m": null,"dct_k":6,"pooling_mode":"dct_k",  "desc": "dct_k_6"}],
+["dct_k_8_d64", {"d_out": 64, "quantization": null,     "pq_m": null,"dct_k":8,"pooling_mode":"dct_k",  "desc": "dct_k_8"}],
+["dct_k_12_d64", {"d_out": 64, "quantization": null,     "pq_m": null,"dct_k":12,"pooling_mode":"dct_k",  "desc": "dct_k_12"}]
+
+
+]
+}

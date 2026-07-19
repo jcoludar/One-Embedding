@@ -20,6 +20,7 @@ def train_classification_probe(
     C_grid: list[float] = None,
     cv_folds: int = 3,
     seed: int = 42,
+    n_jobs = -1
 ) -> dict:
     """Train LogReg with CV-tuned C, return predictions + metrics.
 
@@ -38,19 +39,21 @@ def train_classification_probe(
     """
     if C_grid is None:
         C_grid = [0.01, 0.1, 1.0, 10.0]
-
+    
     base_model = LogisticRegression(
         max_iter=500, solver="lbfgs", random_state=seed,
     )
+    
     grid = GridSearchCV(
         base_model, param_grid={"C": C_grid},
-        cv=cv_folds, scoring="accuracy", n_jobs=-1,
+        cv=cv_folds, scoring="accuracy", n_jobs=n_jobs,
     )
+    
     grid.fit(X_train, y_train)
-
+    
     best_C = grid.best_params_["C"]
     predictions = grid.predict(X_test)
-
+    
     classes = np.unique(np.concatenate([y_train, y_test]))
     per_class_acc = {}
     for c in classes:

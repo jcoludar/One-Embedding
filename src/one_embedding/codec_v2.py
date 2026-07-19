@@ -37,7 +37,7 @@ from src.one_embedding.preprocessing import compute_corpus_stats, all_but_the_to
 from src.one_embedding.universal_transforms import random_orthogonal_project
 from src.one_embedding.transforms import dct_summary
 from src.one_embedding.quantization import (
-    quantize_int4, dequantize_int4,
+    quantize_int4, dequantize_int4, 
     quantize_int2, dequantize_int2,
     quantize_binary, dequantize_binary,
     quantize_binary_magnitude, dequantize_binary_magnitude,
@@ -91,6 +91,7 @@ class OneEmbeddingCodec:
         quantization: str | None = "binary",
         pq_m: int | None = None,
         abtt_k: int = 0,
+        pooling_mode: str = "dct_k",
         dct_k: int = 4,
         seed: int = 42,
         codebook_path: str | None = None,
@@ -103,7 +104,11 @@ class OneEmbeddingCodec:
         self.d_out = d_out
         self.quantization = quantization
         self.abtt_k = abtt_k
-        self.dct_k = dct_k
+        self.pooling_mode = pooling_mode
+        if pooling_mode == "dct_k": 
+            self.dct_k = dct_k
+        else:
+            self.dct_k = 1
         self.seed = seed
         self._proj_cache: dict[int, np.ndarray] = {}
         self._corpus_stats = None
@@ -179,11 +184,13 @@ class OneEmbeddingCodec:
         self._corpus_stats = compute_corpus_stats(
             embeddings, n_sample=50_000, n_pcs=n_pcs, seed=self.seed
         )
-
+        
+        
         if self.quantization == "pq":
             preprocessed = {}
             for pid, m in embeddings.items():
                 preprocessed[pid] = self._preprocess(m)
+            
             self._pq_model = pq_fit(
                 preprocessed, M=self.pq_m, n_centroids=self.pq_k,
                 max_residues=max_residues, seed=self.seed,
@@ -220,7 +227,7 @@ class OneEmbeddingCodec:
             f.attrs["seed"] = self.seed
 
         return path
-
+    
     def _load_codebook(self, path: str):
         """Load codebook from H5."""
         with h5py.File(path, "r") as f:
@@ -259,8 +266,12 @@ class OneEmbeddingCodec:
 
         L, D = raw.shape
         projected = self._preprocess(raw)
-        protein_vec = dct_summary(projected, K=self.dct_k).astype(np.float16)
-
+        if self.pooling_mode == "dct_k":
+            protein_vec = dct_summary(projected, K=self.dct_k).astype(np.float16)
+        elif self.pooling_mode == "mean":
+            protein_vec = projected.mean(axis=0)
+        elif self.pooling_mode == "max":
+            protein_vec = projected.max(axis=0)
         result = {
             "protein_vec": protein_vec,
             "metadata": {
@@ -358,7 +369,10 @@ class OneEmbeddingCodec:
         elif quantization == "pq":
             return pq_decode(encoded["pq_codes"], self._pq_model)
         raise ValueError(f"Unknown quantization: {quantization}")
-
+    
+    
+    
+    
     # ── H5 I/O ────────────────────────────────────────────────────────────
 
     @staticmethod
@@ -424,7 +438,9 @@ class OneEmbeddingCodec:
     @staticmethod
     def _read_per_residue_from_h5(group, quantization: str | None,
                                    L: int, d_out: int,
-                                   codebook_path: str | None = None) -> np.ndarray:
+                                   codebook_path: str | None = None,
+                                   pq_model:dict = None,
+                                ) -> np.ndarray:
         """Read and decode per-residue data from an H5 group."""
         if quantization is None:
             return group["per_residue"][:].astype(np.float32)
@@ -467,19 +483,85 @@ class OneEmbeddingCodec:
             return dequantize_binary_magnitude(compressed)
         elif quantization == "pq":
             codes = group["pq_codes"][:]
-            if codebook_path is None:
-                raise ValueError("codebook_path required for PQ modes")
-            with h5py.File(codebook_path, "r") as cb:
-                pq_model = {
-                    "codebook": cb["pq_codebook"][:],
-                    "M": int(cb.attrs["pq_M"]),
-                    "n_centroids": int(cb.attrs["pq_K"]),
-                    "sub_dim": int(cb.attrs["pq_sub_dim"]),
-                    "D": int(cb.attrs["pq_D"]),
-                }
+            if pq_model is None and not codebook_path is None:
+                with h5py.File(codebook_path, "r") as cb:
+                    pq_model = {
+                        "codebook": cb["pq_codebook"][:],
+                        "M": int(cb.attrs["pq_M"]),
+                        "n_centroids": int(cb.attrs["pq_K"]),
+                        "sub_dim": int(cb.attrs["pq_sub_dim"]),
+                        "D": int(cb.attrs["pq_D"]),
+                    }
+            
+            if pq_model is None:
+                raise ValueError("codebook_path or pq_model dict required for PQ modes")
+            
             return pq_decode(codes, pq_model)
         raise ValueError(f"Unknown quantization: {quantization}")
-
+    
+    @staticmethod
+    def read_single_residue_from_h5(group, quantization: str | None,
+                                    d_out: int, index:int,
+                                    codebook_path: str | None = None,
+                                    pq_model:dict = None,
+                                ) -> np.ndarray:
+        """Read and decode single residue data from an H5 group. wanted to try, No longer used."""
+        if quantization is None:
+            return group["per_residue"][index].astype(np.float32)
+        elif quantization == "int4":
+            compressed = {
+                "data": group["per_residue_data"][index][np.newaxis,],
+                "scales": group["per_residue_scales"][:],
+                "zero_points": group["per_residue_zp"][:],
+                "original_shape": (1, d_out),
+                "dtype": "int4",
+            }
+            return dequantize_int4(compressed)[0]
+        elif quantization == "int2":
+            compressed = {
+                "data": group["per_residue_data"][index][np.newaxis,],
+                "scales": group["per_residue_scales"][:],
+                "zero_points": group["per_residue_zp"][:],
+                "original_shape": (1, d_out),
+                "dtype": "int2",
+            }
+            return dequantize_int2(compressed)[0]
+        elif quantization == "binary":
+            compressed = {
+                "bits": group["per_residue_bits"][index][np.newaxis,],
+                "means": group["per_residue_means"][:],
+                "scales": group["per_residue_scales"][:],
+                "original_shape": (1, d_out),
+                "dtype": "binary",
+            }
+            return dequantize_binary(compressed)[0]
+        elif quantization == "binary_magnitude":
+            compressed = {
+                "bits": group["per_residue_bits"][index][np.newaxis,],
+                "means": group["per_residue_means"][:],
+                "scales": group["per_residue_scales"][:],
+                "magnitudes": group["per_residue_magnitudes"][:],
+                "original_shape": (1, d_out),
+                "dtype": "binary_magnitude",
+            }
+            return dequantize_binary_magnitude(compressed)[0]
+        elif quantization == "pq":
+            codes = group["pq_codes"][index][np.newaxis,]
+            if pq_model is None and not codebook_path is None:
+                with h5py.File(codebook_path, "r") as cb:
+                    pq_model = {
+                        "codebook": cb["pq_codebook"][:],
+                        "M": int(cb.attrs["pq_M"]),
+                        "n_centroids": int(cb.attrs["pq_K"]),
+                        "sub_dim": int(cb.attrs["pq_sub_dim"]),
+                        "D": int(cb.attrs["pq_D"]),
+                    }
+            
+            if pq_model is None:
+                raise ValueError("codebook_path or pq_model dict required for PQ modes")
+            
+            return pq_decode(codes, pq_model)[0]
+        raise ValueError(f"Unknown quantization: {quantization}")
     @staticmethod
     def load(path: str, codebook_path: str | None = None) -> dict:
         """Load and decode a single compressed protein.

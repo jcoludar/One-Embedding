@@ -1,0 +1,17 @@
+{"config":
+[
+["d1024",     {"d_out": 1024, "quantization": null,   "pq_m": null,"dct_k":1,"pooling_mode":"dct_k","prefix":"d1024_float16_dct1", "desc": "lossless 1024d"}],
+["d896",     {"d_out": 896, "quantization": null,   "pq_m": null,"dct_k":1,"pooling_mode":"dct_k","prefix":"d896_float16_dct1", "desc": "lossless 896d"}],
+["d640",     {"d_out": 640, "quantization": null,   "pq_m": null,"dct_k":1,"pooling_mode":"dct_k","prefix":"d640_float16_dct1", "desc": "lossless 640d"}],
+["d512",     {"d_out": 512, "quantization": null,   "pq_m": null,"dct_k":1,"pooling_mode":"dct_k","prefix":"d512_float16_dct1", "desc": "lossless 512d"}],
+["d256",     {"d_out": 256, "quantization": null,   "pq_m": null,"dct_k":1,"pooling_mode":"dct_k","prefix":"d256_float16_dct1", "desc": "lossless 256d"}],
+["d256",     {"d_out": 128, "quantization": null,   "pq_m": null,"dct_k":1,"pooling_mode":"dct_k","prefix":"d128_float16_dct1", "desc": "lossless 256d"}],
+["d64",     {"d_out": 64, "quantization": null,   "pq_m": null, "dct_k":1,"pooling_mode":"dct_k","prefix":"d64_float16_dct1","desc": "lossless 64d"}],
+["d32",     {"d_out": 32, "quantization": null,   "pq_m": null,"dct_k":1,"pooling_mode":"dct_k","prefix":"d32_float16_dct1", "desc": "lossless 32d"}],
+["d16",     {"d_out": 16, "quantization": null,   "pq_m": null,"dct_k":1,"pooling_mode":"dct_k","prefix":"d16_float16_dct1", "desc": "lossless 16d"}],
+["d8",     {"d_out": 8, "quantization": null,   "pq_m": null,"dct_k":1,"pooling_mode":"dct_k","prefix":"d8_float16_dct1", "desc": "lossless 8d"}],
+["d4",     {"d_out": 4, "quantization": null,   "pq_m": null,"dct_k":1,"pooling_mode":"dct_k","prefix":"d4_float16_dct1", "desc": "lossless 4d"}]
+
+
+]
+}

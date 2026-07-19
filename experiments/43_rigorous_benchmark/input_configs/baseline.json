@@ -1,0 +1,5 @@
+{"config":
+[
+["d1024",     {"d_out": 1024, "quantization": null,   "pq_m": null,"dct_k":1,"context":true,"pooling_mode":"dct_k","prefix":"d1024_float16_dct1", "desc": "lossless 1024d"}]
+]
+}

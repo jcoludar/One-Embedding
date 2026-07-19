@@ -1,0 +1,20 @@
+{"config":
+[
+["d1024",     {"d_out": 1024, "quantization": "int4",   "pq_m": null, "desc": "lossless 1024d"}],
+["d896",     {"d_out": 896, "quantization": "int4",   "pq_m": null, "desc": "lossless 896d"}],
+["d768",     {"d_out": 768, "quantization": "int4",   "pq_m": null, "desc": "lossless 768d"}],
+["d640",     {"d_out": 640, "quantization": "int4",   "pq_m": null, "desc": "lossless 640d"}],
+["d512",     {"d_out": 512, "quantization": "int4",   "pq_m": null, "desc": "lossless 512d"}],
+["d384",     {"d_out": 384, "quantization": "int4",   "pq_m": null, "desc": "lossless 384d"}],
+["d256",     {"d_out": 256, "quantization": "int4",   "pq_m": null, "desc": "lossless 256d"}],
+["d128",     {"d_out": 128, "quantization": "int4",   "pq_m": null, "desc": "lossless 128d"}],
+["d64",     {"d_out": 64, "quantization": "int4",   "pq_m": null, "desc": "lossless 64d"}],
+["d48",     {"d_out": 48, "quantization": "int4",   "pq_m": null, "desc": "lossless 48d"}],
+["d32",     {"d_out": 32, "quantization": "int4",   "pq_m": null, "desc": "lossless 32d"}],
+["d16",     {"d_out": 16, "quantization": "int4",   "pq_m": null, "desc": "lossless 16d"}],
+["d8",     {"d_out": 8, "quantization": "int4",   "pq_m": null, "desc": "lossless 8d"}],
+["d4",     {"d_out": 4, "quantization": "int4",   "pq_m": null, "desc": "lossless 4d"}]
+
+
+]
+}
